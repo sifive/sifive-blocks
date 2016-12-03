@@ -8,18 +8,24 @@ import regmapper._
 object NonBlockingEnqueue {
   def apply(enq: DecoupledIO[UInt], regWidth: Int = 32): Seq[RegField] = {
     val enqWidth = enq.bits.getWidth
+    val quash = Wire(Bool())
     require(enqWidth > 0)
     require(regWidth > enqWidth)
     Seq(
       RegField(enqWidth,
         RegReadFn(UInt(0)),
         RegWriteFn((valid, data) => {
-          enq.valid := valid
+          enq.valid := valid && !quash
           enq.bits := data
           Bool(true)
         })),
       RegField(regWidth - enqWidth - 1),
-      RegField.r(1, !enq.ready))
+      RegField(1,
+        !enq.ready,
+        RegWriteFn((valid, data) =>  {
+          quash := valid && data(0)
+          Bool(true)
+        })))
   }
 }
 
