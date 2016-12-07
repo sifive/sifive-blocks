@@ -11,9 +11,9 @@ import util.AsyncResetRegVec
 case class GPIOConfig(address: BigInt, width: Int)
 
 trait HasGPIOParameters {
-  val params: Tuple2[Parameters, GPIOConfig]
-  implicit val p = params._1
-  val c = params._2
+  implicit val p: Parameters
+  val params: GPIOConfig
+  val c = params
 }
 
 // YAGNI: Make the PUE, DS, and
@@ -289,7 +289,7 @@ object GPIOInputPinCtrl {
 }
 
 // Magic TL2 Incantation to create a TL2 Slave
-class TLGPIO(p: Parameters, c: GPIOConfig)
+class TLGPIO(c: GPIOConfig)(implicit p: Parameters)
   extends TLRegisterRouter(c.address, interrupts = c.width, beatBytes = p(PeripheryBusConfig).beatBytes)(
-  new TLRegBundle(Tuple2(p, c), _)    with GPIOBundle)(
-  new TLRegModule(Tuple2(p, c), _, _) with GPIOModule)
+  new TLRegBundle(c, _)    with GPIOBundle)(
+  new TLRegModule(c, _, _) with GPIOModule)

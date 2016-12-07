@@ -118,7 +118,7 @@ class SPITopModule[B <: SPITopBundle](c: SPIConfigBase, bundle: => B, outer: TLS
       RegField.r(1, ip.rxwm)))
 }
 
-abstract class TLSPIBase(c: SPIConfigBase)(implicit val p: Parameters) extends LazyModule {
+abstract class TLSPIBase(c: SPIConfigBase)(implicit p: Parameters) extends LazyModule {
   require(isPow2(c.rSize))
   val rnode = TLRegisterNode(address = AddressSet(c.rAddress, c.rSize-1), beatBytes = p(PeripheryBusConfig).beatBytes)
   val intnode = IntSourceNode(1)

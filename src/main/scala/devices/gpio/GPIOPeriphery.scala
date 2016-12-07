@@ -8,7 +8,7 @@ import uncore.tilelink2.TLFragmenter
 
 trait PeripheryGPIO {
   this: TopNetwork { val gpioConfig: GPIOConfig } =>
-  val gpio = LazyModule(new TLGPIO(p, gpioConfig))
+  val gpio = LazyModule(new TLGPIO(gpioConfig))
   gpio.node := TLFragmenter(peripheryBusConfig.beatBytes, cacheBlockBytes)(peripheryBus.node)
   intBus.intnode := gpio.intnode
 }

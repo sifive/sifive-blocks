@@ -56,9 +56,9 @@ case class PWMBundleConfig(
 }
 
 trait HasPWMParameters {
-  val params: (PWMConfig, Parameters)
-  val c = params._1
-  implicit val p = params._2
+  implicit val p: Parameters
+  val params: PWMConfig
+  val c = params
 }
 
 trait PWMBundle extends Bundle with HasPWMParameters {
@@ -76,7 +76,7 @@ trait PWMModule extends Module with HasRegMap with HasPWMParameters {
   regmap((GenericTimer.timerRegMap(pwm, 0, c.regBytes)):_*)
 }
 
-class TLPWM(c: PWMConfig)(implicit val p: Parameters)
+class TLPWM(c: PWMConfig)(implicit p: Parameters)
   extends TLRegisterRouter(c.address, interrupts = c.ncmp, size = c.size, beatBytes = p(PeripheryBusConfig).beatBytes)(
-  new TLRegBundle((c, p), _)    with PWMBundle)(
-  new TLRegModule((c, p), _, _) with PWMModule)
+  new TLRegBundle(c, _)    with PWMBundle)(
+  new TLRegModule(c, _, _) with PWMModule)

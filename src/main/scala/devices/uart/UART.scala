@@ -46,9 +46,9 @@ class UARTPortIO extends Bundle {
 }
 
 trait MixUARTParameters {
-  val params: (UARTConfig, Parameters)
-  val c = params._1
-  implicit val p = params._2
+  implicit val p: Parameters
+  val params: UARTConfig
+  val c = params
 }
 
 trait UARTTopBundle extends Bundle with MixUARTParameters with HasUARTParameters {
@@ -269,7 +269,7 @@ class Majority(in: Set[Bool]) {
 }
 
 // Magic TL2 Incantation to create a TL2 Slave
-class UART(c: UARTConfig)(implicit val p: Parameters)
+class UART(c: UARTConfig)(implicit p: Parameters)
   extends TLRegisterRouter(c.address, interrupts = 1, beatBytes = p(PeripheryBusConfig).beatBytes)(
-  new TLRegBundle((c, p), _)    with UARTTopBundle)(
-  new TLRegModule((c, p), _, _) with UARTTopModule)
+  new TLRegBundle(c, _)    with UARTTopBundle)(
+  new TLRegModule(c, _, _) with UARTTopModule)

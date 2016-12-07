@@ -21,9 +21,9 @@ case class MockAONConfig(
 }
 
 trait HasMockAONParameters {
-  val params: (MockAONConfig, Parameters)
-  val c = params._1
-  implicit val p = params._2
+  implicit val p: Parameters
+  val params: MockAONConfig
+  val c = params
 }
 
 class MockAONPMUIO extends Bundle {
@@ -99,7 +99,7 @@ trait MockAONModule extends Module with HasRegMap with HasMockAONParameters {
 
 }
 
-class MockAON(c: MockAONConfig)(implicit val p: Parameters)
+class MockAON(c: MockAONConfig)(implicit p: Parameters)
   extends TLRegisterRouter(c.address, interrupts = 2, size = c.size, beatBytes = p(PeripheryBusConfig).beatBytes, concurrency = 1)(
-  new TLRegBundle((c, p), _)    with MockAONBundle)(
-  new TLRegModule((c, p), _, _) with MockAONModule)
+  new TLRegBundle(c, _)    with MockAONBundle)(
+  new TLRegModule(c, _, _) with MockAONModule)

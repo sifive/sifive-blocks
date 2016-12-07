@@ -27,7 +27,7 @@ class MockAONWrapperBundle extends Bundle {
   val rsts = new MockAONMOffRstIO()
 }
 
-class MockAONWrapper(c: MockAONConfig)(implicit val p: Parameters) extends LazyModule {
+class MockAONWrapper(c: MockAONConfig)(implicit p: Parameters) extends LazyModule {
 
   val node = TLAsyncInputNode()
   val intnode = IntOutputNode()
