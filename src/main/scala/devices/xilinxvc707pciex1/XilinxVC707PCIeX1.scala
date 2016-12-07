@@ -28,7 +28,7 @@ class XilinxVC707PCIeX1(implicit p: Parameters) extends LazyModule {
   val axi_to_pcie_x1 = LazyModule(new VC707AXIToPCIeX1)
   axi_to_pcie_x1.slave   := TLToAXI4(idBits=4)(slave)
   axi_to_pcie_x1.control := AXI4Fragmenter(lite=true, maxInFlight=4)(TLToAXI4(idBits=0)(control))
-  master := TLWidthWidget(64)(AXI4ToTL()(AXI4Fragmenter()(axi_to_pcie_x1.master)))
+  master := TLWidthWidget(8)(AXI4ToTL()(AXI4Fragmenter()(axi_to_pcie_x1.master)))
 
   lazy val module = new LazyModuleImp(this) {
     val io = new Bundle {
