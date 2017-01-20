@@ -27,7 +27,7 @@ class XilinxVC707MIGIO extends Bundle with VC707MIGUnidirectionalIODDR
 
 class XilinxVC707MIG(implicit p: Parameters) extends LazyModule with HasXilinxVC707MIGParameters {
   val node = TLInputNode()
-  val axi4 = AXI4InternalOutputNode(AXI4SlavePortParameters(
+  val axi4 = AXI4InternalOutputNode(Seq(AXI4SlavePortParameters(
     slaves = Seq(AXI4SlaveParameters(
       address = Seq(AddressSet(p(ExtMem).base, p(ExtMem).size-1)),
       regionType    = RegionType.UNCACHED,
@@ -35,7 +35,7 @@ class XilinxVC707MIG(implicit p: Parameters) extends LazyModule with HasXilinxVC
       supportsWrite = TransferSizes(1, 256*8),
       supportsRead  = TransferSizes(1, 256*8),
       interleavedId = Some(0))),
-    beatBytes = 8))
+    beatBytes = 8)))
 
   val xing = LazyModule(new TLAsyncCrossing)
   val toaxi4 = LazyModule(new TLToAXI4(idBits = 4))
