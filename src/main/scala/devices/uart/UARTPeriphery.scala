@@ -14,8 +14,8 @@ trait PeripheryUART {
   this: TopNetwork {
     val uartConfigs: Seq[UARTConfig]
   } =>
-  val uartDevices = uartConfigs.zipWithIndex.map { case (c, i) =>
-    val uart = LazyModule(new UART(c) { override lazy val valName = Some(s"uart$i") } )
+  val uart = uartConfigs.zipWithIndex.map { case (c, i) =>
+    val uart = LazyModule(new UART(c))
     uart.node := TLFragmenter(peripheryBusConfig.beatBytes, cacheBlockBytes)(peripheryBus.node)
     intBus.intnode := uart.intnode
     uart
@@ -32,7 +32,7 @@ trait PeripheryUARTModule {
     val outer: PeripheryUART
     val io: PeripheryUARTBundle
   } =>
-  (io.uarts zip outer.uartDevices).foreach { case (io, device) =>
+  (io.uarts zip outer.uart).foreach { case (io, device) =>
     io <> device.module.io.port
   }
 }
