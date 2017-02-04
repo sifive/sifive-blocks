@@ -90,7 +90,7 @@ trait I2CModule extends Module with HasI2CParameters with HasRegMap {
   val filterCnt = Reg(init = UInt(0, 14.W))
   when ( !control.coreEn ) {
     filterCnt := 0.U
-  } .elsewhen (~(filterCnt.orR)) {
+  } .elsewhen (!(filterCnt.orR)) {
     filterCnt := Cat(prescaler.hi, prescaler.lo) >> 2  //16x I2C bus frequency
   } .otherwise {
     filterCnt := filterCnt - 1.U
@@ -98,23 +98,23 @@ trait I2CModule extends Module with HasI2CParameters with HasRegMap {
 
   val fSCL      = Reg(init = UInt(0x7, 3.W))
   val fSDA      = Reg(init = UInt(0x7, 3.W))
-  when (~(filterCnt.orR)) {
+  when (!(filterCnt.orR)) {
     fSCL := Cat(fSCL, io.port.scl.in)
     fSDA := Cat(fSDA, io.port.sda.in)
   }
 
-  val sSCL      = Reg(init = Bool(true), next = (new Majority(fSCL.toBools.toSet)).out)
-  val sSDA      = Reg(init = Bool(true), next = (new Majority(fSDA.toBools.toSet)).out)
+  val sSCL      = Reg(init = true.B, next = (new Majority(fSCL.toBools.toSet)).out)
+  val sSDA      = Reg(init = true.B, next = (new Majority(fSDA.toBools.toSet)).out)
 
-  val dSCL      = Reg(init = Bool(true), next = sSCL)
-  val dSDA      = Reg(init = Bool(true), next = sSDA)
+  val dSCL      = Reg(init = true.B, next = sSCL)
+  val dSDA      = Reg(init = true.B, next = sSDA)
 
   val dSCLOen   = Reg(next = io.port.scl.oe) // delayed scl_oen
 
   // detect start condition => detect falling edge on SDA while SCL is high
   // detect stop  condition => detect rising  edge on SDA while SCL is high
-  val startCond = Reg(init = Bool(false), next = !sSDA &&  dSDA && sSCL)
-  val stopCond  = Reg(init = Bool(false), next =  sSDA && !dSDA && sSCL)
+  val startCond = Reg(init = false.B, next = !sSDA &&  dSDA && sSCL)
+  val stopCond  = Reg(init = false.B, next =  sSDA && !dSDA && sSCL)
 
   // master drives SCL high, but another master pulls it low
   // master start counting down its low cycle now (clock synchronization)
@@ -122,14 +122,14 @@ trait I2CModule extends Module with HasI2CParameters with HasRegMap {
 
   // slave_wait is asserted when master wants to drive SCL high, but the slave pulls it low
   // slave_wait remains asserted until the slave releases SCL
-  val slaveWait = Reg(init = Bool(false))
+  val slaveWait = Reg(init = false.B)
   slaveWait := (io.port.scl.oe && !dSCLOen && !sSCL) || (slaveWait && !sSCL)
 
-  val clkEn     = Reg(init = Bool(true))     // clock generation signals
+  val clkEn     = Reg(init = true.B)     // clock generation signals
   val cnt       = Reg(init = UInt(0, 16.W))  // clock divider counter (synthesis)
 
   // generate clk enable signal
-  when (~(cnt.orR) || !control.coreEn || sclSync ) {
+  when (!(cnt.orR) || !control.coreEn || sclSync ) {
     cnt   := Cat(prescaler.hi, prescaler.lo)
     clkEn := true.B
   }
@@ -141,26 +141,26 @@ trait I2CModule extends Module with HasI2CParameters with HasRegMap {
     clkEn := false.B
   }
 
-  val sclOen     = Reg(init = Bool(true))
+  val sclOen     = Reg(init = true.B)
   io.port.scl.oe := sclOen
 
-  val sdaOen     = Reg(init = Bool(true))
+  val sdaOen     = Reg(init = true.B)
   io.port.sda.oe := sdaOen
 
-  val sdaChk     = Reg(init = Bool(false))    // check SDA output (Multi-master arbitration)
+  val sdaChk     = Reg(init = false.B)       // check SDA output (Multi-master arbitration)
 
-  val transmitBit = Reg(init = Bool(false))
+  val transmitBit = Reg(init = false.B)
   val receivedBit = Reg(Bool())
   when (sSCL && !dSCL) {
     receivedBit := sSDA
   }
 
   val bitCmd      = Reg(init = UInt(0, 4.W)) // command (from byte controller)
-  val bitCmdStop  = Reg(init = Bool(false))
+  val bitCmdStop  = Reg(init = false.B)
   when (clkEn) {
     bitCmdStop := bitCmd === I2C_CMD_STOP
   }
-  val bitCmdAck   = Reg(init = Bool(false))
+  val bitCmdAck   = Reg(init = false.B)
 
   val (s_bit_idle ::
        s_bit_start_a :: s_bit_start_b :: s_bit_start_c :: s_bit_start_d :: s_bit_start_e ::
@@ -169,7 +169,7 @@ trait I2CModule extends Module with HasI2CParameters with HasRegMap {
        s_bit_wr_a    :: s_bit_wr_b    :: s_bit_wr_c    :: s_bit_wr_d    :: Nil) = Enum(UInt(), 18)
   val bitState    = Reg(init = s_bit_idle)
 
-  val arbLost     = Reg(init = Bool(false), next = (sdaChk && !sSDA && sdaOen) | ((bitState === s_bit_idle) && stopCond && !bitCmdStop))
+  val arbLost     = Reg(init = false.B, next = (sdaChk && !sSDA && sdaOen) | ((bitState === s_bit_idle) && stopCond && !bitCmdStop))
 
   // bit FSM
   when (arbLost) {
@@ -309,11 +309,11 @@ trait I2CModule extends Module with HasI2CParameters with HasRegMap {
 
 
   //////// Byte level ///////
-  val load        = Reg(init = Bool(false))                      // load shift register
-  val shift       = Reg(init = Bool(false))                      // shift shift register
-  val cmdAck      = Reg(init = Bool(false))                      // also done
-  val receivedAck = Reg(init = Bool(false))                      // from I2C slave
-  val go          = (cmd.read | cmd.write | cmd.stop) & ~cmdAck  // CHECK: why stop instead of start?
+  val load        = Reg(init = false.B)                         // load shift register
+  val shift       = Reg(init = false.B)                         // shift shift register
+  val cmdAck      = Reg(init = false.B)                         // also done
+  val receivedAck = Reg(init = false.B)                         // from I2C slave
+  val go          = (cmd.read | cmd.write | cmd.stop) & !cmdAck
 
   val bitCnt      = Reg(init = UInt(0, 3.W))
   when (load) {
@@ -453,7 +453,7 @@ trait I2CModule extends Module with HasI2CParameters with HasRegMap {
 
   //////// Top level ////////
 
-  // hack
+  // hack: b/c the same register offset is used to write cmd and read status
   val nextCmd = Wire(UInt(8.W))
   nextCmd := cmd.asUInt
   cmd := (new CommandBundle).fromBits(nextCmd)
@@ -483,7 +483,7 @@ trait I2CModule extends Module with HasI2CParameters with HasRegMap {
   status.transferInProgress := cmd.read || cmd.write
   status.irqFlag            := (cmdAck || arbLost || status.irqFlag) && !cmd.irqAck
 
-  // Note that these are out of order.
+
   regmap(
     I2CCtrlRegs.prescaler_lo -> Seq(RegField(8, prescaler.lo)),
     I2CCtrlRegs.prescaler_hi -> Seq(RegField(8, prescaler.hi)),
