@@ -328,7 +328,7 @@ trait I2CModule extends Module with HasI2CParameters with HasRegMap {
   when (load) {
     receivedData := transmitData
   }
-  .otherwise {
+  .elsewhen (shift) {
     receivedData := Cat(receivedData, receivedBit)
   }
 
@@ -453,6 +453,11 @@ trait I2CModule extends Module with HasI2CParameters with HasRegMap {
 
   //////// Top level ////////
 
+  // hack
+  val nextCmd = Wire(UInt(8.W))
+  nextCmd := cmd.asUInt
+  cmd := (new CommandBundle).fromBits(nextCmd)
+
   when (cmdAck || arbLost) {
     cmd.start := false.B    // clear command bits when done
     cmd.stop  := false.B    // or when aribitration lost
@@ -461,6 +466,7 @@ trait I2CModule extends Module with HasI2CParameters with HasRegMap {
   }
   cmd.irqAck  := false.B    // clear IRQ_ACK bit (essentially 1 cycle pulse b/c it is overwritten by regmap below)
 
+  status.receivedAck := receivedAck
   when (stopCond) {
     status.busy             := false.B
   }
@@ -476,11 +482,6 @@ trait I2CModule extends Module with HasI2CParameters with HasRegMap {
   }
   status.transferInProgress := cmd.read || cmd.write
   status.irqFlag            := (cmdAck || arbLost || status.irqFlag) && !cmd.irqAck
-
-  // hack
-  val nextCmd = Wire(UInt(8.W))
-  nextCmd := cmd.asUInt
-  cmd := (new CommandBundle).fromBits(nextCmd)
 
   // Note that these are out of order.
   regmap(
