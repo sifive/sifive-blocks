@@ -8,7 +8,7 @@ import uncore.tilelink2.TLFragmenter
 
 trait PeripheryI2C {
   this: TopNetwork { val i2cConfigs: Seq[I2CConfig] } =>
-  val i2cDevices = i2cConfigs.zipWithIndex.map { case (c, i) =>
+  val i2c = i2cConfigs.zipWithIndex.map { case (c, i) =>
     val i2c = LazyModule(new TLI2C(c))
     i2c.node := TLFragmenter(peripheryBusConfig.beatBytes, cacheBlockBytes)(peripheryBus.node)
     intBus.intnode := i2c.intnode
@@ -27,7 +27,7 @@ trait PeripheryI2CModule {
     val outer: PeripheryI2C
     val io: PeripheryI2CBundle
   } =>
-  (io.i2cs zip outer.i2cDevices).foreach { case (io, device) =>
+  (io.i2cs zip outer.i2c).foreach { case (io, device) =>
     io <> device.module.io.port
   }
 }
