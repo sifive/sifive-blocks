@@ -37,6 +37,7 @@
 
 // This code was re-written in Chisel by SiFive, Inc.
 // See LICENSE for license details.
+// WISHBONE interface replaced by Tilelink2
 
 package sifive.blocks.devices.i2c
 
