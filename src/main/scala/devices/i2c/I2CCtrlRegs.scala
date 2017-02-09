@@ -6,8 +6,8 @@ package sifive.blocks.devices.i2c
 
 object I2CCtrlRegs {
   val prescaler_lo = 0x00  // low byte clock prescaler register
-  val prescaler_hi = 0x01  // high byte clock prescaler register
-  val control      = 0x02  // control register
-  val data         = 0x03  // write: transmit byte, read: receive byte
-  val cmd_status   = 0x04  // write: command, read: status
+  val prescaler_hi = 0x04  // high byte clock prescaler register
+  val control      = 0x08  // control register
+  val data         = 0x0c  // write: transmit byte, read: receive byte
+  val cmd_status   = 0x10  // write: command, read: status
 }
