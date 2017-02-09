@@ -182,10 +182,10 @@ trait I2CModule extends Module with HasI2CParameters with HasRegMap {
   }
 
   val sclOen     = Reg(init = true.B)
-  io.port.scl.oe := sclOen
+  io.port.scl.oe := !sclOen
 
   val sdaOen     = Reg(init = true.B)
-  io.port.sda.oe := sdaOen
+  io.port.sda.oe := !sdaOen
 
   val sdaChk     = Reg(init = false.B)       // check SDA output (Multi-master arbitration)
 
