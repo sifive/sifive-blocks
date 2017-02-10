@@ -11,7 +11,7 @@ trait PeripheryXilinxVC707MIG extends TopNetwork {
 
   val xilinxvc707mig = LazyModule(new XilinxVC707MIG)
   require(p(BankedL2Config).nMemoryChannels == 1, "Coreplex must have 1 master memory port")
-  val mem = Seq(xilinxvc707mig.node)
+  xilinxvc707mig.node := mem(0).node
 }
 
 trait PeripheryXilinxVC707MIGBundle extends TopNetworkBundle {

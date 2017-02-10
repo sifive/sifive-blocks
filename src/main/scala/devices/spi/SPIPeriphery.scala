@@ -8,8 +8,8 @@ import rocketchip.{TopNetwork,TopNetworkModule}
 
 trait PeripherySPI {
   this: TopNetwork { val spiConfigs: Seq[SPIConfig] } =>
-  val spiDevices = (spiConfigs.zipWithIndex) map {case (c, i) =>
-    val spi = LazyModule(new TLSPI(c) { override lazy val valName = Some(s"spi$i") } )
+  val spi = (spiConfigs.zipWithIndex) map {case (c, i) =>
+    val spi = LazyModule(new TLSPI(c))
     spi.rnode := TLFragmenter(peripheryBusConfig.beatBytes, cacheBlockBytes)(peripheryBus.node)
     intBus.intnode := spi.intnode
     spi
@@ -28,7 +28,7 @@ trait PeripherySPIModule {
     val outer: PeripherySPI
     val io: PeripherySPIBundle
   } =>
-  (io.spis zip outer.spiDevices).foreach { case (io, device) =>
+  (io.spis zip outer.spi).foreach { case (io, device) =>
     io <> device.module.io.port
   }
 }

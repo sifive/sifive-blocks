@@ -167,27 +167,27 @@ class vc707axi_to_pcie_x1() extends BlackBox
 
 class VC707AXIToPCIeX1(implicit p:Parameters) extends LazyModule
 {
-  val slave = AXI4SlaveNode(AXI4SlavePortParameters(
+  val slave = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     slaves = Seq(AXI4SlaveParameters(
       address       = List(AddressSet(0x60000000L, 0x1fffffffL)),
       executable    = true,
       supportsWrite = TransferSizes(1, 256),
       supportsRead  = TransferSizes(1, 256),
       interleavedId = Some(0))), // the Xilinx IP is friendly
-    beatBytes = 8))
+    beatBytes = 8)))
 
-  val control = AXI4SlaveNode(AXI4SlavePortParameters(
+  val control = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     slaves = Seq(AXI4SlaveParameters(
       address       = List(AddressSet(0x50000000L, 0x03ffffffL)),
       supportsWrite = TransferSizes(1, 4),
       supportsRead  = TransferSizes(1, 4),
       interleavedId = Some(0))), // no read interleaving b/c AXI-lite
-    beatBytes = 4))
+    beatBytes = 4)))
 
-  val master = AXI4MasterNode(AXI4MasterPortParameters(
+  val master = AXI4MasterNode(Seq(AXI4MasterPortParameters(
     masters = Seq(AXI4MasterParameters(
       id      = IdRange(0, 1),
-      aligned = false))))
+      aligned = false)))))
 
   lazy val module = new LazyModuleImp(this) {
     // The master on the control port must be AXI-lite

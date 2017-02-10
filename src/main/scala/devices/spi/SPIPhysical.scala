@@ -12,8 +12,8 @@ class SPIMicroOp(c: SPIConfigBase) extends SPIBundle(c) {
 }
 
 object SPIMicroOp {
-  val Transfer = UInt(0, 1)
-  val Delay    = UInt(1, 1)
+  def Transfer = UInt(0, 1)
+  def Delay    = UInt(1, 1)
 }
 
 class SPIPhyControl(c: SPIConfigBase) extends SPIBundle(c) {

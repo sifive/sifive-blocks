@@ -30,8 +30,8 @@ class PWMGPIOPort(c: PWMBundleConfig)(implicit p: Parameters) extends Module {
 trait PeripheryPWM {
   this: TopNetwork { val pwmConfigs: Seq[PWMConfig] } =>
 
-  val pwmDevices = (pwmConfigs.zipWithIndex) map { case (c, i) =>
-    val pwm = LazyModule(new TLPWM(c) { override lazy val  valName = Some(s"pwm$i") })
+  val pwm = (pwmConfigs.zipWithIndex) map { case (c, i) =>
+    val pwm = LazyModule(new TLPWM(c))
     pwm.node := TLFragmenter(peripheryBusConfig.beatBytes, cacheBlockBytes)(peripheryBus.node)
     intBus.intnode := pwm.intnode
     pwm
@@ -52,7 +52,7 @@ trait PeripheryPWMModule {
     val outer: PeripheryPWM
     val io: PeripheryPWMBundle
   } =>
-  (io.pwms.zipWithIndex zip outer.pwmDevices) foreach { case ((io, i), device) =>
+  (io.pwms.zipWithIndex zip outer.pwm) foreach { case ((io, i), device) =>
     io.port := device.module.io.gpio
   }
 }
