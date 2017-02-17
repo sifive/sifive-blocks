@@ -30,7 +30,6 @@ trait SPIConfigBase {
   lazy val txDepthBits = log2Floor(txDepth) + 1
   lazy val rxDepthBits = log2Floor(rxDepth) + 1
 
-  lazy val bc = new SPIBundleConfig(csWidth)
 }
 
 case class SPIConfig(
@@ -48,15 +47,6 @@ case class SPIConfig(
   require(frameBits >= 4)
   require(sampleDelay >= 0)
 }
-
-case class SPIBundleConfig(csWidth: Int)
-  {
-    def union(that: SPIBundleConfig): SPIBundleConfig =
-      SPIBundleConfig(scala.math.max(csWidth, that.csWidth))
-
-    def toSPIConfig: SPIConfig = new SPIConfig(rAddress = -1,
-      csWidth = csWidth)
-  }
 
 class SPITopBundle(val i: Vec[Vec[Bool]], val r: Vec[TLBundle]) extends Bundle
 

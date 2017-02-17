@@ -5,6 +5,7 @@ import Chisel._
 import diplomacy.LazyModule
 import uncore.tilelink2._
 import rocketchip.{TopNetwork,TopNetworkModule}
+import util.HeterogeneousBag
 
 trait PeripherySPI {
   this: TopNetwork { val spiConfigs: Seq[SPIConfig] } =>
@@ -18,8 +19,7 @@ trait PeripherySPI {
 
 trait PeripherySPIBundle {
   this: { val spiConfigs: Seq[SPIConfig] } =>
-  val spi_bc = spiConfigs.map(_.bc).reduce(_.union(_))
-  val spis = Vec(spiConfigs.size, new SPIPortIO(spi_bc.toSPIConfig))
+  val spis = HeterogeneousBag(spiConfigs.map(new SPIPortIO(_)))
 }
 
 trait PeripherySPIModule {

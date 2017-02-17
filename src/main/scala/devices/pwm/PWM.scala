@@ -44,16 +44,6 @@ case class PWMConfig(
   regBytes: Int = 4,
   ncmp: Int = 4,
   cmpWidth: Int = 16)
-{
-  val bc = new PWMBundleConfig(ncmp)
-}
-
-case class PWMBundleConfig(
-  ncmp: Int)
-{
-  def union(that: PWMBundleConfig): PWMBundleConfig =
-    PWMBundleConfig(scala.math.max(ncmp, that.ncmp))
-}
 
 trait HasPWMParameters {
   implicit val p: Parameters
