@@ -6,19 +6,20 @@ import config._
 import diplomacy.LazyModule
 import rocketchip.{TopNetwork,TopNetworkModule}
 import uncore.tilelink2.TLFragmenter
+import util.HeterogeneousBag
 
 import sifive.blocks.devices.gpio._
 
-class PWMPortIO(c: PWMBundleConfig)(implicit p: Parameters) extends Bundle {
+class PWMPortIO(c: PWMConfig)(implicit p: Parameters) extends Bundle {
   val port = Vec(c.ncmp, Bool()).asOutput
   override def cloneType: this.type = new PWMPortIO(c).asInstanceOf[this.type]
 }
 
-class PWMPinsIO(c: PWMBundleConfig)(implicit p: Parameters) extends Bundle {
+class PWMPinsIO(c: PWMConfig)(implicit p: Parameters) extends Bundle {
   val pwm = Vec(c.ncmp, new GPIOPin)
 }
 
-class PWMGPIOPort(c: PWMBundleConfig)(implicit p: Parameters) extends Module {
+class PWMGPIOPort(c: PWMConfig)(implicit p: Parameters) extends Module {
   val io = new Bundle {
     val pwm = new PWMPortIO(c).flip()
     val pins = new PWMPinsIO(c)
@@ -43,8 +44,7 @@ trait PeripheryPWMBundle {
     val p: Parameters
     val pwmConfigs: Seq[PWMConfig]
   } =>
-  val pwm_bc = pwmConfigs.map(_.bc).reduce(_.union(_))
-  val pwms = Vec(pwmConfigs.size, new PWMPortIO(pwm_bc)(p))
+  val pwms = HeterogeneousBag(pwmConfigs.map(new PWMPortIO(_)(p)))
 }
 
 trait PeripheryPWMModule {
