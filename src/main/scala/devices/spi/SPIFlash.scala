@@ -3,7 +3,7 @@ package sifive.blocks.devices.spi
 
 import Chisel._
 
-class SPIFlashInsn(c: SPIFlashConfigBase) extends SPIBundle(c) {
+class SPIFlashInsn(c: SPIFlashParamsBase) extends SPIBundle(c) {
   val cmd = new Bundle with HasSPIProtocol {
     val code = Bits(width = c.insnCmdBits)
     val en = Bool()
@@ -18,13 +18,13 @@ class SPIFlashInsn(c: SPIFlashConfigBase) extends SPIBundle(c) {
   val data = new Bundle with HasSPIProtocol
 }
 
-class SPIFlashControl(c: SPIFlashConfigBase) extends SPIBundle(c) {
+class SPIFlashControl(c: SPIFlashParamsBase) extends SPIBundle(c) {
   val insn = new SPIFlashInsn(c)
   val fmt = new Bundle with HasSPIEndian
 }
 
 object SPIFlashInsn {
-  def init(c: SPIFlashConfigBase): SPIFlashInsn = {
+  def init(c: SPIFlashParamsBase): SPIFlashInsn = {
     val insn = Wire(new SPIFlashInsn(c))
     insn.cmd.en := Bool(true)
     insn.cmd.code := Bits(0x03)
@@ -38,12 +38,12 @@ object SPIFlashInsn {
   }
 }
 
-class SPIFlashAddr(c: SPIFlashConfigBase) extends SPIBundle(c) {
+class SPIFlashAddr(c: SPIFlashParamsBase) extends SPIBundle(c) {
   val next = UInt(width = c.insnAddrBits)
   val hold = UInt(width = c.insnAddrBits)
 }
 
-class SPIFlashMap(c: SPIFlashConfigBase) extends Module {
+class SPIFlashMap(c: SPIFlashParamsBase) extends Module {
   val io = new Bundle {
     val en = Bool(INPUT)
     val ctrl = new SPIFlashControl(c).asInput

@@ -3,13 +3,13 @@ package sifive.blocks.devices.spi
 
 import Chisel._
 
-class SPIFIFOControl(c: SPIConfigBase) extends SPIBundle(c) {
+class SPIFIFOControl(c: SPIParamsBase) extends SPIBundle(c) {
   val fmt = new SPIFormat(c) with HasSPILength
   val cs = new Bundle with HasSPICSMode
   val wm = new SPIWatermark(c)
 }
 
-class SPIFIFO(c: SPIConfigBase) extends Module {
+class SPIFIFO(c: SPIParamsBase) extends Module {
   val io = new Bundle {
     val ctrl = new SPIFIFOControl(c).asInput
     val link = new SPIInnerIO(c)

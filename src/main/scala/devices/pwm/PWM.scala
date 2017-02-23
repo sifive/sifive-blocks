@@ -3,9 +3,8 @@ package sifive.blocks.devices.pwm
 
 import Chisel._
 import Chisel.ImplicitConversions._
-import config._
+import config.Parameters
 import regmapper._
-import rocketchip.PeripheryBusConfig
 import uncore.tilelink2._
 import util._
 
@@ -13,7 +12,7 @@ import sifive.blocks.util.GenericTimer
 
 // Core PWM Functionality  & Register Interface
 
-class PWM(val ncmp: Int = 4, val cmpWidth: Int = 16)(implicit p: Parameters) extends GenericTimer {
+class PWM(val ncmp: Int = 4, val cmpWidth: Int = 16) extends GenericTimer {
   protected def countWidth = ((1 << scaleWidth) - 1) + cmpWidth
   protected lazy val countAlways = RegEnable(io.regs.cfg.write.bits(12), Bool(false), io.regs.cfg.write.valid && unlocked)
   protected lazy val feed = count.carryOut(scale + UInt(cmpWidth))
@@ -38,35 +37,31 @@ class PWM(val ncmp: Int = 4, val cmpWidth: Int = 16)(implicit p: Parameters) ext
   countEn := countAlways || oneShot
 }
 
-case class PWMConfig(
+case class PWMParams(
   address: BigInt,
   size: Int = 0x1000,
   regBytes: Int = 4,
   ncmp: Int = 4,
   cmpWidth: Int = 16)
 
-trait HasPWMParameters {
-  implicit val p: Parameters
-  val params: PWMConfig
-  val c = params
+trait HasPWMBundleContents extends Bundle {
+  val params: PWMParams
+  val gpio = Vec(params.ncmp, Bool()).asOutput
 }
 
-trait PWMBundle extends Bundle with HasPWMParameters {
-  val gpio = Vec(c.ncmp, Bool()).asOutput
-}
+trait HasPWMModuleContents extends Module with HasRegMap {
+  val io: HasPWMBundleContents
+  val params: PWMParams
 
-trait PWMModule extends Module with HasRegMap with HasPWMParameters {
-  val io: PWMBundle
-
-  val pwm = Module(new PWM(c.ncmp, c.cmpWidth))
+  val pwm = Module(new PWM(params.ncmp, params.cmpWidth))
 
   interrupts := pwm.io.ip
   io.gpio := pwm.io.gpio
 
-  regmap((GenericTimer.timerRegMap(pwm, 0, c.regBytes)):_*)
+  regmap((GenericTimer.timerRegMap(pwm, 0, params.regBytes)):_*)
 }
 
-class TLPWM(c: PWMConfig)(implicit p: Parameters)
-  extends TLRegisterRouter(c.address, interrupts = c.ncmp, size = c.size, beatBytes = p(PeripheryBusConfig).beatBytes)(
-  new TLRegBundle(c, _)    with PWMBundle)(
-  new TLRegModule(c, _, _) with PWMModule)
+class TLPWM(w: Int, c: PWMParams)(implicit p: Parameters)
+  extends TLRegisterRouter(c.address, interrupts = c.ncmp, size = c.size, beatBytes = w)(
+  new TLRegBundle(c, _)    with HasPWMBundleContents)(
+  new TLRegModule(c, _, _) with HasPWMModuleContents)

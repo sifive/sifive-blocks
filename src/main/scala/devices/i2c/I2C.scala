@@ -43,20 +43,12 @@ package sifive.blocks.devices.i2c
 
 import Chisel._
 import config._
-import util._
 import regmapper._
 import uncore.tilelink2._
-import rocketchip.PeripheryBusConfig
-import util.AsyncResetRegVec
+import util.{AsyncResetRegVec, Majority}
 import sifive.blocks.devices.gpio.{GPIOPinCtrl}
 
-case class I2CConfig(address: BigInt)
-
-trait HasI2CParameters {
-  implicit val p: Parameters
-  val params: I2CConfig
-  val c = params
-}
+case class I2CParams(address: BigInt)
 
 class I2CPin extends Bundle {
   val in  = Bool(INPUT)
@@ -69,12 +61,13 @@ class I2CPort extends Bundle {
   val sda = new I2CPin
 }
 
-trait I2CBundle extends Bundle with HasI2CParameters {
+trait HasI2CBundleContents extends Bundle {
   val port = new I2CPort
 }
 
-trait I2CModule extends Module with HasI2CParameters with HasRegMap {
-  val io: I2CBundle
+trait HasI2CModuleContents extends Module with HasRegMap {
+  val io: HasI2CBundleContents
+  val params: I2CParams
 
   val I2C_CMD_NOP   = UInt(0x00)
   val I2C_CMD_START = UInt(0x01)
@@ -143,8 +136,8 @@ trait I2CModule extends Module with HasI2CParameters with HasRegMap {
     fSDA := Cat(fSDA, io.port.sda.in)
   }
 
-  val sSCL      = Reg(init = true.B, next = (new Majority(fSCL.toBools.toSet)).out)
-  val sSDA      = Reg(init = true.B, next = (new Majority(fSDA.toBools.toSet)).out)
+  val sSCL      = Reg(init = true.B, next = Majority(fSCL))
+  val sSDA      = Reg(init = true.B, next = Majority(fSDA))
 
   val dSCL      = Reg(init = true.B, next = sSCL)
   val dSDA      = Reg(init = true.B, next = sSDA)
@@ -540,16 +533,8 @@ trait I2CModule extends Module with HasI2CParameters with HasRegMap {
   interrupts(0) := status.irqFlag & control.intEn
 }
 
-// Copied from UART.scala
-class Majority(in: Set[Bool]) {
-  private val n = (in.size >> 1) + 1
-  private val clauses = in.subsets(n).map(_.reduce(_ && _))
-  val out = clauses.reduce(_ || _)
-}
-
-
 // Magic TL2 Incantation to create a TL2 Slave
-class TLI2C(c: I2CConfig)(implicit p: Parameters)
-  extends TLRegisterRouter(c.address, interrupts = 1, beatBytes = p(PeripheryBusConfig).beatBytes)(
-  new TLRegBundle(c, _)    with I2CBundle)(
-  new TLRegModule(c, _, _) with I2CModule)
+class TLI2C(w: Int, c: I2CParams)(implicit p: Parameters)
+  extends TLRegisterRouter(c.address, interrupts = 1, beatBytes = w)(
+  new TLRegBundle(c, _)    with HasI2CBundleContents)(
+  new TLRegModule(c, _, _) with HasI2CModuleContents)

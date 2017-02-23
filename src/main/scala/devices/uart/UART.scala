@@ -5,12 +5,11 @@ import Chisel._
 import config._
 import regmapper._
 import uncore.tilelink2._
-import junctions._
 import util._
-import rocketchip.PeripheryBusConfig
+
 import sifive.blocks.util.{NonBlockingEnqueue, NonBlockingDequeue}
 
-case class UARTConfig(
+case class UARTParams(
   address: BigInt,
   dataBits: Int = 8,
   stopBits: Int = 2,
@@ -21,23 +20,23 @@ case class UARTConfig(
   nRxEntries: Int = 8)
 
 trait HasUARTParameters {
-  val c: UARTConfig
-  val uartDataBits = c.dataBits
-  val uartStopBits = c.stopBits
-  val uartDivisorBits = c.divisorBits
+  def c: UARTParams
+  def uartDataBits = c.dataBits
+  def uartStopBits = c.stopBits
+  def uartDivisorBits = c.divisorBits
 
-  val uartOversample = c.oversample
-  val uartOversampleFactor = 1 << uartOversample
-  val uartNSamples = c.nSamples
+  def uartOversample = c.oversample
+  def uartOversampleFactor = 1 << uartOversample
+  def uartNSamples = c.nSamples
 
-  val uartNTxEntries = c.nTxEntries
-  val uartNRxEntries = c.nRxEntries
+  def uartNTxEntries = c.nTxEntries
+  def uartNRxEntries = c.nRxEntries
 
   require(uartDivisorBits > uartOversample)
   require(uartOversampleFactor > uartNSamples)
 }
 
-abstract class UARTModule(val c: UARTConfig)(implicit val p: Parameters)
+abstract class UARTModule(val c: UARTParams)(implicit val p: Parameters)
     extends Module with HasUARTParameters
 
 class UARTPortIO extends Bundle {
@@ -45,17 +44,11 @@ class UARTPortIO extends Bundle {
   val rxd = Bool(INPUT)
 }
 
-trait MixUARTParameters {
-  implicit val p: Parameters
-  val params: UARTConfig
-  val c = params
-}
-
-trait UARTTopBundle extends Bundle with MixUARTParameters with HasUARTParameters {
+trait HasUARTTopBundleContents extends Bundle {
   val port = new UARTPortIO
 }
 
-class UARTTx(c: UARTConfig)(implicit p: Parameters) extends UARTModule(c)(p) {
+class UARTTx(c: UARTParams)(implicit p: Parameters) extends UARTModule(c)(p) {
   val io = new Bundle {
     val en = Bool(INPUT)
     val in = Decoupled(Bits(width = uartDataBits)).flip
@@ -91,7 +84,7 @@ class UARTTx(c: UARTConfig)(implicit p: Parameters) extends UARTModule(c)(p) {
   }
 }
 
-class UARTRx(c: UARTConfig)(implicit p: Parameters) extends UARTModule(c)(p) {
+class UARTRx(c: UARTParams)(implicit p: Parameters) extends UARTModule(c)(p) {
   val io = new Bundle {
     val en = Bool(INPUT)
     val in = Bits(INPUT, 1)
@@ -116,7 +109,7 @@ class UARTRx(c: UARTConfig)(implicit p: Parameters) extends UARTModule(c)(p) {
   }
 
   val sample = Reg(Bits(width = uartNSamples))
-  val voter = new Majority(sample.toBools.toSet)
+  val voter = Majority(sample.toBools.toSet)
   when (pulse) {
     sample := Cat(sample, io.in)
   }
@@ -164,7 +157,7 @@ class UARTRx(c: UARTConfig)(implicit p: Parameters) extends UARTModule(c)(p) {
       busy := Bool(true)
       when (expire) {
         sched := Bool(true)
-        when (voter.out) {
+        when (voter) {
           state := s_idle
         } .otherwise {
           state := s_data
@@ -181,7 +174,7 @@ class UARTRx(c: UARTConfig)(implicit p: Parameters) extends UARTModule(c)(p) {
           state := s_idle
           valid := Bool(true)
         } .otherwise {
-          shifter := Cat(voter.out, shifter >> 1)
+          shifter := Cat(voter, shifter >> 1)
           sched := Bool(true)
         }
       }
@@ -198,13 +191,16 @@ class UARTInterrupts extends Bundle {
   val txwm = Bool()
 }
 
-trait UARTTopModule extends Module with MixUARTParameters with HasUARTParameters with HasRegMap {
-  val io: UARTTopBundle
+trait HasUARTTopModuleContents extends Module with HasUARTParameters with HasRegMap {
+  val io: HasUARTTopBundleContents
+  implicit val p: Parameters
+  def params: UARTParams
+  def c = params
 
-  val txm = Module(new UARTTx(c))
+  val txm = Module(new UARTTx(params))
   val txq = Module(new Queue(txm.io.in.bits, uartNTxEntries))
 
-  val rxm = Module(new UARTRx(c))
+  val rxm = Module(new UARTRx(params))
   val rxq = Module(new Queue(rxm.io.out.bits, uartNRxEntries))
 
   val divinit = 542 // (62.5MHz / 115200)
@@ -262,14 +258,8 @@ trait UARTTopModule extends Module with MixUARTParameters with HasUARTParameters
   )
 }
 
-class Majority(in: Set[Bool]) {
-  private val n = (in.size >> 1) + 1
-  private val clauses = in.subsets(n).map(_.reduce(_ && _))
-  val out = clauses.reduce(_ || _)
-}
-
-// Magic TL2 Incantation to create a TL2 Slave
-class UART(c: UARTConfig)(implicit p: Parameters)
-  extends TLRegisterRouter(c.address, interrupts = 1, beatBytes = p(PeripheryBusConfig).beatBytes)(
-  new TLRegBundle(c, _)    with UARTTopBundle)(
-  new TLRegModule(c, _, _) with UARTTopModule)
+// Magic TL2 Incantation to create a TL2 UART
+class TLUART(w: Int, c: UARTParams)(implicit p: Parameters)
+  extends TLRegisterRouter(c.address, interrupts = 1, beatBytes = w)(
+  new TLRegBundle(c, _)    with HasUARTTopBundleContents)(
+  new TLRegModule(c, _, _) with HasUARTTopModuleContents)

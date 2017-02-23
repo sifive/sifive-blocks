@@ -3,11 +3,11 @@ package sifive.blocks.devices.spi
 
 import Chisel._
 
-class SPIInnerIO(c: SPIConfigBase) extends SPILinkIO(c) {
+class SPIInnerIO(c: SPIParamsBase) extends SPILinkIO(c) {
   val lock = Bool(OUTPUT)
 }
 
-class SPIArbiter(c: SPIConfigBase, n: Int) extends Module {
+class SPIArbiter(c: SPIParamsBase, n: Int) extends Module {
   val io = new Bundle {
     val inner = Vec(n, new SPIInnerIO(c)).flip
     val outer = new SPILinkIO(c)

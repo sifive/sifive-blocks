@@ -2,19 +2,12 @@
 package sifive.blocks.devices.gpio
 
 import Chisel._
-import config._
+import config.Parameters
 import regmapper._
 import uncore.tilelink2._
-import rocketchip.PeripheryBusConfig
 import util.AsyncResetRegVec
 
-case class GPIOConfig(address: BigInt, width: Int)
-
-trait HasGPIOParameters {
-  implicit val p: Parameters
-  val params: GPIOConfig
-  val c = params
-}
+case class GPIOParams(address: BigInt, width: Int)
 
 // YAGNI: Make the PUE, DS, and
 // these also optionally HW controllable.
@@ -100,7 +93,7 @@ class GPIOPin extends Bundle {
 // level, and we have to do the pinmux
 // outside of RocketChipTop.
 
-class GPIOPortIO(c: GPIOConfig) extends Bundle {
+class GPIOPortIO(c: GPIOParams) extends Bundle {
   val pins = Vec(c.width, new GPIOPin)
   val iof_0 = Vec(c.width, new GPIOPinIOF).flip
   val iof_1 = Vec(c.width, new GPIOPinIOF).flip
@@ -108,12 +101,15 @@ class GPIOPortIO(c: GPIOConfig) extends Bundle {
 
 // It would be better if the IOF were here and
 // we could do the pinmux inside.
-trait GPIOBundle extends Bundle with HasGPIOParameters {
-  val port = new GPIOPortIO(c)
+trait HasGPIOBundleContents extends Bundle {
+  val params: GPIOParams
+  val port = new GPIOPortIO(params)
 }
 
-trait GPIOModule extends Module with HasGPIOParameters with HasRegMap {
-  val io: GPIOBundle
+trait HasGPIOModuleContents extends Module with HasRegMap {
+  val io: HasGPIOBundleContents
+  val params: GPIOParams
+  val c = params
 
   //--------------------------------------------------
   // CSR Declarations
@@ -289,7 +285,7 @@ object GPIOInputPinCtrl {
 }
 
 // Magic TL2 Incantation to create a TL2 Slave
-class TLGPIO(c: GPIOConfig)(implicit p: Parameters)
-  extends TLRegisterRouter(c.address, interrupts = c.width, beatBytes = p(PeripheryBusConfig).beatBytes)(
-  new TLRegBundle(c, _)    with GPIOBundle)(
-  new TLRegModule(c, _, _) with GPIOModule)
+class TLGPIO(w: Int, c: GPIOParams)(implicit p: Parameters)
+  extends TLRegisterRouter(c.address, interrupts = c.width, beatBytes = w)(
+  new TLRegBundle(c, _)    with HasGPIOBundleContents)(
+  new TLRegModule(c, _, _) with HasGPIOModuleContents)

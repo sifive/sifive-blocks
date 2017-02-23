@@ -5,25 +5,18 @@ import Chisel._
 import config._
 import regmapper._
 import uncore.tilelink2._
-import rocketchip.PeripheryBusConfig
 
 import sifive.blocks.util.GenericTimer
 
-case class MockAONConfig(
-  address: BigInt = BigInt(0x10000000),
-  nBackupRegs: Int = 16) {
+case class MockAONParams(
+    address: BigInt = BigInt(0x10000000),
+    nBackupRegs: Int = 16) {
   def size: Int = 0x1000
   def regBytes: Int = 4
   def wdogOffset: Int = 0
   def rtcOffset: Int = 0x40
   def backupRegOffset: Int = 0x80
   def pmuOffset: Int = 0x100
-}
-
-trait HasMockAONParameters {
-  implicit val p: Parameters
-  val params: MockAONConfig
-  val c = params
 }
 
 class MockAONPMUIO extends Bundle {
@@ -36,10 +29,10 @@ class MockAONMOffRstIO extends Bundle {
   val corerst = Bool(OUTPUT)
 }
 
-trait MockAONBundle extends Bundle with HasMockAONParameters {
+trait HasMockAONBundleContents extends Bundle {
 
   // Output of the Power Management Sequencer
-  val moff = new MockAONMOffRstIO ()
+  val moff = new MockAONMOffRstIO
 
   // This goes out to wrapper
   // to be combined to create aon_rst.
@@ -56,8 +49,10 @@ trait MockAONBundle extends Bundle with HasMockAONParameters {
   val resetCauses = new ResetCauses().asInput
 }
 
-trait MockAONModule extends Module with HasRegMap with HasMockAONParameters {
-  val io: MockAONBundle
+trait HasMockAONModuleContents extends Module with HasRegMap {
+  val io: HasMockAONBundleContents
+  val params: MockAONParams
+  val c = params
 
   // the expectation here is that Chisel's implicit reset is aonrst,
   // which is asynchronous, so don't use synchronous-reset registers.
@@ -99,7 +94,7 @@ trait MockAONModule extends Module with HasRegMap with HasMockAONParameters {
 
 }
 
-class MockAON(c: MockAONConfig)(implicit p: Parameters)
-  extends TLRegisterRouter(c.address, interrupts = 2, size = c.size, beatBytes = p(PeripheryBusConfig).beatBytes, concurrency = 1)(
-  new TLRegBundle(c, _)    with MockAONBundle)(
-  new TLRegModule(c, _, _) with MockAONModule)
+class TLMockAON(w: Int, c: MockAONParams)(implicit p: Parameters)
+  extends TLRegisterRouter(c.address, interrupts = 2, size = c.size, beatBytes = w, concurrency = 1)(
+  new TLRegBundle(c, _)    with HasMockAONBundleContents)(
+  new TLRegModule(c, _, _) with HasMockAONModuleContents)
