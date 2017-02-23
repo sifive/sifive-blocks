@@ -38,7 +38,7 @@ case class SPIFlashConfig(
   require(sampleDelay >= 0)
 }
 
-class SPIFlashTopBundle(i: Vec[Vec[Bool]], r: Vec[TLBundle], val f: Vec[TLBundle]) extends SPITopBundle(i, r)
+class SPIFlashTopBundle(i: util.HeterogeneousBag[Vec[Bool]], r: util.HeterogeneousBag[TLBundle], val f: util.HeterogeneousBag[TLBundle]) extends SPITopBundle(i, r)
 
 class SPIFlashTopModule[B <: SPIFlashTopBundle]
     (c: SPIFlashConfigBase, bundle: => B, outer: TLSPIFlashBase)

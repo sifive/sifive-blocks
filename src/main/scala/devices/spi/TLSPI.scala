@@ -48,7 +48,7 @@ case class SPIConfig(
   require(sampleDelay >= 0)
 }
 
-class SPITopBundle(val i: Vec[Vec[Bool]], val r: Vec[TLBundle]) extends Bundle
+class SPITopBundle(val i: util.HeterogeneousBag[Vec[Bool]], val r: util.HeterogeneousBag[TLBundle]) extends Bundle
 
 class SPITopModule[B <: SPITopBundle](c: SPIConfigBase, bundle: => B, outer: TLSPIBase)
   extends LazyModuleImp(outer) {
