@@ -11,7 +11,7 @@ import Chisel._
 // ------------------------------------------------------------
 
 import config._
-import junctions.{JTAGIO}
+import jtag.{JTAGIO}
 
 class JTAGPinsIO extends Bundle {
 
@@ -19,25 +19,22 @@ class JTAGPinsIO extends Bundle {
   val TMS    = new GPIOPin()
   val TDI    = new GPIOPin()
   val TDO    = new GPIOPin()
-  val TRST_n = new GPIOPin()
+  val TRSTn = new GPIOPin()
 
 }
 
-class JTAGGPIOPort(drvTdo: Boolean = false)(implicit p: Parameters) extends Module {
+class JTAGGPIOPort()(implicit p: Parameters) extends Module {
 
   val io = new Bundle {
-    val jtag = new JTAGIO(drvTdo)
+    val jtag = new JTAGIO()
     val pins = new JTAGPinsIO()
   }
 
   io.jtag.TCK  := GPIOInputPinCtrl(io.pins.TCK, pue = Bool(true)).asClock
   io.jtag.TMS  := GPIOInputPinCtrl(io.pins.TMS, pue = Bool(true))
   io.jtag.TDI  := GPIOInputPinCtrl(io.pins.TDI, pue = Bool(true))
-  io.jtag.TRST := ~GPIOInputPinCtrl(io.pins.TRST_n, pue = Bool(true))
+  io.jtag.TRSTn := GPIOInputPinCtrl(io.pins.TRSTn, pue = Bool(true))
 
-  GPIOOutputPinCtrl(io.pins.TDO, io.jtag.TDO)
-  if (drvTdo) {
-    io.pins.TDO.o.oe := io.jtag.DRV_TDO.get
-  }
-
+  GPIOOutputPinCtrl(io.pins.TDO, io.jtag.TDO.data)
+  io.pins.TDO.o.oe := io.jtag.TDO.driven
 }
