@@ -3,7 +3,7 @@ package sifive.blocks.devices.spi
 
 import Chisel._
 
-abstract class SPIBundle(val c: SPIConfigBase) extends Bundle {
+abstract class SPIBundle(val c: SPIParamsBase) extends Bundle {
   override def cloneType: SPIBundle.this.type =
     this.getClass.getConstructors.head.newInstance(c).asInstanceOf[this.type]
 }
@@ -14,7 +14,7 @@ class SPIDataIO extends Bundle {
   val oe = Bool(OUTPUT)
 }
 
-class SPIPortIO(c: SPIConfigBase) extends SPIBundle(c) {
+class SPIPortIO(c: SPIParamsBase) extends SPIBundle(c) {
   val sck = Bool(OUTPUT)
   val dq = Vec(4, new SPIDataIO)
   val cs = Vec(c.csWidth, Bool(OUTPUT))
@@ -26,7 +26,7 @@ trait HasSPIProtocol {
 trait HasSPIEndian {
   val endian = Bits(width = SPIEndian.width)
 }
-class SPIFormat(c: SPIConfigBase) extends SPIBundle(c)
+class SPIFormat(c: SPIParamsBase) extends SPIBundle(c)
     with HasSPIProtocol
     with HasSPIEndian {
   val iodir = Bits(width = SPIDirection.width)
@@ -36,13 +36,13 @@ trait HasSPILength extends SPIBundle {
   val len = UInt(width = c.lengthBits)
 }
 
-class SPIClocking(c: SPIConfigBase) extends SPIBundle(c) {
+class SPIClocking(c: SPIParamsBase) extends SPIBundle(c) {
   val div = UInt(width = c.divisorBits)
   val pol = Bool()
   val pha = Bool()
 }
 
-class SPIChipSelect(c: SPIConfigBase) extends SPIBundle(c) {
+class SPIChipSelect(c: SPIParamsBase) extends SPIBundle(c) {
   val id = UInt(width = c.csIdBits)
   val dflt = Vec(c.csWidth, Bool())
 
@@ -57,19 +57,19 @@ trait HasSPICSMode {
   val mode = Bits(width = SPICSMode.width)
 }
 
-class SPIDelay(c: SPIConfigBase) extends SPIBundle(c) {
+class SPIDelay(c: SPIParamsBase) extends SPIBundle(c) {
   val cssck = UInt(width = c.delayBits)
   val sckcs = UInt(width = c.delayBits)
   val intercs = UInt(width = c.delayBits)
   val interxfr = UInt(width = c.delayBits)
 }
 
-class SPIWatermark(c: SPIConfigBase) extends SPIBundle(c) {
+class SPIWatermark(c: SPIParamsBase) extends SPIBundle(c) {
   val tx = UInt(width = c.txDepthBits)
   val rx = UInt(width = c.rxDepthBits)
 }
 
-class SPIControl(c: SPIConfigBase) extends SPIBundle(c) {
+class SPIControl(c: SPIParamsBase) extends SPIBundle(c) {
   val fmt = new SPIFormat(c) with HasSPILength
   val sck = new SPIClocking(c)
   val cs = new SPIChipSelect(c) with HasSPICSMode
@@ -78,7 +78,7 @@ class SPIControl(c: SPIConfigBase) extends SPIBundle(c) {
 }
 
 object SPIControl {
-  def init(c: SPIConfigBase): SPIControl = {
+  def init(c: SPIParamsBase): SPIControl = {
     val ctrl = Wire(new SPIControl(c))
     ctrl.fmt.proto := SPIProtocol.Single
     ctrl.fmt.iodir := SPIDirection.Rx
