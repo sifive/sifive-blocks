@@ -182,7 +182,7 @@ class VC707AXIToPCIeX1(implicit p:Parameters) extends LazyModule
         "interrupt-map-mask" -> Seq(0, 0, 0, 7).flatMap(ofInt),
         "interrupt-map"      -> Seq(1, 2, 3, 4).flatMap(ofMap),
         "ranges"             -> resources("ranges").map { case Binding(_, ResourceAddress(address, _, _, _)) =>
-                                                               ResourceMapping(address, 0) },
+                                                               ResourceMapping(address, BigInt(0x02000000) << 64) },
         "interrupt-controller" -> Seq(ResourceMap(labels = Seq(intc), value = Map(
           "interrupt-controller" -> Nil,
           "#address-cells"       -> ofInt(0),
