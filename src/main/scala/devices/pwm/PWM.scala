@@ -62,6 +62,6 @@ trait HasPWMModuleContents extends Module with HasRegMap {
 }
 
 class TLPWM(w: Int, c: PWMParams)(implicit p: Parameters)
-  extends TLRegisterRouter(c.address, interrupts = c.ncmp, size = c.size, beatBytes = w)(
+  extends TLRegisterRouter(c.address, "pwm", Seq("sifive,pwm0"), interrupts = c.ncmp, size = c.size, beatBytes = w)(
   new TLRegBundle(c, _)    with HasPWMBundleContents)(
   new TLRegModule(c, _, _) with HasPWMModuleContents)

@@ -95,6 +95,6 @@ trait HasMockAONModuleContents extends Module with HasRegMap {
 }
 
 class TLMockAON(w: Int, c: MockAONParams)(implicit p: Parameters)
-  extends TLRegisterRouter(c.address, interrupts = 2, size = c.size, beatBytes = w, concurrency = 1)(
+  extends TLRegisterRouter(c.address, "aon", Seq("sifive,aon0"), interrupts = 2, size = c.size, beatBytes = w, concurrency = 1)(
   new TLRegBundle(c, _)    with HasMockAONBundleContents)(
   new TLRegModule(c, _, _) with HasMockAONModuleContents)

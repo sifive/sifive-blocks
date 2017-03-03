@@ -286,6 +286,6 @@ object GPIOInputPinCtrl {
 
 // Magic TL2 Incantation to create a TL2 Slave
 class TLGPIO(w: Int, c: GPIOParams)(implicit p: Parameters)
-  extends TLRegisterRouter(c.address, interrupts = c.width, beatBytes = w)(
+  extends TLRegisterRouter(c.address, "gpio", Seq("sifive,gpio0"), interrupts = c.width, beatBytes = w)(
   new TLRegBundle(c, _)    with HasGPIOBundleContents)(
   new TLRegModule(c, _, _) with HasGPIOModuleContents)

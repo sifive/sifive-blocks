@@ -260,6 +260,6 @@ trait HasUARTTopModuleContents extends Module with HasUARTParameters with HasReg
 
 // Magic TL2 Incantation to create a TL2 UART
 class TLUART(w: Int, c: UARTParams)(implicit p: Parameters)
-  extends TLRegisterRouter(c.address, interrupts = 1, beatBytes = w)(
+  extends TLRegisterRouter(c.address, "serial", Seq("sifive,uart0"), interrupts = 1, beatBytes = w)(
   new TLRegBundle(c, _)    with HasUARTTopBundleContents)(
   new TLRegModule(c, _, _) with HasUARTTopModuleContents)

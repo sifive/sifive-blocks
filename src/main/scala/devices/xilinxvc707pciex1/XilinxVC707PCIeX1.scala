@@ -23,12 +23,13 @@ class XilinxVC707PCIeX1(implicit p: Parameters) extends LazyModule {
   val slave = TLInputNode()
   val control = TLInputNode()
   val master = TLOutputNode()
-  val intnode = IntSourceNode(1)
+  val intnode = IntOutputNode()
 
   val axi_to_pcie_x1 = LazyModule(new VC707AXIToPCIeX1)
   axi_to_pcie_x1.slave   := AXI4Buffer()(TLToAXI4(idBits=4)(slave))
   axi_to_pcie_x1.control := AXI4Buffer()(AXI4Fragmenter(lite=true, maxInFlight=4)(TLToAXI4(idBits=0)(control)))
   master := TLWidthWidget(8)(AXI4ToTL()(AXI4Fragmenter()(axi_to_pcie_x1.master)))
+  intnode := axi_to_pcie_x1.intnode
 
   lazy val module = new LazyModuleImp(this) {
     val io = new Bundle {
@@ -40,7 +41,6 @@ class XilinxVC707PCIeX1(implicit p: Parameters) extends LazyModule {
     }
 
     io.port <> axi_to_pcie_x1.module.io.port
-    io.interrupt(0)(0) := axi_to_pcie_x1.module.io.interrupt_out
 
     //PCIe Reference Clock
     val ibufds_gte2 = Module(new IBUFDS_GTE2)

@@ -535,6 +535,6 @@ trait HasI2CModuleContents extends Module with HasRegMap {
 
 // Magic TL2 Incantation to create a TL2 Slave
 class TLI2C(w: Int, c: I2CParams)(implicit p: Parameters)
-  extends TLRegisterRouter(c.address, interrupts = 1, beatBytes = w)(
+  extends TLRegisterRouter(c.address, "i2c", Seq("sifive,i2c0"), interrupts = 1, beatBytes = w)(
   new TLRegBundle(c, _)    with HasI2CBundleContents)(
   new TLRegModule(c, _, _) with HasI2CModuleContents)

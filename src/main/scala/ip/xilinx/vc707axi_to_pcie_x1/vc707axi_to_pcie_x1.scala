@@ -5,6 +5,7 @@ import Chisel._
 import config._
 import diplomacy._
 import uncore.axi4._
+import uncore.tilelink2.{IntSourceNode, IntSourcePortSimple}
 import junctions._
 
 // IP VLNV: xilinx.com:customize_ip:vc707pcietoaxi:1.0
@@ -167,9 +168,33 @@ class vc707axi_to_pcie_x1() extends BlackBox
 
 class VC707AXIToPCIeX1(implicit p:Parameters) extends LazyModule
 {
+  val device = new SimpleDevice("pci", Seq("xlnx,axi-pcie-host-1.00.a")) {
+    override def describe(resources: ResourceBindings): Description = {
+      val Description(name, mapping) = super.describe(resources)
+      val intc = "pcie_intc"
+      def ofInt(x: Int) = Seq(ResourceInt(BigInt(x)))
+      def ofMap(x: Int) = Seq(0, 0, 0, x).flatMap(ofInt) ++ Seq(ResourceReference(intc)) ++ ofInt(x)
+      val extra = Map(
+        "#address-cells"     -> ofInt(3),
+        "#size-cells"        -> ofInt(2),
+        "#interrupt-cells"   -> ofInt(1),
+        "device_type"        -> Seq(ResourceString("pci")),
+        "interrupt-map-mask" -> Seq(0, 0, 0, 7).flatMap(ofInt),
+        "interrupt-map"      -> Seq(1, 2, 3, 4).flatMap(ofMap),
+        "ranges"             -> resources("ranges").map { case Binding(_, ResourceAddress(address, _, _, _)) =>
+                                                               ResourceMapping(address, 0) },
+        "interrupt-controller" -> Seq(ResourceMap(labels = Seq(intc), value = Map(
+          "interrupt-controller" -> Nil,
+          "#address-cells"       -> ofInt(0),
+          "#interrupt-cells"     -> ofInt(1)))))
+      Description(name, mapping ++ extra)
+    }
+  }
+
   val slave = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     slaves = Seq(AXI4SlaveParameters(
       address       = List(AddressSet(0x60000000L, 0x1fffffffL)),
+      resources     = Seq(Resource(device, "ranges")),
       executable    = true,
       supportsWrite = TransferSizes(1, 256),
       supportsRead  = TransferSizes(1, 256),
@@ -179,6 +204,7 @@ class VC707AXIToPCIeX1(implicit p:Parameters) extends LazyModule
   val control = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     slaves = Seq(AXI4SlaveParameters(
       address       = List(AddressSet(0x50000000L, 0x03ffffffL)),
+      resources     = device.reg,
       supportsWrite = TransferSizes(1, 4),
       supportsRead  = TransferSizes(1, 4),
       interleavedId = Some(0))), // no read interleaving b/c AXI-lite
@@ -188,6 +214,8 @@ class VC707AXIToPCIeX1(implicit p:Parameters) extends LazyModule
     masters = Seq(AXI4MasterParameters(
       id      = IdRange(0, 1),
       aligned = false)))))
+
+  val intnode = IntSourceNode(IntSourcePortSimple(resources = device.int))
 
   lazy val module = new LazyModuleImp(this) {
     // The master on the control port must be AXI-lite
@@ -204,7 +232,7 @@ class VC707AXIToPCIeX1(implicit p:Parameters) extends LazyModule
       val control_in = control.bundleIn
       val master_out = master.bundleOut
       val REFCLK = Bool(INPUT)
-      val interrupt_out = Bool(OUTPUT)
+      val interrupt_out = intnode.bundleOut
     }
 
     val blackbox = Module(new vc707axi_to_pcie_x1)
@@ -222,7 +250,7 @@ class VC707AXIToPCIeX1(implicit p:Parameters) extends LazyModule
     io.port.pci_exp_txn             := blackbox.io.pci_exp_txn
     blackbox.io.pci_exp_rxp         := io.port.pci_exp_rxp
     blackbox.io.pci_exp_rxn         := io.port.pci_exp_rxn
-    io.interrupt_out                := blackbox.io.interrupt_out
+    io.interrupt_out(0)(0)          := blackbox.io.interrupt_out
     blackbox.io.REFCLK              := io.REFCLK
 
     //s
