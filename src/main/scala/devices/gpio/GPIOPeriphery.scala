@@ -2,27 +2,31 @@
 package sifive.blocks.devices.gpio
 
 import Chisel._
+import config.Field
 import diplomacy.LazyModule
-import rocketchip.{TopNetwork,TopNetworkModule}
+import rocketchip.{
+  HasTopLevelNetworks,
+  HasTopLevelNetworksBundle,
+  HasTopLevelNetworksModule
+}
 import uncore.tilelink2.TLFragmenter
 
-trait PeripheryGPIO {
-  this: TopNetwork { val gpioConfig: GPIOConfig } =>
-  val gpio = LazyModule(new TLGPIO(gpioConfig))
-  gpio.node := TLFragmenter(peripheryBusConfig.beatBytes, cacheBlockBytes)(peripheryBus.node)
+case object PeripheryGPIOKey extends Field[GPIOParams]
+
+trait HasPeripheryGPIO extends HasTopLevelNetworks {
+  val gpioParams = p(PeripheryGPIOKey)
+  val gpio = LazyModule(new TLGPIO(peripheryBusBytes, gpioParams))
+  gpio.node := TLFragmenter(peripheryBusBytes, cacheBlockBytes)(peripheryBus.node)
   intBus.intnode := gpio.intnode
 }
 
-trait PeripheryGPIOBundle {
-  this: { val gpioConfig: GPIOConfig } =>
-  val gpio = new GPIOPortIO(gpioConfig)
+trait HasPeripheryGPIOBundle extends HasTopLevelNetworksBundle {
+  val outer: HasPeripheryGPIO
+  val gpio = new GPIOPortIO(outer.gpioParams)
 }
 
-trait PeripheryGPIOModule {
-  this: TopNetworkModule {
-    val gpioConfig: GPIOConfig
-    val outer: PeripheryGPIO
-    val io: PeripheryGPIOBundle
-  } =>
+trait HasPeripheryGPIOModule extends HasTopLevelNetworksModule {
+  val outer: HasPeripheryGPIO
+  val io: HasPeripheryGPIOBundle
   io.gpio <> outer.gpio.module.io.port
 }

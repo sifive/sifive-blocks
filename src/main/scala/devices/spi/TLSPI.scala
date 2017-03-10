@@ -3,14 +3,13 @@ package sifive.blocks.devices.spi
 
 import Chisel._
 import config._
-import uncore.tilelink2._
 import diplomacy._
 import regmapper._
-import junctions._
-import rocketchip.PeripheryBusConfig
+import uncore.tilelink2._
+
 import sifive.blocks.util.{NonBlockingEnqueue, NonBlockingDequeue}
 
-trait SPIConfigBase {
+trait SPIParamsBase {
   val rAddress: BigInt
   val rSize: BigInt
   val rxDepth: Int
@@ -32,7 +31,7 @@ trait SPIConfigBase {
 
 }
 
-case class SPIConfig(
+case class SPIParams(
     rAddress: BigInt,
     rSize: BigInt = 0x1000,
     rxDepth: Int = 8,
@@ -42,15 +41,15 @@ case class SPIConfig(
     delayBits: Int = 8,
     divisorBits: Int = 12,
     sampleDelay: Int = 2)
-  extends SPIConfigBase {
+  extends SPIParamsBase {
 
   require(frameBits >= 4)
   require(sampleDelay >= 0)
 }
 
-class SPITopBundle(val i: Vec[Vec[Bool]], val r: Vec[TLBundle]) extends Bundle
+class SPITopBundle(val i: util.HeterogeneousBag[Vec[Bool]], val r: util.HeterogeneousBag[TLBundle]) extends Bundle
 
-class SPITopModule[B <: SPITopBundle](c: SPIConfigBase, bundle: => B, outer: TLSPIBase)
+class SPITopModule[B <: SPITopBundle](c: SPIParamsBase, bundle: => B, outer: TLSPIBase)
   extends LazyModuleImp(outer) {
 
   val io = new Bundle {
@@ -108,13 +107,14 @@ class SPITopModule[B <: SPITopBundle](c: SPIConfigBase, bundle: => B, outer: TLS
       RegField.r(1, ip.rxwm)))
 }
 
-abstract class TLSPIBase(c: SPIConfigBase)(implicit p: Parameters) extends LazyModule {
+abstract class TLSPIBase(w: Int, c: SPIParamsBase)(implicit p: Parameters) extends LazyModule {
   require(isPow2(c.rSize))
-  val rnode = TLRegisterNode(address = AddressSet(c.rAddress, c.rSize-1), beatBytes = p(PeripheryBusConfig).beatBytes)
-  val intnode = IntSourceNode(1)
+  val device = new SimpleDevice("spi", Seq("sifive,spi0"))
+  val rnode = TLRegisterNode(address = AddressSet(c.rAddress, c.rSize-1), device = device, beatBytes = w)
+  val intnode = IntSourceNode(IntSourcePortSimple(resources = device.int))
 }
 
-class TLSPI(c: SPIConfig)(implicit p: Parameters) extends TLSPIBase(c)(p) {
+class TLSPI(w: Int, c: SPIParams)(implicit p: Parameters) extends TLSPIBase(w,c)(p) {
   lazy val module = new SPITopModule(c, new SPITopBundle(intnode.bundleOut, rnode.bundleIn), this) {
     mac.io.link <> fifo.io.link
     rnode.regmap(regmapBase:_*)

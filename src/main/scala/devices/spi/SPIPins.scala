@@ -4,13 +4,13 @@ package sifive.blocks.devices.spi
 import Chisel._
 import sifive.blocks.devices.gpio.{GPIOPin, GPIOOutputPinCtrl, GPIOInputPinCtrl}
 
-class SPIPinsIO(c: SPIConfigBase) extends SPIBundle(c) {
+class SPIPinsIO(c: SPIParamsBase) extends SPIBundle(c) {
   val sck = new GPIOPin
   val dq = Vec(4, new GPIOPin)
   val cs = Vec(c.csWidth, new GPIOPin)
 }
 
-class SPIGPIOPort(c: SPIConfigBase, syncStages: Int = 0, driveStrength: Bool = Bool(false)) extends Module {
+class SPIGPIOPort(c: SPIParamsBase, syncStages: Int = 0, driveStrength: Bool = Bool(false)) extends Module {
   val io = new SPIBundle(c) {
     val spi = new SPIPortIO(c).flip
     val pins = new SPIPinsIO(c)

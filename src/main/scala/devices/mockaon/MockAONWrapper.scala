@@ -27,11 +27,11 @@ class MockAONWrapperBundle extends Bundle {
   val rsts = new MockAONMOffRstIO()
 }
 
-class MockAONWrapper(c: MockAONConfig)(implicit p: Parameters) extends LazyModule {
+class MockAONWrapper(w: Int, c: MockAONParams)(implicit p: Parameters) extends LazyModule {
 
   val node = TLAsyncInputNode()
   val intnode = IntOutputNode()
-  val aon = LazyModule (new MockAON(c)(p))
+  val aon = LazyModule(new TLMockAON(w, c))
 
   // We only need to isolate the signals
   // coming from MOFF to AON,

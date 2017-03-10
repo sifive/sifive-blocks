@@ -3,7 +3,7 @@ package sifive.blocks.devices.spi
 
 import Chisel._
 
-class SPILinkIO(c: SPIConfigBase) extends SPIBundle(c) {
+class SPILinkIO(c: SPIParamsBase) extends SPIBundle(c) {
   val tx = Decoupled(Bits(width = c.frameBits))
   val rx = Valid(Bits(width = c.frameBits)).flip
 
@@ -17,7 +17,7 @@ class SPILinkIO(c: SPIConfigBase) extends SPIBundle(c) {
   val active = Bool(INPUT)
 }
 
-class SPIMedia(c: SPIConfigBase) extends Module {
+class SPIMedia(c: SPIParamsBase) extends Module {
   val io = new Bundle {
     val port = new SPIPortIO(c)
     val ctrl = new Bundle {

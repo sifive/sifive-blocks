@@ -4,7 +4,7 @@ package sifive.blocks.devices.spi
 import Chisel._
 import sifive.blocks.util.ShiftRegisterInit
 
-class SPIMicroOp(c: SPIConfigBase) extends SPIBundle(c) {
+class SPIMicroOp(c: SPIParamsBase) extends SPIBundle(c) {
   val fn = Bits(width = 1)
   val stb = Bool()
   val cnt = UInt(width = c.countBits)
@@ -16,12 +16,12 @@ object SPIMicroOp {
   def Delay    = UInt(1, 1)
 }
 
-class SPIPhyControl(c: SPIConfigBase) extends SPIBundle(c) {
+class SPIPhyControl(c: SPIParamsBase) extends SPIBundle(c) {
   val sck = new SPIClocking(c)
   val fmt = new SPIFormat(c)
 }
 
-class SPIPhysical(c: SPIConfigBase) extends Module {
+class SPIPhysical(c: SPIParamsBase) extends Module {
   val io = new SPIBundle(c) {
     val port = new SPIPortIO(c)
     val ctrl = new SPIPhyControl(c).asInput

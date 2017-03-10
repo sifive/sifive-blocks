@@ -7,7 +7,7 @@ import diplomacy._
 import regmapper._
 import uncore.tilelink2._
 
-trait SPIFlashConfigBase extends SPIConfigBase {
+trait SPIFlashParamsBase extends SPIParamsBase {
   val fAddress: BigInt
   val fSize: BigInt
 
@@ -18,7 +18,7 @@ trait SPIFlashConfigBase extends SPIConfigBase {
   lazy val insnAddrLenBits = log2Floor(insnAddrBytes) + 1
 }
 
-case class SPIFlashConfig(
+case class SPIFlashParams(
     rAddress: BigInt,
     fAddress: BigInt,
     rSize: BigInt = 0x1000,
@@ -29,7 +29,7 @@ case class SPIFlashConfig(
     delayBits: Int = 8,
     divisorBits: Int = 12,
     sampleDelay: Int = 2)
-  extends SPIFlashConfigBase {
+  extends SPIFlashParamsBase {
   val frameBits = 8
   val insnAddrBytes = 4
   val insnPadLenBits = 4
@@ -38,10 +38,10 @@ case class SPIFlashConfig(
   require(sampleDelay >= 0)
 }
 
-class SPIFlashTopBundle(i: Vec[Vec[Bool]], r: Vec[TLBundle], val f: Vec[TLBundle]) extends SPITopBundle(i, r)
+class SPIFlashTopBundle(i: util.HeterogeneousBag[Vec[Bool]], r: util.HeterogeneousBag[TLBundle], val f: util.HeterogeneousBag[TLBundle]) extends SPITopBundle(i, r)
 
 class SPIFlashTopModule[B <: SPIFlashTopBundle]
-    (c: SPIFlashConfigBase, bundle: => B, outer: TLSPIFlashBase)
+    (c: SPIFlashParamsBase, bundle: => B, outer: TLSPIFlashBase)
   extends SPITopModule(c, bundle, outer) {
 
   val flash = Module(new SPIFlashMap(c))
@@ -91,7 +91,7 @@ class SPIFlashTopModule[B <: SPIFlashTopBundle]
     SPICRs.insnpad -> Seq(RegField(c.frameBits, insn.pad.code)))
 }
 
-abstract class TLSPIFlashBase(c: SPIFlashConfigBase)(implicit p: Parameters) extends TLSPIBase(c)(p) {
+abstract class TLSPIFlashBase(w: Int, c: SPIFlashParamsBase)(implicit p: Parameters) extends TLSPIBase(w,c)(p) {
   require(isPow2(c.fSize))
   val fnode = TLManagerNode(1, TLManagerParameters(
     address     = Seq(AddressSet(c.fAddress, c.fSize-1)),
@@ -101,7 +101,7 @@ abstract class TLSPIFlashBase(c: SPIFlashConfigBase)(implicit p: Parameters) ext
     fifoId      = Some(0)))
 }
 
-class TLSPIFlash(c: SPIFlashConfig)(implicit p: Parameters) extends TLSPIFlashBase(c)(p) {
+class TLSPIFlash(w: Int, c: SPIFlashParams)(implicit p: Parameters) extends TLSPIFlashBase(w,c)(p) {
   lazy val module = new SPIFlashTopModule(c,
     new SPIFlashTopBundle(intnode.bundleOut, rnode.bundleIn, fnode.bundleIn), this) {
 
