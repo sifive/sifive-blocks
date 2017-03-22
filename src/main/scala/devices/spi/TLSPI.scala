@@ -110,7 +110,7 @@ class SPITopModule[B <: SPITopBundle](c: SPIParamsBase, bundle: => B, outer: TLS
 abstract class TLSPIBase(w: Int, c: SPIParamsBase)(implicit p: Parameters) extends LazyModule {
   require(isPow2(c.rSize))
   val device = new SimpleDevice("spi", Seq("sifive,spi0"))
-  val rnode = TLRegisterNode(address = AddressSet(c.rAddress, c.rSize-1), device = device, beatBytes = w)
+  val rnode = TLRegisterNode(address = Seq(AddressSet(c.rAddress, c.rSize-1)), device = device, beatBytes = w)
   val intnode = IntSourceNode(IntSourcePortSimple(resources = device.int))
 }
 
