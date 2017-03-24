@@ -56,4 +56,8 @@ trait HasPeripherySPIFlashModule extends HasTopLevelNetworksModule {
   val outer: HasPeripherySPIFlash
   val io: HasPeripherySPIFlashBundle
   io.qspi <> outer.qspi.module.io.port
+  //HACK -- introduce delay elements to synchronize these inputs.
+  (io.qspi.dq zip outer.qspi.module.io.port.dq).foreach{ case (i, o) => 
+    o.i := ShiftRegister(i.i, 3)
+  }
 }
