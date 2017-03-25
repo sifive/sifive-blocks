@@ -13,7 +13,7 @@ import uncore.tilelink2.TLWidthWidget
 trait HasPeripheryXilinxVC707PCIeX1 extends HasTopLevelNetworks {
 
   val xilinxvc707pcie = LazyModule(new XilinxVC707PCIeX1)
-  l2FrontendBus.node := xilinxvc707pcie.master
+  fsb.node := xilinxvc707pcie.master
   xilinxvc707pcie.slave   := TLWidthWidget(socBusConfig.beatBytes)(socBus.node)
   xilinxvc707pcie.control := TLWidthWidget(socBusConfig.beatBytes)(socBus.node)
   intBus.intnode := xilinxvc707pcie.intnode
