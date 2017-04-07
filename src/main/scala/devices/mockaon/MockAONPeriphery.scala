@@ -44,4 +44,5 @@ trait HasPeripheryMockAONModule extends HasTopLevelNetworksModule {
 
   outer.coreplex.module.io.rtcToggle := outer.aon.module.io.rtc.asUInt.toBool
 
+  outer.aon.module.io.ndreset := outer.coreplex.module.io.ndreset
 }
