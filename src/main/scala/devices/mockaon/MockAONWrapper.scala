@@ -56,6 +56,7 @@ class MockAONWrapper(w: Int, c: MockAONParams)(implicit p: Parameters) extends L
       val in = node.bundleIn
       val ip = intnode.bundleOut
       val rtc  = Clock(OUTPUT)
+      val ndreset = Bool(INPUT)
     }
 
     val aon_io = aon.module.io
@@ -99,7 +100,7 @@ class MockAONWrapper(w: Int, c: MockAONParams)(implicit p: Parameters) extends L
     val lfclk = aon_io.lfclk
 
     val aonrst_catch = Module (new ResetCatchAndSync(3))
-    aonrst_catch.reset := erst | aon_io.wdog_rst
+    aonrst_catch.reset := erst | aon_io.wdog_rst | io.ndreset
     aonrst_catch.clock := lfclk
     aon.module.reset := aonrst_catch.io.sync_reset
 
