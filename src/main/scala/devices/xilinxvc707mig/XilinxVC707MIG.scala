@@ -2,28 +2,21 @@
 package sifive.blocks.devices.xilinxvc707mig
 
 import Chisel._
+import chisel3.experimental.{Analog,attach}
 import config._
 import diplomacy._
 import uncore.tilelink2._
 import uncore.axi4._
 import rocketchip._
-import sifive.blocks.ip.xilinx.vc707mig.{VC707MIGUnidirectionalIOClocksReset, VC707MIGUnidirectionalIODDR, vc707mig}
+import sifive.blocks.ip.xilinx.vc707mig.{VC707MIGIOClocksReset, VC707MIGIODDR, vc707mig}
 
 trait HasXilinxVC707MIGParameters {
 }
 
-class XilinxVC707MIGPads extends Bundle with VC707MIGUnidirectionalIODDR {
-  val _inout_ddr3_dq = Bits(OUTPUT,64)
-  val _inout_ddr3_dqs_n = Bits(OUTPUT,8)
-  val _inout_ddr3_dqs_p = Bits(OUTPUT,8)
-}
+class XilinxVC707MIGPads extends Bundle with VC707MIGIODDR
 
-class XilinxVC707MIGIO extends Bundle with VC707MIGUnidirectionalIODDR
-                                      with VC707MIGUnidirectionalIOClocksReset {
-  val _inout_ddr3_dq = Bits(OUTPUT,64)
-  val _inout_ddr3_dqs_n = Bits(OUTPUT,8)
-  val _inout_ddr3_dqs_p = Bits(OUTPUT,8)
-}
+class XilinxVC707MIGIO extends Bundle with VC707MIGIODDR
+                                      with VC707MIGIOClocksReset
 
 class XilinxVC707MIG(implicit p: Parameters) extends LazyModule with HasXilinxVC707MIGParameters {
   val device = new MemoryDevice
@@ -58,9 +51,9 @@ class XilinxVC707MIG(implicit p: Parameters) extends LazyModule with HasXilinxVC
     //pins to top level
 
     //inouts
-    io.port._inout_ddr3_dq    := blackbox.io.ddr3_dq
-    io.port._inout_ddr3_dqs_n := blackbox.io.ddr3_dqs_n
-    io.port._inout_ddr3_dqs_p := blackbox.io.ddr3_dqs_p
+    attach(io.port.ddr3_dq,blackbox.io.ddr3_dq)
+    attach(io.port.ddr3_dqs_n,blackbox.io.ddr3_dqs_n)
+    attach(io.port.ddr3_dqs_p,blackbox.io.ddr3_dqs_p)
 
     //outputs
     io.port.ddr3_addr         := blackbox.io.ddr3_addr
