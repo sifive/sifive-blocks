@@ -517,12 +517,28 @@ trait HasI2CModuleContents extends Module with HasRegMap {
   status.irqFlag            := (cmdAck || arbLost || status.irqFlag) && !cmd.irqAck
 
 
+  val statusReadReady = Reg(init = true.B)
+  when (!statusReadReady) {
+    statusReadReady := true.B
+  }
+
+  // statusReadReady,
   regmap(
     I2CCtrlRegs.prescaler_lo -> Seq(RegField(8, prescaler.lo)),
     I2CCtrlRegs.prescaler_hi -> Seq(RegField(8, prescaler.hi)),
     I2CCtrlRegs.control      -> control.elements.map{ case(name, e) => RegField(e.getWidth, e.asInstanceOf[UInt]) }.toSeq,
     I2CCtrlRegs.data         -> Seq(RegField(8, r = RegReadFn(receivedData),  w = RegWriteFn(transmitData))),
-    I2CCtrlRegs.cmd_status   -> Seq(RegField(8, r = RegReadFn(status.asUInt), w = RegWriteFn(nextCmd)))
+    I2CCtrlRegs.cmd_status   -> Seq(RegField(8, r = RegReadFn{ ready =>
+                                                               (statusReadReady, status.asUInt)
+                                                             },
+                                                w = RegWriteFn((valid, data) => {
+                                                               when (valid) {
+                                                                 statusReadReady := false.B
+                                                                 nextCmd := data
+                                                             }
+                                                             true.B
+                                                }
+                                                )))
   )
 
   // tie off unused bits
