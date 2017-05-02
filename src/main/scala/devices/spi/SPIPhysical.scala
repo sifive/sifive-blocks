@@ -82,7 +82,7 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
   }
 
   val tx = (ctrl.fmt.iodir === SPIDirection.Tx)
-  val txen_in = (proto.head +: proto.tail.map(_ && tx)).scanRight(Bool(false))(_ || _)
+  val txen_in = (proto.head +: proto.tail.map(_ && tx)).scanRight(Bool(false))(_ || _).init
   val txen = txen_in :+ txen_in.last
 
   io.port.sck := sck
