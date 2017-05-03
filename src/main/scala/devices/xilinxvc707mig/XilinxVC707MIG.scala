@@ -28,16 +28,21 @@ class XilinxVC707MIG(implicit p: Parameters) extends LazyModule with HasXilinxVC
       regionType    = RegionType.UNCACHED,
       executable    = true,
       supportsWrite = TransferSizes(1, 256*8),
-      supportsRead  = TransferSizes(1, 256*8),
-      interleavedId = Some(0))),
+      supportsRead  = TransferSizes(1, 256*8))),
     beatBytes = 8)))
 
-  val xing = LazyModule(new TLAsyncCrossing)
-  val toaxi4 = LazyModule(new TLToAXI4(idBits = 4))
+  val xing    = LazyModule(new TLAsyncCrossing)
+  val toaxi4  = LazyModule(new TLToAXI4(beatBytes = 8))
+  val indexer = LazyModule(new AXI4IdIndexer(idBits = 4))
+  val deint   = LazyModule(new AXI4Deinterleaver(p(coreplex.CacheBlockBytes)))
+  val yank    = LazyModule(new AXI4UserYanker)
 
   xing.node := node
   val monitor = (toaxi4.node := xing.node)
-  axi4 := toaxi4.node
+  axi4 := yank.node
+  yank.node := deint.node
+  deint.node := indexer.node
+  indexer.node := toaxi4.node
 
   lazy val module = new LazyModuleImp(this) {
     val io = new Bundle {
@@ -80,9 +85,7 @@ class XilinxVC707MIG(implicit p: Parameters) extends LazyModule with HasXilinxVC
     xing.module.io.in_reset := reset
     xing.module.io.out_clock := blackbox.io.ui_clk
     xing.module.io.out_reset := blackbox.io.ui_clk_sync_rst
-    toaxi4.module.clock := blackbox.io.ui_clk
-    toaxi4.module.reset := blackbox.io.ui_clk_sync_rst
-    monitor.foreach { lm =>
+    (Seq(toaxi4, indexer, deint, yank) ++ monitor) foreach { lm =>
       lm.module.clock := blackbox.io.ui_clk
       lm.module.reset := blackbox.io.ui_clk_sync_rst
     }
