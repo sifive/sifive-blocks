@@ -205,7 +205,8 @@ class VC707AXIToPCIeX1(implicit p:Parameters) extends LazyModule
       address       = List(AddressSet(0x50000000L, 0x03ffffffL)),
       resources     = device.reg,
       supportsWrite = TransferSizes(1, 4),
-      supportsRead  = TransferSizes(1, 4))),
+      supportsRead  = TransferSizes(1, 4),
+      interleavedId = Some(0))), // AXI4-Lite never interleaves responses
     beatBytes = 4)))
 
   val master = AXI4MasterNode(Seq(AXI4MasterPortParameters(

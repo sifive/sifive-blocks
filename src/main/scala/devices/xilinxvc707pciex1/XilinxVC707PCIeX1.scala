@@ -38,18 +38,16 @@ class XilinxVC707PCIeX1(implicit p: Parameters) extends LazyModule {
   axi_to_pcie_x1.control :=
     AXI4Buffer()(
     AXI4UserYanker()(
-    AXI4Fragmenter()(
-    AXI4IdIndexer(idBits=0)(
     TLToAXI4(beatBytes=4)(
-    control)))))
+    TLFragmenter(4, p(coreplex.CacheBlockBytes))(
+    control))))
 
   master :=
     TLWidthWidget(8)(
     AXI4ToTL()(
     AXI4UserYanker(capMaxFlight=Some(8))(
     AXI4Fragmenter()(
-    AXI4IdIndexer(idBits=0)(
-    axi_to_pcie_x1.master)))))
+    axi_to_pcie_x1.master))))
 
   intnode := axi_to_pcie_x1.intnode
 
