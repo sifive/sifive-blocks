@@ -36,10 +36,12 @@ class XilinxVC707MIG(implicit p: Parameters) extends LazyModule with HasXilinxVC
   val indexer = LazyModule(new AXI4IdIndexer(idBits = 4))
   val deint   = LazyModule(new AXI4Deinterleaver(p(coreplex.CacheBlockBytes)))
   val yank    = LazyModule(new AXI4UserYanker)
+  val buffer  = LazyModule(new AXI4Buffer)
 
   xing.node := node
   val monitor = (toaxi4.node := xing.node)
-  axi4 := yank.node
+  axi4 := buffer.node
+  buffer.node := yank.node
   yank.node := deint.node
   deint.node := indexer.node
   indexer.node := toaxi4.node
@@ -85,7 +87,7 @@ class XilinxVC707MIG(implicit p: Parameters) extends LazyModule with HasXilinxVC
     xing.module.io.in_reset := reset
     xing.module.io.out_clock := blackbox.io.ui_clk
     xing.module.io.out_reset := blackbox.io.ui_clk_sync_rst
-    (Seq(toaxi4, indexer, deint, yank) ++ monitor) foreach { lm =>
+    (Seq(toaxi4, indexer, deint, yank, buffer) ++ monitor) foreach { lm =>
       lm.module.clock := blackbox.io.ui_clk
       lm.module.reset := blackbox.io.ui_clk_sync_rst
     }
