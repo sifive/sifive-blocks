@@ -31,9 +31,8 @@ trait VC707MIGIODDR extends Bundle {
 //reused directly in io bundle for sifive.blocks.devices.xilinxvc707mig
 trait VC707MIGIOClocksReset extends Bundle {
   //inputs
-  //differential system clocks
-  val sys_clk_n             = Bool(INPUT)
-  val sys_clk_p             = Bool(INPUT)
+  //"NO_BUFFER" clock source (must be connected to IBUF outside of IP)
+  val sys_clk_i             = Bool(INPUT)
   //user interface signals
   val ui_clk                = Clock(OUTPUT)
   val ui_clk_sync_rst       = Bool(OUTPUT)

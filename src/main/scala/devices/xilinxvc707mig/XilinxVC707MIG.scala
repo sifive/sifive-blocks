@@ -77,9 +77,8 @@ class XilinxVC707MIG(implicit p: Parameters) extends LazyModule with HasXilinxVC
     io.port.ddr3_odt          := blackbox.io.ddr3_odt
 
     //inputs
-    //differential system clock
-    blackbox.io.sys_clk_n     := io.port.sys_clk_n
-    blackbox.io.sys_clk_p     := io.port.sys_clk_p
+    //NO_BUFFER clock
+    blackbox.io.sys_clk_i     := io.port.sys_clk_i
 
     //user interface signals
     val axi_async = axi4.bundleIn(0)
