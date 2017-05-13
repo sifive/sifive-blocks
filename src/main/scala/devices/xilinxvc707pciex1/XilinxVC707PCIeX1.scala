@@ -20,9 +20,9 @@ class XilinxVC707PCIeX1IO extends Bundle with VC707AXIToPCIeX1IOSerial
 }
 
 class XilinxVC707PCIeX1(implicit p: Parameters) extends LazyModule {
-  val slave = TLInputNode()
-  val control = TLInputNode()
-  val master = TLOutputNode()
+  val slave = TLAsyncInputNode()
+  val control = TLAsyncInputNode()
+  val master = TLAsyncOutputNode()
   val intnode = IntOutputNode()
 
   val axi_to_pcie_x1 = LazyModule(new VC707AXIToPCIeX1)
@@ -33,21 +33,24 @@ class XilinxVC707PCIeX1(implicit p: Parameters) extends LazyModule {
     AXI4Deinterleaver(p(coreplex.CacheBlockBytes))(
     AXI4IdIndexer(idBits=4)(
     TLToAXI4(beatBytes=8)(
-    slave)))))
+    TLAsyncCrossingSink()(
+    slave))))))
 
   axi_to_pcie_x1.control :=
     AXI4Buffer()(
     AXI4UserYanker()(
     TLToAXI4(beatBytes=4)(
     TLFragmenter(4, p(coreplex.CacheBlockBytes))(
-    control))))
+    TLAsyncCrossingSink()(
+    control)))))
 
   master :=
+    TLAsyncCrossingSource()(
     TLWidthWidget(8)(
     AXI4ToTL()(
     AXI4UserYanker(capMaxFlight=Some(8))(
     AXI4Fragmenter()(
-    axi_to_pcie_x1.master))))
+    axi_to_pcie_x1.master)))))
 
   intnode := axi_to_pcie_x1.intnode
 
