@@ -203,7 +203,7 @@ trait HasUARTTopModuleContents extends Module with HasUARTParameters with HasReg
   val rxm = Module(new UARTRx(params))
   val rxq = Module(new Queue(rxm.io.out.bits, uartNRxEntries))
 
-  val divinit = 542 // (62.5MHz / 115200)
+  val divinit = p(diplomacy.DTSTimebase) * p(rocketchip.RTCPeriod) / 115200
   val div = Reg(init = UInt(divinit, uartDivisorBits))
 
   private val stopCountBits = log2Up(uartStopBits)
