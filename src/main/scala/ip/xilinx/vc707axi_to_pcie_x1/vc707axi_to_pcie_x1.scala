@@ -181,7 +181,7 @@ class VC707AXIToPCIeX1(implicit p:Parameters) extends LazyModule
         "device_type"        -> Seq(ResourceString("pci")),
         "interrupt-map-mask" -> Seq(0, 0, 0, 7).flatMap(ofInt),
         "interrupt-map"      -> Seq(1, 2, 3, 4).flatMap(ofMap),
-        "ranges"             -> resources("ranges").map { case Binding(_, ResourceAddress(address, _, _, _)) =>
+        "ranges"             -> resources("ranges").map { case Binding(_, ResourceAddress(address, _, _, _, _)) =>
                                                                ResourceMapping(address, BigInt(0x02000000) << 64) },
         "interrupt-controller" -> Seq(ResourceMap(labels = Seq(intc), value = Map(
           "interrupt-controller" -> Nil,
@@ -211,6 +211,7 @@ class VC707AXIToPCIeX1(implicit p:Parameters) extends LazyModule
 
   val master = AXI4MasterNode(Seq(AXI4MasterPortParameters(
     masters = Seq(AXI4MasterParameters(
+      name    = "VC707 PCIe",
       id      = IdRange(0, 1),
       aligned = false)))))
 
