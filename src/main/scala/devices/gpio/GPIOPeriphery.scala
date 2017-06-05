@@ -3,18 +3,14 @@ package sifive.blocks.devices.gpio
 
 import Chisel._
 import config.Field
-import diplomacy.LazyModule
-import rocketchip.{
-  HasTopLevelNetworks,
-  HasTopLevelNetworksBundle,
-  HasTopLevelNetworksModule
-}
+import diplomacy.{LazyModule,LazyMultiIOModuleImp}
+import rocketchip.HasSystemNetworks
 import uncore.tilelink2.TLFragmenter
 import util.HeterogeneousBag
 
 case object PeripheryGPIOKey extends Field[Seq[GPIOParams]]
 
-trait HasPeripheryGPIO extends HasTopLevelNetworks {
+trait HasPeripheryGPIO extends HasSystemNetworks {
   val gpioParams = p(PeripheryGPIOKey)
   val gpio = gpioParams map {params =>
     val gpio = LazyModule(new TLGPIO(peripheryBusBytes, params))
@@ -24,15 +20,15 @@ trait HasPeripheryGPIO extends HasTopLevelNetworks {
   }
 }
 
-trait HasPeripheryGPIOBundle extends HasTopLevelNetworksBundle {
-  val outer: HasPeripheryGPIO
-  val gpio = HeterogeneousBag(outer.gpioParams.map(new GPIOPortIO(_)))
+trait HasPeripheryGPIOBundle {
+  val gpio: HeterogeneousBag[GPIOPortIO]
 }
 
-trait HasPeripheryGPIOModule extends HasTopLevelNetworksModule {
+trait HasPeripheryGPIOModuleImp extends LazyMultiIOModuleImp with HasPeripheryGPIOBundle {
   val outer: HasPeripheryGPIO
-  val io: HasPeripheryGPIOBundle
-  (io.gpio zip outer.gpio) foreach { case (io, device) =>
+  val gpio = IO(HeterogeneousBag(outer.gpioParams.map(new GPIOPortIO(_))))
+
+  (gpio zip outer.gpio) foreach { case (io, device) =>
     io <> device.module.io.port
   }
 }

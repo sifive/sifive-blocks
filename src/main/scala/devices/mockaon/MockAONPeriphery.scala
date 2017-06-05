@@ -3,20 +3,14 @@ package sifive.blocks.devices.mockaon
 
 import Chisel._
 import config.Field
-import coreplex.CoreplexRISCVPlatform
-import diplomacy.LazyModule
-import rocketchip.{
-  HasTopLevelNetworks,
-  HasTopLevelNetworksBundle,
-  HasTopLevelNetworksModule
-}
+import diplomacy.{LazyModule, LazyMultiIOModuleImp}
+import rocketchip.{HasSystemNetworks, HasCoreplexRISCVPlatform}
 import uncore.tilelink2.{IntXing, TLAsyncCrossingSource, TLFragmenter}
+import util.ResetCatchAndSync
 
 case object PeripheryMockAONKey extends Field[MockAONParams]
 
-trait HasPeripheryMockAON extends HasTopLevelNetworks {
-  val coreplex: CoreplexRISCVPlatform
-
+trait HasPeripheryMockAON extends HasSystemNetworks with HasCoreplexRISCVPlatform {
   // We override the clock & Reset here so that all synchronizers, etc
   // are in the proper clock domain.
   val mockAONParams= p(PeripheryMockAONKey)
@@ -27,15 +21,18 @@ trait HasPeripheryMockAON extends HasTopLevelNetworks {
   intBus.intnode := aon_int.intnode
 }
 
-trait HasPeripheryMockAONBundle extends HasTopLevelNetworksBundle {
-  val aon = new MockAONWrapperBundle()
+trait HasPeripheryMockAONBundle {
+  val aon: MockAONWrapperBundle
+  def coreResetCatchAndSync(core_clock: Clock) = {
+    ResetCatchAndSync(core_clock, aon.rsts.corerst, 20)
+  }
 }
 
-trait HasPeripheryMockAONModule extends HasTopLevelNetworksModule {
+trait HasPeripheryMockAONModuleImp extends LazyMultiIOModuleImp with HasPeripheryMockAONBundle {
   val outer: HasPeripheryMockAON
-  val io: HasPeripheryMockAONBundle
+  val aon = IO(new MockAONWrapperBundle)
 
-  io.aon <> outer.aon.module.io
+  aon <> outer.aon.module.io
 
   // Explicit clock & reset are unused in MockAONWrapper.
   // Tie  to check this assumption.

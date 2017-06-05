@@ -2,29 +2,28 @@
 package sifive.blocks.devices.xilinxvc707mig
 
 import Chisel._
-import diplomacy._
-import rocketchip.{
-  HasTopLevelNetworks,
-  HasTopLevelNetworksModule,
-  HasTopLevelNetworksBundle
-}
-import coreplex.BankedL2Config
+import diplomacy.{LazyModule, LazyMultiIOModuleImp}
+import rocketchip.HasSystemNetworks
 
-trait HasPeripheryXilinxVC707MIG extends HasTopLevelNetworks {
-  val module: HasPeripheryXilinxVC707MIGModule
+trait HasPeripheryXilinxVC707MIG extends HasSystemNetworks {
+  val module: HasPeripheryXilinxVC707MIGModuleImp
 
   val xilinxvc707mig = LazyModule(new XilinxVC707MIG)
-  require(p(BankedL2Config).nMemoryChannels == 1, "Coreplex must have 1 master memory port")
+  require(nMemoryChannels == 1, "Coreplex must have 1 master memory port")
   xilinxvc707mig.node := mem(0).node
 }
 
-trait HasPeripheryXilinxVC707MIGBundle extends HasTopLevelNetworksBundle {
-  val xilinxvc707mig = new XilinxVC707MIGIO
+trait HasPeripheryXilinxVC707MIGBundle {
+  val xilinxvc707mig: XilinxVC707MIGIO
+  def connectXilinxVC707MIGToPads(pads: XilinxVC707MIGPads) {
+    pads <> xilinxvc707mig
+  }
 }
 
-trait HasPeripheryXilinxVC707MIGModule extends HasTopLevelNetworksModule {
+trait HasPeripheryXilinxVC707MIGModuleImp extends LazyMultiIOModuleImp
+    with HasPeripheryXilinxVC707MIGBundle {
   val outer: HasPeripheryXilinxVC707MIG
-  val io: HasPeripheryXilinxVC707MIGBundle
+  val xilinxvc707mig = IO(new XilinxVC707MIGIO)
 
-  io.xilinxvc707mig <> outer.xilinxvc707mig.module.io.port
+  xilinxvc707mig <> outer.xilinxvc707mig.module.io.port
 }
