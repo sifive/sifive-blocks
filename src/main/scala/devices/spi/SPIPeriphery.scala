@@ -37,23 +37,30 @@ trait HasPeripherySPIModule extends HasTopLevelNetworksModule {
   }
 }
 
-case object PeripherySPIFlashKey extends Field[SPIFlashParams]
+case object PeripherySPIFlashKey extends Field[Seq[SPIFlashParams]]
 
 trait HasPeripherySPIFlash extends HasTopLevelNetworks {
   val spiFlashParams = p(PeripherySPIFlashKey)  
-  val qspi = LazyModule(new TLSPIFlash(peripheryBusBytes, spiFlashParams))
-  qspi.rnode := TLFragmenter(peripheryBusBytes, cacheBlockBytes)(peripheryBus.node)
-  qspi.fnode := TLFragmenter(1, cacheBlockBytes)(TLWidthWidget(peripheryBusBytes)(peripheryBus.node))
-  intBus.intnode := qspi.intnode
+  val qspi = spiFlashParams map { params =>
+    val qspi = LazyModule(new TLSPIFlash(peripheryBusBytes, params))
+    qspi.rnode := TLFragmenter(peripheryBusBytes, cacheBlockBytes)(peripheryBus.node)
+    qspi.fnode := TLFragmenter(1, cacheBlockBytes)(TLWidthWidget(peripheryBusBytes)(peripheryBus.node))
+    intBus.intnode := qspi.intnode
+    qspi
+  }
 }
 
 trait HasPeripherySPIFlashBundle extends HasTopLevelNetworksBundle {
   val outer: HasPeripherySPIFlash 
-  val qspi = new SPIPortIO(outer.spiFlashParams)
+  val qspi = HeterogenousBag(outer.spiFlashParams.map(new SPIPortIO(_)))
 }
 
 trait HasPeripherySPIFlashModule extends HasTopLevelNetworksModule {
   val outer: HasPeripherySPIFlash
   val io: HasPeripherySPIFlashBundle
-  io.qspi <> outer.qspi.module.io.port
+
+  (io.qspi zip outer.qspi) foreach { case (io, device) => 
+    io.qspi <> device.module.io.port
+  }
 }
+
