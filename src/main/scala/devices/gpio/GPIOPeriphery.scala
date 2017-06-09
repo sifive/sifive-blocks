@@ -10,6 +10,7 @@ import rocketchip.{
   HasTopLevelNetworksModule
 }
 import uncore.tilelink2.TLFragmenter
+import util.HeterogeneousBag
 
 case object PeripheryGPIOKey extends Field[Seq[GPIOParams]]
 
@@ -25,13 +26,13 @@ trait HasPeripheryGPIO extends HasTopLevelNetworks {
 
 trait HasPeripheryGPIOBundle extends HasTopLevelNetworksBundle {
   val outer: HasPeripheryGPIO
-  val gpio = HeterogeneousBag(outer.gpioParams(map(new GPIOPortIO(_))))
+  val gpio = HeterogeneousBag(outer.gpioParams.map(new GPIOPortIO(_)))
 }
 
 trait HasPeripheryGPIOModule extends HasTopLevelNetworksModule {
   val outer: HasPeripheryGPIO
   val io: HasPeripheryGPIOBundle
   (io.gpio zip outer.gpio) foreach { case (io, device) =>
-    io.gpio <> device.module.io.port
+    io <> device.module.io.port
   }
 }

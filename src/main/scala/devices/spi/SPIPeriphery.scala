@@ -52,7 +52,7 @@ trait HasPeripherySPIFlash extends HasTopLevelNetworks {
 
 trait HasPeripherySPIFlashBundle extends HasTopLevelNetworksBundle {
   val outer: HasPeripherySPIFlash 
-  val qspi = HeterogenousBag(outer.spiFlashParams.map(new SPIPortIO(_)))
+  val qspi = HeterogeneousBag(outer.spiFlashParams.map(new SPIPortIO(_)))
 }
 
 trait HasPeripherySPIFlashModule extends HasTopLevelNetworksModule {
@@ -60,7 +60,7 @@ trait HasPeripherySPIFlashModule extends HasTopLevelNetworksModule {
   val io: HasPeripherySPIFlashBundle
 
   (io.qspi zip outer.qspi) foreach { case (io, device) => 
-    io.qspi <> device.module.io.port
+    io <> device.module.io.port
   }
 }
 
