@@ -23,8 +23,8 @@ trait HasPeripherySPI extends HasSystemNetworks {
 trait HasPeripherySPIBundle {
   val spis: HeterogeneousBag[SPIPortIO]
 
-  def SPItoGPIOPins(sync_stages: Int = 0): Seq[SPIGPIOPort] = spis.map { s =>
-    val pin = Module(new SPIGPIOPort(s.c, sync_stages))
+  def SPItoGPIOPins(syncStages: Int = 0): Seq[SPIGPIOPort] = spis.map { s =>
+    val pin = Module(new SPIGPIOPort(s.c, syncStages))
     pin.io.spi <> s
     pin
   }

@@ -22,8 +22,8 @@ trait HasPeripheryI2C extends HasSystemNetworks {
 trait HasPeripheryI2CBundle {
   val i2cs: Vec[I2CPort]
 
-  def toGPIOPins(dummy: Int = 1): Seq[I2CGPIOPort] = i2cs.map { i =>
-    val pin = Module(new I2CGPIOPort)
+  def toGPIOPins(syncStages: Int = 0): Seq[I2CGPIOPort] = i2cs.map { i =>
+    val pin = Module(new I2CGPIOPort(syncStages))
     pin.io.i2c <> i
     pin
   }

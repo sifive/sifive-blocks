@@ -29,8 +29,8 @@ trait HasPeripheryUARTBundle {
     uarts.foreach { _.rxd := UInt(1) }
   }
 
-  def UARTtoGPIOPins(sync_stages: Int = 0): Seq[UARTGPIOPort] = uarts.map { u =>
-    val pin = Module(new UARTGPIOPort(sync_stages))
+  def UARTtoGPIOPins(syncStages: Int = 0): Seq[UARTGPIOPort] = uarts.map { u =>
+    val pin = Module(new UARTGPIOPort(syncStages))
     pin.io.uart <> u
     pin
   }
