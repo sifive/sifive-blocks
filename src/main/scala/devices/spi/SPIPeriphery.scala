@@ -23,10 +23,10 @@ trait HasPeripherySPI extends HasSystemNetworks {
 trait HasPeripherySPIBundle {
   val spis: HeterogeneousBag[SPIPortIO]
 
-  def SPItoGPIOPins(syncStages: Int = 0): Seq[SPIGPIOPort] = spis.map { s =>
-    val pin = Module(new SPIGPIOPort(s.c, syncStages))
-    pin.io.spi <> s
-    pin
+  def SPItoGPIOPins(syncStages: Int = 0): Seq[SPIPinsIO] = spis.map { s =>
+    val pins = Module(new SPIGPIOPort(s.c, syncStages))
+    pins.io.spi <> s
+    pins.io.pins
   }
 }
 
@@ -54,6 +54,15 @@ trait HasPeripherySPIFlash extends HasSystemNetworks {
 
 trait HasPeripherySPIFlashBundle {
   val qspi: HeterogeneousBag[SPIPortIO]
+
+  // It is important for SPIFlash that the syncStages is agreed upon, because
+  // internally it needs to realign the input data to the output SCK.
+  // Therefore, we rely on the syncStages parameter.
+  def SPIFlashtoGPIOPins(syncStages: Int = 0): Seq[SPIPinsIO] = qspi.map { s =>
+    val pins = Module(new SPIGPIOPort(s.c, syncStages))
+    pins.io.spi <> s
+    pins.io.pins
+  }
 }
 
 trait HasPeripherySPIFlashModuleImp extends LazyMultiIOModuleImp with HasPeripherySPIFlashBundle {

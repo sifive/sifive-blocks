@@ -43,10 +43,10 @@ trait HasPeripheryPWM extends HasSystemNetworks {
 trait HasPeripheryPWMBundle {
   val pwms: HeterogeneousBag[PWMPortIO]
 
-  def PWMtoGPIOPins(dummy: Int = 1): Seq[PWMGPIOPort] = pwms.map { p =>
-    val pin = Module(new PWMGPIOPort(p.c))
-    pin.io.pwm <> p
-    pin
+  def PWMtoGPIOPins(dummy: Int = 1): Seq[PWMPinsIO] = pwms.map { p =>
+    val pins = Module(new PWMGPIOPort(p.c))
+    pins.io.pwm <> p
+    pins.io.pins
   }
 }
 

@@ -30,9 +30,9 @@ trait HasPeripheryUARTBundle {
   }
 
   def UARTtoGPIOPins(syncStages: Int = 0): Seq[UARTPinsIO] = uarts.map { u =>
-    val pin = Module(new UARTGPIOPort(syncStages))
-    pin.io.uart <> u
-    pin.io.pins
+    val pins = Module(new UARTGPIOPort(syncStages))
+    pins.io.uart <> u
+    pins.io.pins
   }
 }
 
