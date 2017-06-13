@@ -3,20 +3,16 @@ package sifive.blocks.devices.uart
 
 import Chisel._
 import config.Field
-import diplomacy.LazyModule
-import rocketchip.{
-  HasTopLevelNetworks,
-  HasTopLevelNetworksBundle,
-  HasTopLevelNetworksModule
-}
-import uncore.tilelink2._
+import diplomacy.{LazyModule, LazyMultiIOModuleImp}
+import rocketchip.HasSystemNetworks
+import uncore.tilelink2.TLFragmenter
 
 import sifive.blocks.devices.gpio.{GPIOPin, GPIOOutputPinCtrl, GPIOInputPinCtrl}
 import sifive.blocks.util.ShiftRegisterInit
 
 case object PeripheryUARTKey extends Field[Seq[UARTParams]]
 
-trait HasPeripheryUART extends HasTopLevelNetworks {
+trait HasPeripheryUART extends HasSystemNetworks {
   val uartParams = p(PeripheryUARTKey)  
   val uarts = uartParams map { params =>
     val uart = LazyModule(new TLUART(peripheryBusBytes, params))
@@ -26,15 +22,25 @@ trait HasPeripheryUART extends HasTopLevelNetworks {
   }
 }
 
-trait HasPeripheryUARTBundle extends HasTopLevelNetworksBundle {
-  val outer: HasPeripheryUART
-  val uarts = Vec(outer.uartParams.size, new UARTPortIO)
+trait HasPeripheryUARTBundle {
+  val uarts: Vec[UARTPortIO]
+
+  def tieoffUARTs(dummy: Int = 1) {
+    uarts.foreach { _.rxd := UInt(1) }
+  }
+
+  def UARTtoGPIOPins(syncStages: Int = 0): Seq[UARTPinsIO] = uarts.map { u =>
+    val pins = Module(new UARTGPIOPort(syncStages))
+    pins.io.uart <> u
+    pins.io.pins
+  }
 }
 
-trait HasPeripheryUARTModule extends HasTopLevelNetworksModule {
+trait HasPeripheryUARTModuleImp extends LazyMultiIOModuleImp with HasPeripheryUARTBundle {
   val outer: HasPeripheryUART
-  val io: HasPeripheryUARTBundle
-  (io.uarts zip outer.uarts).foreach { case (io, device) =>
+  val uarts = IO(Vec(outer.uartParams.size, new UARTPortIO))
+
+  (uarts zip outer.uarts).foreach { case (io, device) =>
     io <> device.module.io.port
   }
 }
