@@ -95,6 +95,7 @@ abstract class TLSPIFlashBase(w: Int, c: SPIFlashParamsBase)(implicit p: Paramet
   require(isPow2(c.fSize))
   val fnode = TLManagerNode(1, TLManagerParameters(
     address     = Seq(AddressSet(c.fAddress, c.fSize-1)),
+    resources   = Seq(Resource(device, "ranges")),
     regionType  = RegionType.UNCACHED,
     executable  = true,
     supportsGet = TransferSizes(1, 1),
