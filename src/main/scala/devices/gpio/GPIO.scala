@@ -5,7 +5,7 @@ import Chisel._
 import config.Parameters
 import regmapper._
 import uncore.tilelink2._
-import util.AsyncResetRegVec
+import util.{AsyncResetRegVec, GenericParameterizedBundle}
 
 case class GPIOParams(address: BigInt, width: Int)
 
@@ -93,7 +93,7 @@ class GPIOPin extends Bundle {
 // level, and we have to do the pinmux
 // outside of RocketChipTop.
 
-class GPIOPortIO(c: GPIOParams) extends Bundle {
+class GPIOPortIO(c: GPIOParams) extends GenericParameterizedBundle(c) {
   val pins = Vec(c.width, new GPIOPin)
   val iof_0 = Vec(c.width, new GPIOPinIOF).flip
   val iof_1 = Vec(c.width, new GPIOPinIOF).flip

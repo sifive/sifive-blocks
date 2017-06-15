@@ -2,8 +2,9 @@
 package sifive.blocks.devices.spi
 
 import Chisel._
+import util.GenericParameterizedBundle
 
-abstract class SPIBundle(val c: SPIParamsBase) extends Bundle {
+abstract class SPIBundle(val c: SPIParamsBase) extends GenericParameterizedBundle(c) {
   override def cloneType: SPIBundle.this.type =
     this.getClass.getConstructors.head.newInstance(c).asInstanceOf[this.type]
 }
