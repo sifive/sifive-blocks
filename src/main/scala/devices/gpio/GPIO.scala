@@ -7,7 +7,7 @@ import regmapper._
 import uncore.tilelink2._
 import util.{AsyncResetRegVec, GenericParameterizedBundle}
 
-case class GPIOParams(address: BigInt, width: Int, includeIOF: Bool = true)
+case class GPIOParams(address: BigInt, width: Int, includeIOF: Boolean = false)
 
 // YAGNI: Make the PUE, DS, and
 // these also optionally HW controllable.
@@ -153,6 +153,10 @@ trait HasGPIOModuleContents extends Module with HasRegMap {
   val rise = ~valueReg & inSyncReg;
   val fall = valueReg & ~inSyncReg;
 
+  val iofEnFields =  if (c.includeIOF) (Seq(RegField.rwReg(c.width, iofEnReg.io))) else (Seq(RegField(c.width)))
+  val iofSelFields = if (c.includeIOF) (Seq(RegField(c.width, iofSelReg))) else (Seq(RegField(c.width)))
+
+
   // Note that these are out of order.
   regmap(
     GPIOCtrlRegs.value     -> Seq(RegField.r(c.width, valueReg)),
@@ -167,8 +171,8 @@ trait HasGPIOModuleContents extends Module with HasRegMap {
     GPIOCtrlRegs.low_ip    -> Seq(RegField.w1ToClear(c.width,lowIpReg, ~valueReg)),
     GPIOCtrlRegs.port      -> Seq(RegField(c.width, portReg)),
     GPIOCtrlRegs.pullup_en -> Seq(RegField.rwReg(c.width, pueReg.io)),
-    GPIOCtrlRegs.iof_en    -> if (c.includeIOF) (Seq(RegField.rwReg(c.width, iofEnReg.io))) else (Seq(RegField(c.width))),
-    GPIOCtrlRegs.iof_sel   -> if (c.includeIOF) (Seq(RegField(c.width, iofSelReg))) else (Seq(RegField(c.width))),
+    GPIOCtrlRegs.iof_en    -> iofEnFields,
+    GPIOCtrlRegs.iof_sel   -> iofSelFields,
     GPIOCtrlRegs.drive     -> Seq(RegField(c.width, dsReg)),
     GPIOCtrlRegs.input_en  -> Seq(RegField.rwReg(c.width, ieReg.io)),
     GPIOCtrlRegs.out_xor   -> Seq(RegField(c.width, xorReg))
@@ -203,13 +207,13 @@ trait HasGPIOModuleContents extends Module with HasRegMap {
     if (c.includeIOF) {
       // Allow SW Override for invalid inputs.
       iof0Ctrl(pin)      <> swPinCtrl(pin)
-      when (io.port.iof_0(pin).o.valid) {
-        iof0Ctrl(pin)    <> io.port.iof_0(pin).o
+      when (io.port.iof_0.get(pin).o.valid) {
+        iof0Ctrl(pin)    <> io.port.iof_0.get(pin).o
       }
 
       iof1Ctrl(pin)      <> swPinCtrl(pin)
-      when (io.port.iof_1(pin).o.valid) {
-        iof1Ctrl(pin)    <> io.port.iof_1(pin).o
+      when (io.port.iof_1.get(pin).o.valid) {
+        iof1Ctrl(pin)    <> io.port.iof_1.get(pin).o
       }
 
       // Select IOF 0 vs. IOF 1.
@@ -236,8 +240,8 @@ trait HasGPIOModuleContents extends Module with HasRegMap {
 
     if (c.includeIOF) {
       // Send Value to all consumers
-      io.port.iof_0(pin).i.ival := inSyncReg(pin)
-      io.port.iof_1(pin).i.ival := inSyncReg(pin)
+      io.port.iof_0.get(pin).i.ival := inSyncReg(pin)
+      io.port.iof_1.get(pin).i.ival := inSyncReg(pin)
     }
   }
 }
