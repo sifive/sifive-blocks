@@ -7,7 +7,7 @@ import regmapper._
 import uncore.tilelink2._
 import util.{AsyncResetRegVec, GenericParameterizedBundle}
 
-case class GPIOParams(address: BigInt, width: Int)
+case class GPIOParams(address: BigInt, width: Int, includeIOF: Bool = true)
 
 // YAGNI: Make the PUE, DS, and
 // these also optionally HW controllable.
@@ -95,8 +95,8 @@ class GPIOPin extends Bundle {
 
 class GPIOPortIO(c: GPIOParams) extends GenericParameterizedBundle(c) {
   val pins = Vec(c.width, new GPIOPin)
-  val iof_0 = Vec(c.width, new GPIOPinIOF).flip
-  val iof_1 = Vec(c.width, new GPIOPinIOF).flip
+  val iof_0 = if (c.includeIOF) Some(Vec(c.width, new GPIOPinIOF).flip) else None
+  val iof_1 = if (c.includeIOF) Some(Vec(c.width, new GPIOPinIOF).flip) else None
 }
 
 // It would be better if the IOF were here and
@@ -142,7 +142,7 @@ trait HasGPIOModuleContents extends Module with HasRegMap {
   // HW IO Function
   val iofEnReg  = Module(new AsyncResetRegVec(c.width, 0))
   val iofSelReg = Reg(init = UInt(0, c.width))
-
+  
   // Invert Output
   val xorReg    = Reg(init = UInt(0, c.width))
 
@@ -167,8 +167,8 @@ trait HasGPIOModuleContents extends Module with HasRegMap {
     GPIOCtrlRegs.low_ip    -> Seq(RegField.w1ToClear(c.width,lowIpReg, ~valueReg)),
     GPIOCtrlRegs.port      -> Seq(RegField(c.width, portReg)),
     GPIOCtrlRegs.pullup_en -> Seq(RegField.rwReg(c.width, pueReg.io)),
-    GPIOCtrlRegs.iof_en    -> Seq(RegField.rwReg(c.width, iofEnReg.io)),
-    GPIOCtrlRegs.iof_sel   -> Seq(RegField(c.width, iofSelReg)),
+    GPIOCtrlRegs.iof_en    -> if (c.includeIOF) (Seq(RegField.rwReg(c.width, iofEnReg.io))) else (Seq(RegField(c.width))),
+    GPIOCtrlRegs.iof_sel   -> if (c.includeIOF) (Seq(RegField(c.width, iofSelReg))) else (Seq(RegField(c.width))),
     GPIOCtrlRegs.drive     -> Seq(RegField(c.width, dsReg)),
     GPIOCtrlRegs.input_en  -> Seq(RegField.rwReg(c.width, ieReg.io)),
     GPIOCtrlRegs.out_xor   -> Seq(RegField(c.width, xorReg))
@@ -198,26 +198,33 @@ trait HasGPIOModuleContents extends Module with HasRegMap {
     swPinCtrl(pin).ds     := dsReg(pin)
     swPinCtrl(pin).ie     := ieReg.io.q(pin)
 
-    // Allow SW Override for invalid inputs.
-    iof0Ctrl(pin)      <> swPinCtrl(pin)
-    when (io.port.iof_0(pin).o.valid) {
-      iof0Ctrl(pin)    <> io.port.iof_0(pin).o
+    val pre_xor = Wire(new GPIOPinCtrl())
+
+    if (c.includeIOF) {
+      // Allow SW Override for invalid inputs.
+      iof0Ctrl(pin)      <> swPinCtrl(pin)
+      when (io.port.iof_0(pin).o.valid) {
+        iof0Ctrl(pin)    <> io.port.iof_0(pin).o
+      }
+
+      iof1Ctrl(pin)      <> swPinCtrl(pin)
+      when (io.port.iof_1(pin).o.valid) {
+        iof1Ctrl(pin)    <> io.port.iof_1(pin).o
+      }
+
+      // Select IOF 0 vs. IOF 1.
+      iofCtrl(pin)       <> Mux(iofSelReg(pin), iof1Ctrl(pin), iof0Ctrl(pin))
+
+      // Allow SW Override for things IOF doesn't control.
+      iofPlusSwPinCtrl(pin) <> swPinCtrl(pin)
+      iofPlusSwPinCtrl(pin) <> iofCtrl(pin)
+   
+      // Final XOR & Pin Control
+      pre_xor  := Mux(iofEnReg.io.q(pin), iofPlusSwPinCtrl(pin), swPinCtrl(pin))
+    } else {
+      pre_xor := swPinCtrl(pin)
     }
 
-    iof1Ctrl(pin)      <> swPinCtrl(pin)
-    when (io.port.iof_1(pin).o.valid) {
-      iof1Ctrl(pin)    <> io.port.iof_1(pin).o
-    }
-
-    // Select IOF 0 vs. IOF 1.
-    iofCtrl(pin)       <> Mux(iofSelReg(pin), iof1Ctrl(pin), iof0Ctrl(pin))
-
-    // Allow SW Override for things IOF doesn't control.
-    iofPlusSwPinCtrl(pin) <> swPinCtrl(pin)
-    iofPlusSwPinCtrl(pin) <> iofCtrl(pin)
-
-    // Final XOR & Pin Control
-    val pre_xor: GPIOPinCtrl = Mux(iofEnReg.io.q(pin), iofPlusSwPinCtrl(pin), swPinCtrl(pin))
     io.port.pins(pin).o      := pre_xor
     io.port.pins(pin).o.oval := pre_xor.oval ^ xorReg(pin)
 
@@ -227,9 +234,11 @@ trait HasGPIOModuleContents extends Module with HasRegMap {
                          (highIpReg(pin) & highIeReg(pin)) |
                          (lowIpReg(pin) & lowIeReg(pin))
 
-    // Send Value to all consumers
-    io.port.iof_0(pin).i.ival := inSyncReg(pin)
-    io.port.iof_1(pin).i.ival := inSyncReg(pin)
+    if (c.includeIOF) {
+      // Send Value to all consumers
+      io.port.iof_0(pin).i.ival := inSyncReg(pin)
+      io.port.iof_1(pin).i.ival := inSyncReg(pin)
+    }
   }
 }
 
