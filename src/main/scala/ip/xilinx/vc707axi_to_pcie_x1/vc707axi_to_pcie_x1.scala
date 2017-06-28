@@ -181,8 +181,8 @@ class VC707AXIToPCIeX1(implicit p:Parameters) extends LazyModule
         "device_type"        -> Seq(ResourceString("pci")),
         "interrupt-map-mask" -> Seq(0, 0, 0, 7).flatMap(ofInt),
         "interrupt-map"      -> Seq(1, 2, 3, 4).flatMap(ofMap),
-        "ranges"             -> resources("ranges").map { case Binding(_, ResourceAddress(address, _, _, _, _)) =>
-                                                               ResourceMapping(address, BigInt(0x02000000) << 64) },
+        "ranges"             -> resources("ranges").map { case Binding(_, ResourceAddress(address, perms)) =>
+                                                               ResourceMapping(address, BigInt(0x02000000) << 64, perms) },
         "interrupt-controller" -> Seq(ResourceMap(labels = Seq(intc), value = Map(
           "interrupt-controller" -> Nil,
           "#address-cells"       -> ofInt(0),
@@ -203,7 +203,7 @@ class VC707AXIToPCIeX1(implicit p:Parameters) extends LazyModule
   val control = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     slaves = Seq(AXI4SlaveParameters(
       address       = List(AddressSet(0x50000000L, 0x03ffffffL)),
-      resources     = device.reg,
+      resources     = device.reg("control"),
       supportsWrite = TransferSizes(1, 4),
       supportsRead  = TransferSizes(1, 4),
       interleavedId = Some(0))), // AXI4-Lite never interleaves responses
