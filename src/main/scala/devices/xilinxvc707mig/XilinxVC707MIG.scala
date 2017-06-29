@@ -24,7 +24,7 @@ class XilinxVC707MIG(implicit p: Parameters) extends LazyModule with HasXilinxVC
   val axi4 = AXI4InternalOutputNode(Seq(AXI4SlavePortParameters(
     slaves = Seq(AXI4SlaveParameters(
       address = Seq(AddressSet(p(ExtMem).base, p(ExtMem).size-1)),
-      resources     = device.reg("mem"),
+      resources     = device.reg,
       regionType    = RegionType.UNCACHED,
       executable    = true,
       supportsWrite = TransferSizes(1, 256*8),
