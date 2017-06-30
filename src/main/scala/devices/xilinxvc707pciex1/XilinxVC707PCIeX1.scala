@@ -38,7 +38,7 @@ class XilinxVC707PCIeX1(implicit p: Parameters) extends LazyModule {
 
   axi_to_pcie_x1.control :=
     AXI4Buffer()(
-    AXI4UserYanker()(
+    AXI4UserYanker(capMaxFlight = Some(2))(
     TLToAXI4(beatBytes=4)(
     TLFragmenter(4, p(coreplex.CacheBlockBytes))(
     TLAsyncCrossingSink()(
