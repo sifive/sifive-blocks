@@ -32,7 +32,7 @@ class XilinxVC707PCIeX1(implicit p: Parameters) extends LazyModule {
     AXI4UserYanker()(
     AXI4Deinterleaver(p(coreplex.CacheBlockBytes))(
     AXI4IdIndexer(idBits=4)(
-    TLToAXI4(beatBytes=8)(
+    TLToAXI4(beatBytes=8, adapterName = Some("pcie-slave"))(
     TLAsyncCrossingSink()(
     slave))))))
 
