@@ -32,7 +32,7 @@ class XilinxVC707MIG(implicit p: Parameters) extends LazyModule with HasXilinxVC
     beatBytes = 8)))
 
   val xing    = LazyModule(new TLAsyncCrossing)
-  val toaxi4  = LazyModule(new TLToAXI4(beatBytes = 8))
+  val toaxi4  = LazyModule(new TLToAXI4(beatBytes = 8, adapterName = Some("mem"), stripBits = 1))
   val indexer = LazyModule(new AXI4IdIndexer(idBits = 4))
   val deint   = LazyModule(new AXI4Deinterleaver(p(coreplex.CacheBlockBytes)))
   val yank    = LazyModule(new AXI4UserYanker)
