@@ -2,10 +2,10 @@
 package sifive.blocks.devices.gpio
 
 import Chisel._
-import config.Parameters
-import regmapper._
-import uncore.tilelink2._
-import util.{AsyncResetRegVec, GenericParameterizedBundle}
+import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.regmapper._
+import freechips.rocketchip.tilelink._
+import freechips.rocketchip.util.{AsyncResetRegVec, GenericParameterizedBundle}
 
 case class GPIOParams(address: BigInt, width: Int, includeIOF: Boolean = false)
 

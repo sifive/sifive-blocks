@@ -3,7 +3,7 @@ package sifive.blocks.devices.mockaon
 
 import Chisel._
 import Chisel.ImplicitConversions._
-import util._
+import freechips.rocketchip.util._
 import sifive.blocks.util.SRLatch
 
 import sifive.blocks.util.{SlaveRegIF}

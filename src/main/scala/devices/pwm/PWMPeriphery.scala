@@ -2,11 +2,11 @@
 package sifive.blocks.devices.pwm
 
 import Chisel._
-import config.Field
-import diplomacy.{LazyModule,LazyMultiIOModuleImp}
-import rocketchip.HasSystemNetworks
-import uncore.tilelink2.TLFragmenter
-import util.HeterogeneousBag
+import freechips.rocketchip.config.Field
+import freechips.rocketchip.diplomacy.{LazyModule,LazyMultiIOModuleImp}
+import freechips.rocketchip.chip.HasSystemNetworks
+import freechips.rocketchip.tilelink.TLFragmenter
+import freechips.rocketchip.util.HeterogeneousBag
 
 import sifive.blocks.devices.gpio._
 

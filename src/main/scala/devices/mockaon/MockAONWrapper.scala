@@ -2,12 +2,13 @@
 package sifive.blocks.devices.mockaon
 
 import Chisel._
-import config._
-import diplomacy._
-import uncore.tilelink2._
+import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.tilelink._
+import freechips.rocketchip.util._
 import sifive.blocks.devices.gpio.{GPIOPin, GPIOOutputPinCtrl, GPIOInputPinCtrl}
 import sifive.blocks.util.{DeglitchShiftRegister, ResetCatchAndSync}
-import util._
+
 /* The wrapper handles the Clock and Reset Generation for The AON block itself,
  and instantiates real pad controls (aka pull-ups)*/
 

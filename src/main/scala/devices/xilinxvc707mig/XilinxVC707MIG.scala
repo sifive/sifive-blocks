@@ -3,11 +3,12 @@ package sifive.blocks.devices.xilinxvc707mig
 
 import Chisel._
 import chisel3.experimental.{Analog,attach}
-import config._
-import diplomacy._
-import uncore.tilelink2._
-import uncore.axi4._
-import rocketchip._
+import freechips.rocketchip.amba.axi4._
+import freechips.rocketchip.chip._
+import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.coreplex.CacheBlockBytes
+import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.tilelink._
 import sifive.blocks.ip.xilinx.vc707mig.{VC707MIGIOClocksReset, VC707MIGIODDR, vc707mig}
 
 trait HasXilinxVC707MIGParameters {
@@ -34,7 +35,7 @@ class XilinxVC707MIG(implicit p: Parameters) extends LazyModule with HasXilinxVC
   val xing    = LazyModule(new TLAsyncCrossing)
   val toaxi4  = LazyModule(new TLToAXI4(beatBytes = 8, adapterName = Some("mem"), stripBits = 1))
   val indexer = LazyModule(new AXI4IdIndexer(idBits = 4))
-  val deint   = LazyModule(new AXI4Deinterleaver(p(coreplex.CacheBlockBytes)))
+  val deint   = LazyModule(new AXI4Deinterleaver(p(CacheBlockBytes)))
   val yank    = LazyModule(new AXI4UserYanker)
   val buffer  = LazyModule(new AXI4Buffer)
 

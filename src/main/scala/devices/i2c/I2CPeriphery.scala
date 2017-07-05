@@ -2,10 +2,10 @@
 package sifive.blocks.devices.i2c
 
 import Chisel._
-import config.Field
-import diplomacy.{LazyModule,LazyMultiIOModuleImp}
-import rocketchip.{HasSystemNetworks}
-import uncore.tilelink2.TLFragmenter
+import freechips.rocketchip.config.Field
+import freechips.rocketchip.diplomacy.{LazyModule,LazyMultiIOModuleImp}
+import freechips.rocketchip.chip.{HasSystemNetworks}
+import freechips.rocketchip.tilelink.TLFragmenter
 
 case object PeripheryI2CKey extends Field[Seq[I2CParams]]
 

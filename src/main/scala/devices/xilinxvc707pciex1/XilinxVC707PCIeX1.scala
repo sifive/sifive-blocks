@@ -2,11 +2,11 @@
 package sifive.blocks.devices.xilinxvc707pciex1
 
 import Chisel._
-import config._
-import diplomacy._
-import uncore.tilelink2._
-import uncore.axi4._
-import rocketchip._
+import freechips.rocketchip.amba.axi4._
+import freechips.rocketchip.coreplex.CacheBlockBytes
+import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.tilelink._
 import sifive.blocks.ip.xilinx.vc707axi_to_pcie_x1.{VC707AXIToPCIeX1, VC707AXIToPCIeX1IOClocksReset, VC707AXIToPCIeX1IOSerial}
 import sifive.blocks.ip.xilinx.ibufds_gte2.IBUFDS_GTE2
 
@@ -30,7 +30,7 @@ class XilinxVC707PCIeX1(implicit p: Parameters) extends LazyModule {
   axi_to_pcie_x1.slave :=
     AXI4Buffer()(
     AXI4UserYanker()(
-    AXI4Deinterleaver(p(coreplex.CacheBlockBytes))(
+    AXI4Deinterleaver(p(CacheBlockBytes))(
     AXI4IdIndexer(idBits=4)(
     TLToAXI4(beatBytes=8, adapterName = Some("pcie-slave"))(
     TLAsyncCrossingSink()(
@@ -40,7 +40,7 @@ class XilinxVC707PCIeX1(implicit p: Parameters) extends LazyModule {
     AXI4Buffer()(
     AXI4UserYanker(capMaxFlight = Some(2))(
     TLToAXI4(beatBytes=4)(
-    TLFragmenter(4, p(coreplex.CacheBlockBytes))(
+    TLFragmenter(4, p(CacheBlockBytes))(
     TLAsyncCrossingSink()(
     control)))))
 

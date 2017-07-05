@@ -3,8 +3,7 @@ package sifive.blocks.ip.xilinx.vc707mig
 
 import Chisel._
 import chisel3.experimental.{Analog,attach}
-import config._
-import junctions._
+import freechips.rocketchip.config._
 
 // IP VLNV: xilinx.com:customize_ip:vc707mig:1.0
 // Black Box

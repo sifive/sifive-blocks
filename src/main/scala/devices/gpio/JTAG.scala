@@ -10,8 +10,8 @@ import Chisel._
 // to put them otherwise.
 // ------------------------------------------------------------
 
-import config._
-import jtag.{JTAGIO}
+import freechips.rocketchip.config._
+import freechips.rocketchip.jtag.{JTAGIO}
 
 class JTAGPinsIO(hasTRSTn: Boolean = true) extends Bundle {
 

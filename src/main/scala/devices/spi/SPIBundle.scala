@@ -2,7 +2,7 @@
 package sifive.blocks.devices.spi
 
 import Chisel._
-import util.GenericParameterizedBundle
+import freechips.rocketchip.util.GenericParameterizedBundle
 
 abstract class SPIBundle(val c: SPIParamsBase) extends GenericParameterizedBundle(c) {
   override def cloneType: SPIBundle.this.type =

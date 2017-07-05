@@ -42,10 +42,10 @@
 package sifive.blocks.devices.i2c
 
 import Chisel._
-import config._
-import regmapper._
-import uncore.tilelink2._
-import util.{AsyncResetRegVec, Majority}
+import freechips.rocketchip.config._
+import freechips.rocketchip.regmapper._
+import freechips.rocketchip.tilelink._
+import freechips.rocketchip.util.{AsyncResetRegVec, Majority}
 import sifive.blocks.devices.gpio.{GPIOPinCtrl}
 
 case class I2CParams(address: BigInt)

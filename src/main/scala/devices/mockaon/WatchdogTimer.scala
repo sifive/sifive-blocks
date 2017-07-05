@@ -3,7 +3,7 @@ package sifive.blocks.devices.mockaon
 
 import Chisel._
 import Chisel.ImplicitConversions._
-import util.AsyncResetReg
+import freechips.rocketchip.util.AsyncResetReg
 
 import sifive.blocks.util.{SlaveRegIF, GenericTimer}
 

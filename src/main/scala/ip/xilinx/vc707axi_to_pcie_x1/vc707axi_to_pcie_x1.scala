@@ -2,11 +2,10 @@
 package sifive.blocks.ip.xilinx.vc707axi_to_pcie_x1
 
 import Chisel._
-import config._
-import diplomacy._
-import uncore.axi4._
-import uncore.tilelink2.{IntSourceNode, IntSourcePortSimple}
-import junctions._
+import freechips.rocketchip.config._
+import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.amba.axi4._
+import freechips.rocketchip.tilelink.{IntSourceNode, IntSourcePortSimple}
 
 // IP VLNV: xilinx.com:customize_ip:vc707pcietoaxi:1.0
 // Black Box

@@ -3,8 +3,8 @@ package sifive.blocks.util
 
 import Chisel._
 import Chisel.ImplicitConversions._
-import regmapper._
-import util.WideCounter
+import freechips.rocketchip.regmapper._
+import freechips.rocketchip.util.WideCounter
 
 class SlaveRegIF(w: Int) extends Bundle {
   val write = Valid(UInt(width = w)).flip

@@ -2,7 +2,7 @@
 package sifive.blocks.util
 
 import Chisel._
-import util.AsyncResetRegVec
+import freechips.rocketchip.util.AsyncResetRegVec
 
 /** Reset: asynchronous assert,
   *  synchronous de-assert
