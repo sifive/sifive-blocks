@@ -2,10 +2,11 @@
 package sifive.blocks.devices.spi
 
 import Chisel._
-import config._
-import diplomacy._
-import regmapper._
-import uncore.tilelink2._
+import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.regmapper._
+import freechips.rocketchip.tilelink._
+import freechips.rocketchip.util.HeterogeneousBag
 
 trait SPIFlashParamsBase extends SPIParamsBase {
   val fAddress: BigInt
@@ -38,7 +39,7 @@ case class SPIFlashParams(
   require(sampleDelay >= 0)
 }
 
-class SPIFlashTopBundle(i: util.HeterogeneousBag[Vec[Bool]], r: util.HeterogeneousBag[TLBundle], val f: util.HeterogeneousBag[TLBundle]) extends SPITopBundle(i, r)
+class SPIFlashTopBundle(i: HeterogeneousBag[Vec[Bool]], r: HeterogeneousBag[TLBundle], val f: HeterogeneousBag[TLBundle]) extends SPITopBundle(i, r)
 
 class SPIFlashTopModule[B <: SPIFlashTopBundle]
     (c: SPIFlashParamsBase, bundle: => B, outer: TLSPIFlashBase)

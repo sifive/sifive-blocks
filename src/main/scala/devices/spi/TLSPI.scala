@@ -2,11 +2,11 @@
 package sifive.blocks.devices.spi
 
 import Chisel._
-import config._
-import diplomacy._
-import regmapper._
-import uncore.tilelink2._
-
+import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.regmapper._
+import freechips.rocketchip.tilelink._
+import freechips.rocketchip.util.HeterogeneousBag
 import sifive.blocks.util.{NonBlockingEnqueue, NonBlockingDequeue}
 
 trait SPIParamsBase {
@@ -47,7 +47,7 @@ case class SPIParams(
   require(sampleDelay >= 0)
 }
 
-class SPITopBundle(val i: util.HeterogeneousBag[Vec[Bool]], val r: util.HeterogeneousBag[TLBundle]) extends Bundle
+class SPITopBundle(val i: HeterogeneousBag[Vec[Bool]], val r: HeterogeneousBag[TLBundle]) extends Bundle
 
 class SPITopModule[B <: SPITopBundle](c: SPIParamsBase, bundle: => B, outer: TLSPIBase)
   extends LazyModuleImp(outer) {

@@ -2,9 +2,9 @@
 package sifive.blocks.devices.mockaon
 
 import Chisel._
-import config._
-import regmapper._
-import uncore.tilelink2._
+import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.regmapper._
+import freechips.rocketchip.tilelink._
 
 import sifive.blocks.util.GenericTimer
 

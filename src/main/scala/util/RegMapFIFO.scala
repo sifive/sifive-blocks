@@ -2,7 +2,7 @@
 package sifive.blocks.util
 
 import Chisel._
-import regmapper._
+import freechips.rocketchip.regmapper._
 
 // MSB indicates full status
 object NonBlockingEnqueue {

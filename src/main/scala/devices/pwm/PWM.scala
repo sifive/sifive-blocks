@@ -3,11 +3,10 @@ package sifive.blocks.devices.pwm
 
 import Chisel._
 import Chisel.ImplicitConversions._
-import config.Parameters
-import regmapper._
-import uncore.tilelink2._
-import util._
-
+import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.regmapper._
+import freechips.rocketchip.tilelink._
+import freechips.rocketchip.util._
 import sifive.blocks.util.GenericTimer
 
 // Core PWM Functionality  & Register Interface

@@ -2,11 +2,10 @@
 package sifive.blocks.devices.uart
 
 import Chisel._
-import config.Field
-import diplomacy.{LazyModule, LazyMultiIOModuleImp}
-import rocketchip.HasSystemNetworks
-import uncore.tilelink2.TLFragmenter
-
+import freechips.rocketchip.config.Field
+import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp}
+import freechips.rocketchip.chip.HasSystemNetworks
+import freechips.rocketchip.tilelink.TLFragmenter
 import sifive.blocks.devices.gpio.{GPIOPin, GPIOOutputPinCtrl, GPIOInputPinCtrl}
 import sifive.blocks.util.ShiftRegisterInit
 

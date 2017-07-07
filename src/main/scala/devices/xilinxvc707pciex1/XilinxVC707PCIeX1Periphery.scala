@@ -2,9 +2,9 @@
 package sifive.blocks.devices.xilinxvc707pciex1
 
 import Chisel._
-import diplomacy.{LazyModule, LazyMultiIOModuleImp}
-import rocketchip.HasSystemNetworks
-import uncore.tilelink2._
+import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp}
+import freechips.rocketchip.chip.HasSystemNetworks
+import freechips.rocketchip.tilelink._
 
 trait HasPeripheryXilinxVC707PCIeX1 extends HasSystemNetworks {
   val xilinxvc707pcie = LazyModule(new XilinxVC707PCIeX1)

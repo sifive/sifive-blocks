@@ -2,8 +2,8 @@
 package sifive.blocks.devices.xilinxvc707mig
 
 import Chisel._
-import diplomacy.{LazyModule, LazyMultiIOModuleImp}
-import rocketchip.HasSystemNetworks
+import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp}
+import freechips.rocketchip.chip.HasSystemNetworks
 
 trait HasPeripheryXilinxVC707MIG extends HasSystemNetworks {
   val module: HasPeripheryXilinxVC707MIGModuleImp

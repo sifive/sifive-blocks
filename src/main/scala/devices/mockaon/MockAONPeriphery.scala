@@ -2,11 +2,11 @@
 package sifive.blocks.devices.mockaon
 
 import Chisel._
-import config.Field
-import diplomacy.{LazyModule, LazyMultiIOModuleImp}
-import rocketchip.{HasSystemNetworks, HasCoreplexRISCVPlatform}
-import uncore.tilelink2.{IntXing, TLAsyncCrossingSource, TLFragmenter}
-import util.ResetCatchAndSync
+import freechips.rocketchip.config.Field
+import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp}
+import freechips.rocketchip.chip.{HasSystemNetworks, HasCoreplexRISCVPlatform}
+import freechips.rocketchip.tilelink.{IntXing, TLAsyncCrossingSource, TLFragmenter}
+import freechips.rocketchip.util.ResetCatchAndSync
 
 case object PeripheryMockAONKey extends Field[MockAONParams]
 
