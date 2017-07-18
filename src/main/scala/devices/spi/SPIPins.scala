@@ -2,33 +2,27 @@
 package sifive.blocks.devices.spi
 
 import Chisel._
-import sifive.blocks.devices.gpio.{GPIOPin, GPIOOutputPinCtrl, GPIOInputPinCtrl}
+import sifive.blocks.devices.pinctrl.{PinCtrl, Pin}
 
-class SPIPinsIO(c: SPIParamsBase) extends SPIBundle(c) {
-  val sck = new GPIOPin
-  val dq = Vec(4, new GPIOPin)
-  val cs = Vec(c.csWidth, new GPIOPin)
-}
+class SPIPins[T <: Pin] (pingen: ()=> T, c: SPIParamsBase) extends SPIBundle(c) {
 
-class SPIGPIOPort(c: SPIParamsBase, syncStages: Int = 0, driveStrength: Bool = Bool(false)) extends Module {
-  val io = new SPIBundle(c) {
-    val spi = new SPIPortIO(c).flip
-    val pins = new SPIPinsIO(c)
-  }
+  val sck: T      = pingen()
+  val dq: Vec[T]  = Vec(4, pingen())
+  val cs: Vec[T]  = Vec(c.csWidth, pingen())
 
-  GPIOOutputPinCtrl(io.pins.sck, io.spi.sck, ds = driveStrength)
+  def fromSPIPort(spi: SPIPortIO, syncStages: Int = 0, driveStrength: Bool = Bool(false)) {
+    
+    sck.outputPin(spi.sck, ds = driveStrength)
 
-  GPIOOutputPinCtrl(io.pins.dq, Bits(0, io.spi.dq.size))
-  (io.pins.dq zip io.spi.dq).foreach {
-    case (p, s) =>
-      p.o.oval := s.o
-      p.o.oe  := s.oe
-      p.o.ie  := ~s.oe
-      p.o.pue := Bool(true)
-      p.o.ds  := driveStrength
+    (dq zip spi.dq).foreach {case (p, s) =>
+      p.outputPin(s.o, pue = Bool(true), ds = driveStrength)
+      p.o.oe := s.oe
+      p.o.ie := ~s.oe
       s.i := ShiftRegister(p.i.ival, syncStages)
-  }
+    }
 
-  GPIOOutputPinCtrl(io.pins.cs, io.spi.cs.asUInt)
-  io.pins.cs.foreach(_.o.ds := driveStrength)
+    (cs zip spi.cs) foreach { case (c, s) =>
+      c.outputPin(s, ds = driveStrength)
+    }
+  }
 }

@@ -12,30 +12,23 @@ import Chisel._
 
 import freechips.rocketchip.config._
 import freechips.rocketchip.jtag.{JTAGIO}
+import sifive.blocks.devices.pinctrl.{Pin, PinCtrl}
 
-class JTAGPinsIO(hasTRSTn: Boolean = true) extends Bundle {
+class JTAGPins[T <: Pin](pingen: () => T, hasTRSTn: Boolean = true) extends Bundle {
 
-  val TCK    = new GPIOPin()
-  val TMS    = new GPIOPin()
-  val TDI    = new GPIOPin()
-  val TDO    = new GPIOPin()
-  val TRSTn  = if (hasTRSTn) Option(new GPIOPin()) else None
+  val TCK         = pingen()
+  val TMS         = pingen()
+  val TDI         = pingen()
+  val TDO        = pingen()
+  val TRSTn = if (hasTRSTn) Option(pingen()) else None
 
-}
+  def fromJTAGPort(jtag: JTAGIO): Unit = {
+    jtag.TCK  := TCK.inputPin (pue = Bool(true)).asClock
+    jtag.TMS  := TMS.inputPin (pue = Bool(true))
+    jtag.TDI  := TDI.inputPin(pue = Bool(true))
+    jtag.TRSTn.foreach{t => t := TRSTn.get.inputPin(pue = Bool(true))}
 
-class JTAGGPIOPort(hasTRSTn: Boolean = true)(implicit p: Parameters) extends Module {
-
-  val io = new Bundle {
-    // TODO: make this not hard-coded true.
-    val jtag = new JTAGIO(hasTRSTn)
-    val pins = new JTAGPinsIO(hasTRSTn)
+    TDO.outputPin(jtag.TDO.data)
+    TDO.o.oe := jtag.TDO.driven
   }
-
-  io.jtag.TCK  := GPIOInputPinCtrl(io.pins.TCK, pue = Bool(true)).asClock
-  io.jtag.TMS  := GPIOInputPinCtrl(io.pins.TMS, pue = Bool(true))
-  io.jtag.TDI  := GPIOInputPinCtrl(io.pins.TDI, pue = Bool(true))
-  io.jtag.TRSTn.foreach{t => t := GPIOInputPinCtrl(io.pins.TRSTn.get, pue = Bool(true))}
-
-  GPIOOutputPinCtrl(io.pins.TDO, io.jtag.TDO.data)
-  io.pins.TDO.o.oe := io.jtag.TDO.driven
 }

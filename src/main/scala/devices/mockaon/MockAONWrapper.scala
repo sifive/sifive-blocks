@@ -6,20 +6,20 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
-import sifive.blocks.devices.gpio.{GPIOPin, GPIOOutputPinCtrl, GPIOInputPinCtrl}
+import sifive.blocks.devices.pinctrl.{EnhancedPin}
 import sifive.blocks.util.{DeglitchShiftRegister, ResetCatchAndSync}
 
 /* The wrapper handles the Clock and Reset Generation for The AON block itself,
  and instantiates real pad controls (aka pull-ups)*/
 
 class MockAONWrapperPMUIO extends Bundle {
-  val dwakeup_n = new GPIOPin()
-  val vddpaden = new GPIOPin()
+  val dwakeup_n = new EnhancedPin()
+  val vddpaden = new  EnhancedPin()
 }
 
 class MockAONWrapperPadsIO extends Bundle {
-  val erst_n = new GPIOPin()
-  val lfextclk = new GPIOPin()
+  val erst_n   = new EnhancedPin()
+  val lfextclk = new EnhancedPin()
   val pmu = new MockAONWrapperPMUIO()
 }
 
@@ -68,7 +68,7 @@ class MockAONWrapper(w: Int, c: MockAONParams)(implicit p: Parameters) extends L
     // -----------------------------------------------
 
     // ERST
-    val erst = ~ GPIOInputPinCtrl(pads.erst_n, pue = Bool(true))
+    val erst = ~pads.erst_n.inputPin(pue = Bool(true))
     aon_io.resetCauses.erst := erst
     aon_io.resetCauses.wdogrst := aon_io.wdog_rst
 
@@ -94,7 +94,7 @@ class MockAONWrapper(w: Int, c: MockAONParams)(implicit p: Parameters) extends L
     // Note that the actual mux lives inside AON itself.
     // Therefore, the lfclk which comes out of AON is the
     // true clock that AON and AONWrapper are running off of.
-    val lfextclk = GPIOInputPinCtrl(pads.lfextclk, pue=Bool(true))
+    val lfextclk = pads.lfextclk.inputPin(pue=Bool(true))
     aon_io.lfextclk := lfextclk.asClock
 
     // Drive AON's clock and Reset
@@ -136,14 +136,14 @@ class MockAONWrapper(w: Int, c: MockAONParams)(implicit p: Parameters) extends L
     // PMU <--> pads Interface
     //--------------------------------------------------
 
-    val dwakeup_n_async = GPIOInputPinCtrl(pads.pmu.dwakeup_n, pue=Bool(true))
+    val dwakeup_n_async = pads.pmu.dwakeup_n.inputPin(pue=Bool(true))
 
     val dwakeup_deglitch = Module (new DeglitchShiftRegister(3))
     dwakeup_deglitch.clock := lfclk
     dwakeup_deglitch.io.d := ~dwakeup_n_async
     aon.module.io.pmu.dwakeup := dwakeup_deglitch.io.q
 
-    GPIOOutputPinCtrl(pads.pmu.vddpaden, aon.module.io.pmu.vddpaden)
+    pads.pmu.vddpaden.outputPin(aon.module.io.pmu.vddpaden)
 
     //--------------------------------------------------
     // Connect signals to MOFF

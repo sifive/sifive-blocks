@@ -7,25 +7,22 @@ import freechips.rocketchip.diplomacy.{LazyModule,LazyMultiIOModuleImp}
 import freechips.rocketchip.chip.HasSystemNetworks
 import freechips.rocketchip.tilelink.TLFragmenter
 import freechips.rocketchip.util.HeterogeneousBag
-
-import sifive.blocks.devices.gpio._
+import sifive.blocks.devices.pinctrl.{PinCtrl, Pin}
 
 class PWMPortIO(val c: PWMParams) extends Bundle {
   val port = Vec(c.ncmp, Bool()).asOutput
   override def cloneType: this.type = new PWMPortIO(c).asInstanceOf[this.type]
 }
 
-class PWMPinsIO(val c: PWMParams) extends Bundle {
-  val pwm = Vec(c.ncmp, new GPIOPin)
-}
+class PWMPins[T <: Pin] (pingen: ()=> T, val c: PWMParams) extends Bundle {
 
-class PWMGPIOPort(val c: PWMParams) extends Module {
-  val io = new Bundle {
-    val pwm = new PWMPortIO(c).flip()
-    val pins = new PWMPinsIO(c)
+  val pwm: Vec[T] = Vec(c.ncmp, pingen())
+
+  def fromPWMPort(port: PWMPortIO) {
+    (pwm zip port.port)  foreach {case (pin, port) =>
+      pin.outputPin(port)
+    }
   }
-
-  GPIOOutputPinCtrl(io.pins.pwm, io.pwm.port.asUInt)
 }
 
 case object PeripheryPWMKey extends Field[Seq[PWMParams]]
@@ -43,11 +40,6 @@ trait HasPeripheryPWM extends HasSystemNetworks {
 trait HasPeripheryPWMBundle {
   val pwms: HeterogeneousBag[PWMPortIO]
 
-  def PWMtoGPIOPins(dummy: Int = 1): Seq[PWMPinsIO] = pwms.map { p =>
-    val pins = Module(new PWMGPIOPort(p.c))
-    pins.io.pwm <> p
-    pins.io.pins
-  }
 }
 
 trait HasPeripheryPWMModuleImp extends LazyMultiIOModuleImp with HasPeripheryPWMBundle {

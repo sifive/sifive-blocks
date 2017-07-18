@@ -6,7 +6,7 @@ import freechips.rocketchip.config.Field
 import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp}
 import freechips.rocketchip.chip.HasSystemNetworks
 import freechips.rocketchip.tilelink.TLFragmenter
-import sifive.blocks.devices.gpio.{GPIOPin, GPIOOutputPinCtrl, GPIOInputPinCtrl}
+import sifive.blocks.devices.pinctrl.{Pin, PinCtrl}
 import sifive.blocks.util.ShiftRegisterInit
 
 case object PeripheryUARTKey extends Field[Seq[UARTParams]]
@@ -28,11 +28,6 @@ trait HasPeripheryUARTBundle {
     uarts.foreach { _.rxd := UInt(1) }
   }
 
-  def UARTtoGPIOPins(syncStages: Int = 0): Seq[UARTPinsIO] = uarts.map { u =>
-    val pins = Module(new UARTGPIOPort(syncStages))
-    pins.io.uart <> u
-    pins.io.pins
-  }
 }
 
 trait HasPeripheryUARTModuleImp extends LazyMultiIOModuleImp with HasPeripheryUARTBundle {
@@ -44,18 +39,14 @@ trait HasPeripheryUARTModuleImp extends LazyMultiIOModuleImp with HasPeripheryUA
   }
 }
 
-class UARTPinsIO extends Bundle {
-  val rxd = new GPIOPin
-  val txd = new GPIOPin
-}
+class UARTPins(pingen: () => Pin) extends Bundle {
+  val rxd = pingen()
+  val txd = pingen()
 
-class UARTGPIOPort(syncStages: Int = 0) extends Module {
-  val io = new Bundle{
-    val uart = new UARTPortIO().flip()
-    val pins = new UARTPinsIO
+  def fromUARTPort(uart: UARTPortIO, syncStages: Int = 0) {
+    txd.outputPin(uart.txd)
+    val rxd_t = rxd.inputPin()
+    uart.rxd := ShiftRegisterInit(rxd_t, syncStages, Bool(true))
   }
-
-  GPIOOutputPinCtrl(io.pins.txd, io.uart.txd)
-  val rxd = GPIOInputPinCtrl(io.pins.rxd)
-  io.uart.rxd := ShiftRegisterInit(rxd, syncStages, Bool(true))
 }
+
