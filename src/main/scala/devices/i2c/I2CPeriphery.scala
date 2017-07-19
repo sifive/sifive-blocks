@@ -20,7 +20,7 @@ trait HasPeripheryI2C extends HasSystemNetworks {
 }
 
 trait HasPeripheryI2CBundle {
-  val i2cs: Vec[I2CPort]
+  val i2c: Vec[I2CPort]
 }
 
 trait HasPeripheryI2CModuleImp extends LazyMultiIOModuleImp with HasPeripheryI2CBundle {

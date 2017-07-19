@@ -17,14 +17,14 @@ class MockAONWrapperPMUIO extends Bundle {
   val vddpaden = new  EnhancedPin()
 }
 
-class MockAONWrapperPadsIO extends Bundle {
+class MockAONWrapperPins extends Bundle {
   val erst_n   = new EnhancedPin()
   val lfextclk = new EnhancedPin()
   val pmu = new MockAONWrapperPMUIO()
 }
 
 class MockAONWrapperBundle extends Bundle {
-  val pads = new MockAONWrapperPadsIO()
+  val pads = new MockAONWrapperPins()
   val rsts = new MockAONMOffRstIO()
 }
 

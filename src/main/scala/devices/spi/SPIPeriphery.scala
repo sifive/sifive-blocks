@@ -21,15 +21,15 @@ trait HasPeripherySPI extends HasSystemNetworks {
 }
 
 trait HasPeripherySPIBundle {
-  val spis: HeterogeneousBag[SPIPortIO]
+  val spi: HeterogeneousBag[SPIPortIO]
 
 }
 
 trait HasPeripherySPIModuleImp extends LazyMultiIOModuleImp with HasPeripherySPIBundle {
   val outer: HasPeripherySPI
-  val spis = IO(HeterogeneousBag(outer.spiParams.map(new SPIPortIO(_))))
+  val spi = IO(HeterogeneousBag(outer.spiParams.map(new SPIPortIO(_))))
 
-  (spis zip outer.spis).foreach { case (io, device) =>
+  (spi zip outer.spis).foreach { case (io, device) =>
     io <> device.module.io.port
   }
 }
@@ -38,7 +38,7 @@ case object PeripherySPIFlashKey extends Field[Seq[SPIFlashParams]]
 
 trait HasPeripherySPIFlash extends HasSystemNetworks {
   val spiFlashParams = p(PeripherySPIFlashKey)  
-  val qspi = spiFlashParams map { params =>
+  val qspis = spiFlashParams map { params =>
     val qspi = LazyModule(new TLSPIFlash(peripheryBusBytes, params))
     qspi.rnode := TLFragmenter(peripheryBusBytes, cacheBlockBytes)(peripheryBus.node)
     qspi.fnode := TLFragmenter(1, cacheBlockBytes)(TLWidthWidget(peripheryBusBytes)(peripheryBus.node))
@@ -56,7 +56,7 @@ trait HasPeripherySPIFlashModuleImp extends LazyMultiIOModuleImp with HasPeriphe
   val outer: HasPeripherySPIFlash
   val qspi = IO(HeterogeneousBag(outer.spiFlashParams.map(new SPIPortIO(_))))
 
-  (qspi zip outer.qspi) foreach { case (io, device) => 
+  (qspi zip outer.qspis) foreach { case (io, device) => 
     io <> device.module.io.port
   }
 }

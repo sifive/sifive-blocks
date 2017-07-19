@@ -34,6 +34,14 @@ object IOFCtrl {
 // for the IOF
 class IOFPin extends Pin {
   val o  = new IOFCtrl().asOutput
+
+  def default(): Unit = {
+    this.o.oval  := Bool(false)
+    this.o.oe    := Bool(false)
+    this.o.ie    := Bool(false)
+    this.o.valid := Bool(false)
+  }
+
   def inputPin(pue: Bool = Bool(false) /*ignored*/): Bool = {
     this.o.oval := Bool(false)
     this.o.oe   := Bool(false)
@@ -53,7 +61,7 @@ class IOFPin extends Pin {
 
 // Connect both the i and o side of the pin,
 // and drive the valid signal for the IOF.
-object GPIOPinToIOF {
+object BasePinToIOF {
   def apply(pin: BasePin, iof: IOFPin): Unit = {
     iof <> pin
     iof.o.valid := Bool(true)

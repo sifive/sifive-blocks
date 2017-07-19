@@ -38,15 +38,15 @@ trait HasPeripheryPWM extends HasSystemNetworks {
 }
 
 trait HasPeripheryPWMBundle {
-  val pwms: HeterogeneousBag[PWMPortIO]
+  val pwm: HeterogeneousBag[PWMPortIO]
 
 }
 
 trait HasPeripheryPWMModuleImp extends LazyMultiIOModuleImp with HasPeripheryPWMBundle {
   val outer: HasPeripheryPWM
-  val pwms = IO(HeterogeneousBag(outer.pwmParams.map(new PWMPortIO(_))))
+  val pwm = IO(HeterogeneousBag(outer.pwmParams.map(new PWMPortIO(_))))
 
-  (pwms zip outer.pwms) foreach { case (io, device) =>
+  (pwm zip outer.pwms) foreach { case (io, device) =>
     io.port := device.module.io.gpio
   }
 }

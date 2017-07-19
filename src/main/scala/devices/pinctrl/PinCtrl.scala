@@ -21,6 +21,7 @@ abstract class Pin extends Bundle {
   val o: PinCtrl
 
   // Must be defined by the subclasses
+  def default(): Unit
   def inputPin(pue: Bool = Bool(false)): Bool
   def outputPin(signal: Bool,
     pue: Bool = Bool(false),
@@ -28,13 +29,6 @@ abstract class Pin extends Bundle {
     ie: Bool = Bool(false)
   ): Unit
   
-  def inputPin(pins: Vec[this.type], pue: Bool): Vec[Bool] = {
-    val signals = Wire(Vec(pins.length, new Bool()))
-    for ((signal, pin) <- (signals zip pins)) {
-      signal := pin.inputPin(pue)
-    }
-    signals
-  }
 }
 
 
@@ -42,6 +36,12 @@ abstract class Pin extends Bundle {
 
 class BasePin extends Pin() {
   val o = new PinCtrl().asOutput
+
+  def default(): Unit = {
+    this.o.oval := Bool(false)
+    this.o.oe   := Bool(false)
+    this.o.ie   := Bool(false)
+  }
 
   def inputPin(pue: Bool = Bool(false) /*ignored*/): Bool = {
     this.o.oval := Bool(false)
@@ -59,7 +59,6 @@ class BasePin extends Pin() {
     this.o.oe   := Bool(true)
     this.o.ie   := ie
   }
-
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -71,6 +70,14 @@ class EnhancedPinCtrl extends PinCtrl {
 class EnhancedPin extends Pin() {
 
   val o = new EnhancedPinCtrl().asOutput
+
+  def default(): Unit = {
+    this.o.oval := Bool(false)
+    this.o.oe   := Bool(false)
+    this.o.ie   := Bool(false)
+    this.o.ds   := Bool(false)
+    this.o.pue  := Bool(false)
+  }
 
   def inputPin(pue: Bool = Bool(false)): Bool = {
     this.o.oval := Bool(false)
