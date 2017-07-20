@@ -3,18 +3,17 @@ package sifive.blocks.devices.i2c
 
 import Chisel._
 import freechips.rocketchip.config.Field
-import freechips.rocketchip.diplomacy.{LazyModule,LazyMultiIOModuleImp}
-import freechips.rocketchip.chip.{HasSystemNetworks}
-import freechips.rocketchip.tilelink.TLFragmenter
+import freechips.rocketchip.coreplex.{HasPeripheryBus, HasInterruptBus}
+import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp}
 
 case object PeripheryI2CKey extends Field[Seq[I2CParams]]
 
-trait HasPeripheryI2C extends HasSystemNetworks {
+trait HasPeripheryI2C extends HasPeripheryBus {
   val i2cParams = p(PeripheryI2CKey)
   val i2c = i2cParams map { params =>
-    val i2c = LazyModule(new TLI2C(peripheryBusBytes, params))
-    i2c.node := TLFragmenter(peripheryBusBytes, cacheBlockBytes)(peripheryBus.node)
-    intBus.intnode := i2c.intnode
+    val i2c = LazyModule(new TLI2C(pbus.beatBytes, params))
+    i2c.node := pbus.toVariableWidthSlaves
+    ibus.fromSync := i2c.intnode
     i2c
   }
 }

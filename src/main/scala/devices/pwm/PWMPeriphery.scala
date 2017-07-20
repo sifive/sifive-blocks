@@ -3,11 +3,9 @@ package sifive.blocks.devices.pwm
 
 import Chisel._
 import freechips.rocketchip.config.Field
-import freechips.rocketchip.diplomacy.{LazyModule,LazyMultiIOModuleImp}
-import freechips.rocketchip.chip.HasSystemNetworks
-import freechips.rocketchip.tilelink.TLFragmenter
+import freechips.rocketchip.coreplex.{HasPeripheryBus, HasInterruptBus}
+import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp}
 import freechips.rocketchip.util.HeterogeneousBag
-
 import sifive.blocks.devices.gpio._
 
 class PWMPortIO(val c: PWMParams) extends Bundle {
@@ -30,12 +28,12 @@ class PWMGPIOPort(val c: PWMParams) extends Module {
 
 case object PeripheryPWMKey extends Field[Seq[PWMParams]]
 
-trait HasPeripheryPWM extends HasSystemNetworks {
+trait HasPeripheryPWM extends HasPeripheryBus with HasInterruptBus {
   val pwmParams = p(PeripheryPWMKey)
   val pwms = pwmParams map { params =>
-    val pwm = LazyModule(new TLPWM(peripheryBusBytes, params))
-    pwm.node := TLFragmenter(peripheryBusBytes, cacheBlockBytes)(peripheryBus.node)
-    intBus.intnode := pwm.intnode
+    val pwm = LazyModule(new TLPWM(pbus.beatBytes, params))
+    pwm.node := pbus.toVariableWidthSlaves
+    ibus.fromSync := pwm.intnode
     pwm
   }
 }

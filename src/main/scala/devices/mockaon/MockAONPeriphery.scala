@@ -3,22 +3,25 @@ package sifive.blocks.devices.mockaon
 
 import Chisel._
 import freechips.rocketchip.config.Field
+import freechips.rocketchip.coreplex.{HasPeripheryBus, HasInterruptBus}
+import freechips.rocketchip.devices.debug.HasPeripheryDebug
+import freechips.rocketchip.devices.tilelink.HasPeripheryClint
 import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp}
-import freechips.rocketchip.chip.{HasSystemNetworks, HasCoreplexRISCVPlatform}
-import freechips.rocketchip.tilelink.{IntXing, TLAsyncCrossingSource, TLFragmenter}
+import freechips.rocketchip.tilelink.{IntXing, TLAsyncCrossingSource}
 import freechips.rocketchip.util.ResetCatchAndSync
 
 case object PeripheryMockAONKey extends Field[MockAONParams]
 
-trait HasPeripheryMockAON extends HasSystemNetworks with HasCoreplexRISCVPlatform {
+trait HasPeripheryMockAON extends HasPeripheryBus
+    with HasInterruptBus
+    with HasPeripheryClint
+    with HasPeripheryDebug {
   // We override the clock & Reset here so that all synchronizers, etc
   // are in the proper clock domain.
   val mockAONParams= p(PeripheryMockAONKey)
-  val aon = LazyModule(new MockAONWrapper(peripheryBusBytes, mockAONParams))
-  val aon_int = LazyModule(new IntXing)
-  aon.node := TLAsyncCrossingSource()(TLFragmenter(peripheryBusBytes, cacheBlockBytes)(peripheryBus.node))
-  aon_int.intnode := aon.intnode
-  intBus.intnode := aon_int.intnode
+  val aon = LazyModule(new MockAONWrapper(pbus.beatBytes, mockAONParams))
+  aon.node := pbus.toAsyncVariableWidthSlaves(sync = 3)
+  ibus.fromAsync := aon.intnode
 }
 
 trait HasPeripheryMockAONBundle {
@@ -39,7 +42,7 @@ trait HasPeripheryMockAONModuleImp extends LazyMultiIOModuleImp with HasPeripher
   outer.aon.module.clock := Bool(false).asClock
   outer.aon.module.reset := Bool(true)
 
-  outer.coreplex.module.io.rtcToggle := outer.aon.module.io.rtc.asUInt.toBool
+  outer.clint.module.io.rtcTick := outer.aon.module.io.rtc.asUInt.toBool
 
-  outer.aon.module.io.ndreset := outer.coreplex.module.io.ndreset
+  outer.aon.module.io.ndreset := outer.debug.module.io.ctrl.ndreset
 }
