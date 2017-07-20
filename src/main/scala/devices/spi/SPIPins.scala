@@ -7,9 +7,12 @@ import sifive.blocks.devices.pinctrl.{PinCtrl, Pin}
 
 class SPIPins[T <: Pin] (pingen: ()=> T, c: SPIParamsBase) extends SPIBundle(c) {
 
-  val sck: T      = pingen()
-  val dq: Vec[T]  = Vec(4, pingen())
-  val cs: Vec[T]  = Vec(c.csWidth, pingen())
+  val sck = pingen()
+  val dq  = Vec(4, pingen())
+  val cs  = Vec(c.csWidth, pingen())
+
+  override def cloneType: this.type =
+    this.getClass.getConstructors.head.newInstance(pingen, c).asInstanceOf[this.type]
 
   def fromSPIPort(spi: SPIPortIO, clock: Clock, reset: Bool,
     syncStages: Int = 0, driveStrength: Bool = Bool(false)) {

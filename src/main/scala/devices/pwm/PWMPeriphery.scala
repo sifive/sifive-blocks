@@ -18,6 +18,9 @@ class PWMPins[T <: Pin] (pingen: ()=> T, val c: PWMParams) extends Bundle {
 
   val pwm: Vec[T] = Vec(c.ncmp, pingen())
 
+  override def cloneType: this.type =
+    this.getClass.getConstructors.head.newInstance(pingen, c).asInstanceOf[this.type]
+
   def fromPWMPort(port: PWMPortIO) {
     (pwm zip port.port)  foreach {case (pin, port) =>
       pin.outputPin(port)
