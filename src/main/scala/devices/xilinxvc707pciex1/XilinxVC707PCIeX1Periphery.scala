@@ -8,10 +8,10 @@ import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp}
 trait HasSystemXilinxVC707PCIeX1 extends HasSystemBus with HasInterruptBus {
   val xilinxvc707pcie = LazyModule(new XilinxVC707PCIeX1)
 
-  sbus.fromAsyncMasters() := xilinxvc707pcie.master
-  xilinxvc707pcie.slave   := sbus.toAsyncFixedWidthSlaves()
+  sbus.fromAsyncFIFOMaster() := xilinxvc707pcie.master
+  xilinxvc707pcie.slave := sbus.toAsyncFixedWidthSlaves()
   xilinxvc707pcie.control := sbus.toAsyncFixedWidthSlaves()
-  ibus.fromAsync          := xilinxvc707pcie.intnode
+  ibus.fromAsync := xilinxvc707pcie.intnode
 }
 
 trait HasSystemXilinxVC707PCIeX1Bundle {
