@@ -2,27 +2,28 @@
 package sifive.blocks.devices.xilinxvc707mig
 
 import Chisel._
+import freechips.rocketchip.coreplex.HasMemoryBus
 import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp}
-import freechips.rocketchip.chip.HasSystemNetworks
 
-trait HasPeripheryXilinxVC707MIG extends HasSystemNetworks {
-  val module: HasPeripheryXilinxVC707MIGModuleImp
+trait HasMemoryXilinxVC707MIG extends HasMemoryBus {
+  val module: HasMemoryXilinxVC707MIGModuleImp
 
   val xilinxvc707mig = LazyModule(new XilinxVC707MIG)
+
   require(nMemoryChannels == 1, "Coreplex must have 1 master memory port")
-  xilinxvc707mig.node := mem(0).node
+  xilinxvc707mig.node := memBuses.head.toDRAMController
 }
 
-trait HasPeripheryXilinxVC707MIGBundle {
+trait HasMemoryXilinxVC707MIGBundle {
   val xilinxvc707mig: XilinxVC707MIGIO
   def connectXilinxVC707MIGToPads(pads: XilinxVC707MIGPads) {
     pads <> xilinxvc707mig
   }
 }
 
-trait HasPeripheryXilinxVC707MIGModuleImp extends LazyMultiIOModuleImp
-    with HasPeripheryXilinxVC707MIGBundle {
-  val outer: HasPeripheryXilinxVC707MIG
+trait HasMemoryXilinxVC707MIGModuleImp extends LazyMultiIOModuleImp
+    with HasMemoryXilinxVC707MIGBundle {
+  val outer: HasMemoryXilinxVC707MIG
   val xilinxvc707mig = IO(new XilinxVC707MIGIO)
 
   xilinxvc707mig <> outer.xilinxvc707mig.module.io.port

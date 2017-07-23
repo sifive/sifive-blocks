@@ -3,19 +3,19 @@ package sifive.blocks.devices.spi
 
 import Chisel._
 import freechips.rocketchip.config.Field
+import freechips.rocketchip.coreplex.{HasPeripheryBus, HasInterruptBus}
 import freechips.rocketchip.diplomacy.{LazyModule,LazyMultiIOModuleImp}
-import freechips.rocketchip.chip.HasSystemNetworks
-import freechips.rocketchip.tilelink.{TLFragmenter,TLWidthWidget}
+import freechips.rocketchip.tilelink.{TLFragmenter}
 import freechips.rocketchip.util.HeterogeneousBag
 
 case object PeripherySPIKey extends Field[Seq[SPIParams]]
 
-trait HasPeripherySPI extends HasSystemNetworks {
+trait HasPeripherySPI extends HasPeripheryBus with HasInterruptBus {
   val spiParams = p(PeripherySPIKey)  
   val spis = spiParams map { params =>
-    val spi = LazyModule(new TLSPI(peripheryBusBytes, params))
-    spi.rnode := TLFragmenter(peripheryBusBytes, cacheBlockBytes)(peripheryBus.node)
-    intBus.intnode := spi.intnode
+    val spi = LazyModule(new TLSPI(pbus.beatBytes, params))
+    spi.rnode := pbus.toVariableWidthSlaves
+    ibus.fromSync := spi.intnode
     spi
   }
 }
@@ -41,13 +41,13 @@ trait HasPeripherySPIModuleImp extends LazyMultiIOModuleImp with HasPeripherySPI
 
 case object PeripherySPIFlashKey extends Field[Seq[SPIFlashParams]]
 
-trait HasPeripherySPIFlash extends HasSystemNetworks {
+trait HasPeripherySPIFlash extends HasPeripheryBus with HasInterruptBus {
   val spiFlashParams = p(PeripherySPIFlashKey)  
   val qspi = spiFlashParams map { params =>
-    val qspi = LazyModule(new TLSPIFlash(peripheryBusBytes, params))
-    qspi.rnode := TLFragmenter(peripheryBusBytes, cacheBlockBytes)(peripheryBus.node)
-    qspi.fnode := TLFragmenter(1, cacheBlockBytes)(TLWidthWidget(peripheryBusBytes)(peripheryBus.node))
-    intBus.intnode := qspi.intnode
+    val qspi = LazyModule(new TLSPIFlash(pbus.beatBytes, params))
+    qspi.rnode := pbus.toVariableWidthSlaves
+    qspi.fnode := TLFragmenter(1, pbus.blockBytes)(pbus.toFixedWidthSlaves)
+    ibus.fromSync := qspi.intnode
     qspi
   }
 }
@@ -73,4 +73,3 @@ trait HasPeripherySPIFlashModuleImp extends LazyMultiIOModuleImp with HasPeriphe
     io <> device.module.io.port
   }
 }
-

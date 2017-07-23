@@ -4,9 +4,8 @@ package sifive.blocks.devices.xilinxvc707mig
 import Chisel._
 import chisel3.experimental.{Analog,attach}
 import freechips.rocketchip.amba.axi4._
-import freechips.rocketchip.chip._
 import freechips.rocketchip.config.Parameters
-import freechips.rocketchip.coreplex.CacheBlockBytes
+import freechips.rocketchip.coreplex._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
 import sifive.blocks.ip.xilinx.vc707mig.{VC707MIGIOClocksReset, VC707MIGIODDR, vc707mig}
