@@ -4,20 +4,19 @@ package sifive.blocks.devices.uart
 import Chisel._
 import chisel3.experimental.{withClockAndReset}
 import freechips.rocketchip.config.Field
+import freechips.rocketchip.coreplex.{HasPeripheryBus, HasInterruptBus}
 import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp}
-import freechips.rocketchip.chip.HasSystemNetworks
-import freechips.rocketchip.tilelink.TLFragmenter
-import sifive.blocks.devices.pinctrl.{Pin, PinCtrl}
+import sifive.blocks.devices.pinctrl.{Pin}
 import sifive.blocks.util.ShiftRegisterInit
 
 case object PeripheryUARTKey extends Field[Seq[UARTParams]]
 
-trait HasPeripheryUART extends HasSystemNetworks {
+trait HasPeripheryUART extends HasPeripheryBus with HasInterruptBus {
   val uartParams = p(PeripheryUARTKey)  
   val uarts = uartParams map { params =>
-    val uart = LazyModule(new TLUART(peripheryBusBytes, params))
-    uart.node := TLFragmenter(peripheryBusBytes, cacheBlockBytes)(peripheryBus.node)
-    intBus.intnode := uart.intnode
+    val uart = LazyModule(new TLUART(pbus.beatBytes, params))
+    uart.node := pbus.toVariableWidthSlaves
+    ibus.fromSync := uart.intnode
     uart
   }
 }

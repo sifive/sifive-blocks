@@ -2,8 +2,8 @@
 package sifive.blocks.devices.uart
 
 import Chisel._
-import freechips.rocketchip.chip.RTCPeriod
 import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.coreplex.RTCPeriod
 import freechips.rocketchip.diplomacy.DTSTimebase
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
@@ -205,7 +205,7 @@ trait HasUARTTopModuleContents extends Module with HasUARTParameters with HasReg
   val rxm = Module(new UARTRx(params))
   val rxq = Module(new Queue(rxm.io.out.bits, uartNRxEntries))
 
-  val divinit = p(DTSTimebase) * p(RTCPeriod) / 115200
+  val divinit = p(DTSTimebase) * BigInt(p(RTCPeriod).getOrElse(1)) / 115200
   val div = Reg(init = UInt(divinit, uartDivisorBits))
 
   private val stopCountBits = log2Up(uartStopBits)

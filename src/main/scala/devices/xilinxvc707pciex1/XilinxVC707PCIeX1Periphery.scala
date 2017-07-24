@@ -2,31 +2,28 @@
 package sifive.blocks.devices.xilinxvc707pciex1
 
 import Chisel._
+import freechips.rocketchip.coreplex.{HasInterruptBus, HasSystemBus}
 import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp}
-import freechips.rocketchip.chip.HasSystemNetworks
-import freechips.rocketchip.tilelink._
 
-trait HasPeripheryXilinxVC707PCIeX1 extends HasSystemNetworks {
+trait HasSystemXilinxVC707PCIeX1 extends HasSystemBus with HasInterruptBus {
   val xilinxvc707pcie = LazyModule(new XilinxVC707PCIeX1)
-  private val intXing = LazyModule(new IntXing)
 
-  fsb.node := TLAsyncCrossingSink()(xilinxvc707pcie.master)
-  xilinxvc707pcie.slave   := TLAsyncCrossingSource()(TLWidthWidget(socBusConfig.beatBytes)(socBus.node))
-  xilinxvc707pcie.control := TLAsyncCrossingSource()(TLWidthWidget(socBusConfig.beatBytes)(socBus.node))
-  intBus.intnode := intXing.intnode
-  intXing.intnode := xilinxvc707pcie.intnode
+  sbus.fromAsyncFIFOMaster() := xilinxvc707pcie.master
+  xilinxvc707pcie.slave := sbus.toAsyncFixedWidthSlaves()
+  xilinxvc707pcie.control := sbus.toAsyncFixedWidthSlaves()
+  ibus.fromAsync := xilinxvc707pcie.intnode
 }
 
-trait HasPeripheryXilinxVC707PCIeX1Bundle {
+trait HasSystemXilinxVC707PCIeX1Bundle {
   val xilinxvc707pcie: XilinxVC707PCIeX1IO
   def connectXilinxVC707PCIeX1ToPads(pads: XilinxVC707PCIeX1Pads) {
     pads <> xilinxvc707pcie
   }
 }
 
-trait HasPeripheryXilinxVC707PCIeX1ModuleImp extends LazyMultiIOModuleImp
-    with HasPeripheryXilinxVC707PCIeX1Bundle {
-  val outer: HasPeripheryXilinxVC707PCIeX1
+trait HasSystemXilinxVC707PCIeX1ModuleImp extends LazyMultiIOModuleImp
+    with HasSystemXilinxVC707PCIeX1Bundle {
+  val outer: HasSystemXilinxVC707PCIeX1
   val xilinxvc707pcie = IO(new XilinxVC707PCIeX1IO)
 
   xilinxvc707pcie <> outer.xilinxvc707pcie.module.io.port
