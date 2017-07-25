@@ -24,7 +24,7 @@ class MockAONWrapperPins extends Bundle {
 }
 
 class MockAONWrapperBundle extends Bundle {
-  val pads = new MockAONWrapperPins()
+  val pins = new MockAONWrapperPins()
   val rsts = new MockAONMOffRstIO()
 }
 
@@ -61,14 +61,14 @@ class MockAONWrapper(w: Int, c: MockAONParams)(implicit p: Parameters) extends L
     }
 
     val aon_io = aon.module.io
-    val pads = io.pads
+    val pins = io.pins
 
     // -----------------------------------------------
     // Generation of aonrst
     // -----------------------------------------------
 
     // ERST
-    val erst = ~pads.erst_n.inputPin(pue = Bool(true))
+    val erst = ~pins.erst_n.inputPin(pue = Bool(true))
     aon_io.resetCauses.erst := erst
     aon_io.resetCauses.wdogrst := aon_io.wdog_rst
 
@@ -94,7 +94,7 @@ class MockAONWrapper(w: Int, c: MockAONParams)(implicit p: Parameters) extends L
     // Note that the actual mux lives inside AON itself.
     // Therefore, the lfclk which comes out of AON is the
     // true clock that AON and AONWrapper are running off of.
-    val lfextclk = pads.lfextclk.inputPin(pue=Bool(true))
+    val lfextclk = pins.lfextclk.inputPin(pue=Bool(true))
     aon_io.lfextclk := lfextclk.asClock
 
     // Drive AON's clock and Reset
@@ -133,17 +133,17 @@ class MockAONWrapper(w: Int, c: MockAONParams)(implicit p: Parameters) extends L
     isolation.module.io.iso_in  := Bool(true)
 
     //--------------------------------------------------
-    // PMU <--> pads Interface
+    // PMU <--> pins Interface
     //--------------------------------------------------
 
-    val dwakeup_n_async = pads.pmu.dwakeup_n.inputPin(pue=Bool(true))
+    val dwakeup_n_async = pins.pmu.dwakeup_n.inputPin(pue=Bool(true))
 
     val dwakeup_deglitch = Module (new DeglitchShiftRegister(3))
     dwakeup_deglitch.clock := lfclk
     dwakeup_deglitch.io.d := ~dwakeup_n_async
     aon.module.io.pmu.dwakeup := dwakeup_deglitch.io.q
 
-    pads.pmu.vddpaden.outputPin(aon.module.io.pmu.vddpaden)
+    pins.pmu.vddpaden.outputPin(aon.module.io.pmu.vddpaden)
 
     //--------------------------------------------------
     // Connect signals to MOFF
