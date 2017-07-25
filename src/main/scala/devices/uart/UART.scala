@@ -3,8 +3,6 @@ package sifive.blocks.devices.uart
 
 import Chisel._
 import freechips.rocketchip.config.Parameters
-import freechips.rocketchip.coreplex.RTCPeriod
-import freechips.rocketchip.diplomacy.DTSTimebase
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
@@ -15,6 +13,7 @@ case class UARTParams(
   address: BigInt,
   dataBits: Int = 8,
   stopBits: Int = 2,
+  divisorInit: Int = 0,
   divisorBits: Int = 16,
   oversample: Int = 4,
   nSamples: Int = 3,
@@ -25,6 +24,7 @@ trait HasUARTParameters {
   def c: UARTParams
   def uartDataBits = c.dataBits
   def uartStopBits = c.stopBits
+  def uartDivisorInit = c.divisorInit
   def uartDivisorBits = c.divisorBits
 
   def uartOversample = c.oversample
@@ -34,6 +34,7 @@ trait HasUARTParameters {
   def uartNTxEntries = c.nTxEntries
   def uartNRxEntries = c.nRxEntries
 
+  require(uartDivisorInit != 0) // should have been initialized during instantiation
   require(uartDivisorBits > uartOversample)
   require(uartOversampleFactor > uartNSamples)
 }
@@ -205,8 +206,7 @@ trait HasUARTTopModuleContents extends Module with HasUARTParameters with HasReg
   val rxm = Module(new UARTRx(params))
   val rxq = Module(new Queue(rxm.io.out.bits, uartNRxEntries))
 
-  val divinit = p(DTSTimebase) * BigInt(p(RTCPeriod).getOrElse(1)) / 115200
-  val div = Reg(init = UInt(divinit, uartDivisorBits))
+  val div = Reg(init = UInt(uartDivisorInit, uartDivisorBits))
 
   private val stopCountBits = log2Up(uartStopBits)
   private val txCountBits = log2Floor(uartNTxEntries) + 1
