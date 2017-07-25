@@ -47,7 +47,7 @@ class UARTPins[T <: Pin] (pingen: () => T) extends Bundle {
   override def cloneType: this.type =
     this.getClass.getConstructors.head.newInstance(pingen).asInstanceOf[this.type]
 
-  def fromUARTPort(uart: UARTPortIO, clock: Clock, reset: Bool, syncStages: Int = 0) {
+  def fromPort(uart: UARTPortIO, clock: Clock, reset: Bool, syncStages: Int = 0) {
     withClockAndReset(clock, reset) {
       txd.outputPin(uart.txd)
       val rxd_t = rxd.inputPin()

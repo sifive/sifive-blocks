@@ -16,7 +16,7 @@ class GPIOPins[T <: Pin] (pingen: ()=> T,  c: GPIOParams) extends Bundle {
   override def cloneType: this.type =
     this.getClass.getConstructors.head.newInstance(pingen, c).asInstanceOf[this.type]
 
-  def fromGPIOPort(port: GPIOPortIO){
+  def fromPort(port: GPIOPortIO){
 
     // This will just match up the components of the Bundle that
     // exist in both.

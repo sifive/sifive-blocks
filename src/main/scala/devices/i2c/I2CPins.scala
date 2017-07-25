@@ -15,7 +15,7 @@ class I2CPins[T <: Pin](pingen: () => T) extends Bundle {
   override def cloneType: this.type =
     this.getClass.getConstructors.head.newInstance(pingen).asInstanceOf[this.type]
 
-  def fromI2CPort(i2c: I2CPort, clock: Clock, reset: Bool, syncStages: Int = 0) = {
+  def fromPort(i2c: I2CPort, clock: Clock, reset: Bool, syncStages: Int = 0) = {
     withClockAndReset(clock, reset) {
       scl.outputPin(i2c.scl.out, pue=true.B, ie = true.B)
       scl.o.oe := i2c.scl.oe

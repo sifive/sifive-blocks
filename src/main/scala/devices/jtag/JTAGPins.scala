@@ -1,13 +1,12 @@
 // See LICENSE for license details.
-package sifive.blocks.devices.gpio
+package sifive.blocks.devices.jtag
 
 import Chisel._
 
 // ------------------------------------------------------------
-// SPI, UART, etc are with their
-// respective packages,
-// This file is for those that don't seem to have a good place
-// to put them otherwise.
+// SPI, UART, etc are with their respective packages,
+// JTAG doesn't really correspond directly to a device, but it does
+// define pins as those devices do.
 // ------------------------------------------------------------
 
 import freechips.rocketchip.config._
@@ -22,7 +21,7 @@ class JTAGPins[T <: Pin](pingen: () => T, hasTRSTn: Boolean = true) extends Bund
   val TDO        = pingen()
   val TRSTn = if (hasTRSTn) Option(pingen()) else None
 
-  def fromJTAGPort(jtag: JTAGIO): Unit = {
+  def fromPort(jtag: JTAGIO): Unit = {
     jtag.TCK  := TCK.inputPin (pue = Bool(true)).asClock
     jtag.TMS  := TMS.inputPin (pue = Bool(true))
     jtag.TDI  := TDI.inputPin(pue = Bool(true))

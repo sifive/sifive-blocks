@@ -14,7 +14,7 @@ class SPIPins[T <: Pin] (pingen: ()=> T, c: SPIParamsBase) extends SPIBundle(c) 
   override def cloneType: this.type =
     this.getClass.getConstructors.head.newInstance(pingen, c).asInstanceOf[this.type]
 
-  def fromSPIPort(spi: SPIPortIO, clock: Clock, reset: Bool,
+  def fromPort(spi: SPIPortIO, clock: Clock, reset: Bool,
     syncStages: Int = 0, driveStrength: Bool = Bool(false)) {
 
     withClockAndReset(clock, reset) {
