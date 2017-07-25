@@ -2,6 +2,7 @@
 package sifive.blocks.devices.gpio
 
 import Chisel._
+import sifive.blocks.devices.pinctrl.{PinCtrl, Pin, BasePin, EnhancedPin, EnhancedPinCtrl}
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
@@ -9,28 +10,18 @@ import freechips.rocketchip.util.{AsyncResetRegVec, GenericParameterizedBundle}
 
 case class GPIOParams(address: BigInt, width: Int, includeIOF: Boolean = false)
 
-// YAGNI: Make the PUE, DS, and
-// these also optionally HW controllable.
-// This is the base class of things you "always"
-// want to control from a HW block.
-class GPIOCtrl extends Bundle {
-  val oval = Bool()
-  val oe   = Bool()
-  val ie   = Bool()
-}
-
-// This is the actual IOF interface.
+// This is the actual IOF interface.pa
 // Add a valid bit to indicate whether
 // there is something actually connected
 // to this.
-class GPIOPinIOFCtrl extends GPIOCtrl {
+class IOFCtrl extends PinCtrl {
   val valid = Bool()
 }
 
 // By default,
-object GPIOPinIOFCtrl {
-  def apply(): GPIOPinIOFCtrl = {
-    val iof = Wire(new GPIOPinIOFCtrl())
+object IOFCtrl {
+  def apply(): IOFCtrl = {
+    val iof = Wire(new IOFCtrl())
     iof.valid := Bool(false)
     iof.oval  := Bool(false)
     iof.oe    := Bool(false)
@@ -39,53 +30,42 @@ object GPIOPinIOFCtrl {
   }
 }
 
-// This is the control for a physical
-// Pad.
-
-class GPIOPinCtrl extends GPIOCtrl {
-  val pue  = Bool() // Pull-up Enable
-  val ds   = Bool() // Drive Strength
-}
-
-object GPIOPinCtrl {
-  def apply(): GPIOPinCtrl = {
-    val pin = Wire(new GPIOPinCtrl())
-    pin.oval := Bool(false)
-    pin.oe   := Bool(false)
-    pin.pue  := Bool(false)
-    pin.ds   := Bool(false)
-    pin.ie   := Bool(false)
-    pin
-  }
-}
-
 // Package up the inputs and outputs
 // for the IOF
-class GPIOPinIOF extends Bundle {
-  val i = new Bundle {
-    val ival = Bool(INPUT)
+class IOFPin extends Pin {
+  val o  = new IOFCtrl().asOutput
+
+  def default(): Unit = {
+    this.o.oval  := Bool(false)
+    this.o.oe    := Bool(false)
+    this.o.ie    := Bool(false)
+    this.o.valid := Bool(false)
   }
-  val o = new GPIOPinIOFCtrl().asOutput
+
+  def inputPin(pue: Bool = Bool(false) /*ignored*/): Bool = {
+    this.o.oval := Bool(false)
+    this.o.oe   := Bool(false)
+    this.o.ie   := Bool(true)
+    this.i.ival
+  }
+  def outputPin(signal: Bool,
+    pue: Bool = Bool(false), /*ignored*/
+    ds: Bool = Bool(false), /*ignored*/
+    ie: Bool = Bool(false)
+  ): Unit = {
+    this.o.oval := signal
+    this.o.oe   := Bool(true)
+    this.o.ie   := ie
+  }
 }
 
 // Connect both the i and o side of the pin,
 // and drive the valid signal for the IOF.
-object GPIOPinToIOF {
-
-  def apply (pin: GPIOPin, iof: GPIOPinIOF): Unit = {
+object BasePinToIOF {
+  def apply(pin: BasePin, iof: IOFPin): Unit = {
     iof <> pin
     iof.o.valid := Bool(true)
   }
-
-}
-
-// Package up the inputs and outputs
-// for the Pin
-class GPIOPin extends Bundle {
-  val i = new Bundle {
-    val ival = Bool(INPUT)
-  }
-  val o = new GPIOPinCtrl().asOutput
 }
 
 // This is sort of weird because
@@ -94,9 +74,9 @@ class GPIOPin extends Bundle {
 // outside of RocketChipTop.
 
 class GPIOPortIO(c: GPIOParams) extends GenericParameterizedBundle(c) {
-  val pins = Vec(c.width, new GPIOPin)
-  val iof_0 = if (c.includeIOF) Some(Vec(c.width, new GPIOPinIOF).flip) else None
-  val iof_1 = if (c.includeIOF) Some(Vec(c.width, new GPIOPinIOF).flip) else None
+  val pins = Vec(c.width, new EnhancedPin())
+  val iof_0 = if (c.includeIOF) Some(Vec(c.width, new IOFPin).flip) else None
+  val iof_1 = if (c.includeIOF) Some(Vec(c.width, new IOFPin).flip) else None
 }
 
 // It would be better if the IOF were here and
@@ -183,15 +163,14 @@ trait HasGPIOModuleContents extends Module with HasRegMap {
   // Actual Pinmux
   // -------------------------------------------------
 
-  val swPinCtrl = Wire(Vec(c.width, new GPIOPinCtrl()))
+  val swPinCtrl = Wire(Vec(c.width, new EnhancedPinCtrl()))
 
   // This strips off the valid.
-  val iof0Ctrl = Wire(Vec(c.width, new GPIOCtrl()))
-  val iof1Ctrl = Wire(Vec(c.width, new GPIOCtrl()))
+  val iof0Ctrl = Wire(Vec(c.width, new EnhancedPinCtrl()))
+  val iof1Ctrl = Wire(Vec(c.width, new EnhancedPinCtrl()))
 
-  val iofCtrl = Wire(Vec(c.width, new GPIOCtrl()))
-  val iofPlusSwPinCtrl = Wire(Vec(c.width, new GPIOPinCtrl()))
-
+  val iofCtrl = Wire(Vec(c.width, new EnhancedPinCtrl()))
+  val iofPlusSwPinCtrl = Wire(Vec(c.width, new EnhancedPinCtrl()))
 
   for (pin <- 0 until c.width) {
 
@@ -202,7 +181,7 @@ trait HasGPIOModuleContents extends Module with HasRegMap {
     swPinCtrl(pin).ds     := dsReg(pin)
     swPinCtrl(pin).ie     := ieReg.io.q(pin)
 
-    val pre_xor = Wire(new GPIOPinCtrl())
+    val pre_xor = Wire(new EnhancedPinCtrl())
 
     if (c.includeIOF) {
       // Allow SW Override for invalid inputs.
@@ -244,57 +223,6 @@ trait HasGPIOModuleContents extends Module with HasRegMap {
       io.port.iof_1.get(pin).i.ival := inSyncReg(pin)
     }
   }
-}
-
-object GPIOOutputPinCtrl {
-
-  def apply( pin: GPIOPin, signal: Bool,
-    pue: Bool = Bool(false),
-    ds:  Bool = Bool(false),
-    ie:  Bool = Bool(false)
-  ): Unit = {
-    pin.o.oval := signal
-    pin.o.oe   := Bool(true)
-    pin.o.pue  := pue
-    pin.o.ds   := ds
-    pin.o.ie   := ie
-  }
-
-  def apply(pins: Vec[GPIOPin], signals: Bits,
-    pue: Bool, ds:  Bool, ie:  Bool
-  ): Unit = {
-    for ((signal, pin) <- (signals.toBools zip pins)) {
-      apply(pin, signal, pue, ds, ie)
-    }
-  }
-
-  def apply(pins: Vec[GPIOPin], signals: Bits): Unit = apply(pins, signals,
-    Bool(false), Bool(false), Bool(false))
-
-}
-
-object GPIOInputPinCtrl {
-
-  def apply (pin: GPIOPin, pue: Bool = Bool(false)): Bool = {
-    pin.o.oval := Bool(false)
-    pin.o.oe   := Bool(false)
-    pin.o.pue  := pue
-    pin.o.ds   := Bool(false)
-    pin.o.ie   := Bool(true)
-
-    pin.i.ival
-  }
-
-  def apply (pins: Vec[GPIOPin], pue: Bool): Vec[Bool] = {
-    val signals = Wire(Vec.fill(pins.size)(Bool(false)))
-    for ((signal, pin) <- (signals zip pins)) {
-      signal := GPIOInputPinCtrl(pin, pue)
-    }
-    signals
-  }
-
-  def apply (pins: Vec[GPIOPin]): Vec[Bool] = apply(pins, Bool(false))
-
 }
 
 // Magic TL2 Incantation to create a TL2 Slave

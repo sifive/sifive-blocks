@@ -2,10 +2,11 @@
 package sifive.blocks.devices.uart
 
 import Chisel._
+import chisel3.experimental.{withClockAndReset}
 import freechips.rocketchip.config.Field
 import freechips.rocketchip.coreplex.{HasPeripheryBus, PeripheryBusParams, HasInterruptBus}
 import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp}
-import sifive.blocks.devices.gpio.{GPIOPin, GPIOOutputPinCtrl, GPIOInputPinCtrl}
+import sifive.blocks.devices.pinctrl.{Pin}
 import sifive.blocks.util.ShiftRegisterInit
 
 case object PeripheryUARTKey extends Field[Seq[UARTParams]]
@@ -22,40 +23,36 @@ trait HasPeripheryUART extends HasPeripheryBus with HasInterruptBus {
 }
 
 trait HasPeripheryUARTBundle {
-  val uarts: Vec[UARTPortIO]
+  val uart: Vec[UARTPortIO]
 
   def tieoffUARTs(dummy: Int = 1) {
-    uarts.foreach { _.rxd := UInt(1) }
+    uart.foreach { _.rxd := UInt(1) }
   }
 
-  def UARTtoGPIOPins(syncStages: Int = 0): Seq[UARTPinsIO] = uarts.map { u =>
-    val pins = Module(new UARTGPIOPort(syncStages))
-    pins.io.uart <> u
-    pins.io.pins
-  }
 }
 
 trait HasPeripheryUARTModuleImp extends LazyMultiIOModuleImp with HasPeripheryUARTBundle {
   val outer: HasPeripheryUART
-  val uarts = IO(Vec(outer.uartParams.size, new UARTPortIO))
+  val uart = IO(Vec(outer.uartParams.size, new UARTPortIO))
 
-  (uarts zip outer.uarts).foreach { case (io, device) =>
+  (uart zip outer.uarts).foreach { case (io, device) =>
     io <> device.module.io.port
   }
 }
 
-class UARTPinsIO extends Bundle {
-  val rxd = new GPIOPin
-  val txd = new GPIOPin
-}
+class UARTPins[T <: Pin] (pingen: () => T) extends Bundle {
+  val rxd = pingen()
+  val txd = pingen()
 
-class UARTGPIOPort(syncStages: Int = 0) extends Module {
-  val io = new Bundle{
-    val uart = new UARTPortIO().flip()
-    val pins = new UARTPinsIO
+  override def cloneType: this.type =
+    this.getClass.getConstructors.head.newInstance(pingen).asInstanceOf[this.type]
+
+  def fromPort(uart: UARTPortIO, clock: Clock, reset: Bool, syncStages: Int = 0) {
+    withClockAndReset(clock, reset) {
+      txd.outputPin(uart.txd)
+      val rxd_t = rxd.inputPin()
+      uart.rxd := ShiftRegisterInit(rxd_t, syncStages, Bool(true))
+    }
   }
-
-  GPIOOutputPinCtrl(io.pins.txd, io.uart.txd)
-  val rxd = GPIOInputPinCtrl(io.pins.rxd)
-  io.uart.rxd := ShiftRegisterInit(rxd, syncStages, Bool(true))
 }
+

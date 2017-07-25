@@ -11,7 +11,7 @@ case object PeripheryGPIOKey extends Field[Seq[GPIOParams]]
 
 trait HasPeripheryGPIO extends HasPeripheryBus with HasInterruptBus {
   val gpioParams = p(PeripheryGPIOKey)
-  val gpio = gpioParams map { params =>
+  val gpios = gpioParams map { params =>
     val gpio = LazyModule(new TLGPIO(pbus.beatBytes, params))
     gpio.node := pbus.toVariableWidthSlaves
     ibus.fromSync := gpio.intnode
@@ -27,7 +27,7 @@ trait HasPeripheryGPIOModuleImp extends LazyMultiIOModuleImp with HasPeripheryGP
   val outer: HasPeripheryGPIO
   val gpio = IO(HeterogeneousBag(outer.gpioParams.map(new GPIOPortIO(_))))
 
-  (gpio zip outer.gpio) foreach { case (io, device) =>
+  (gpio zip outer.gpios) foreach { case (io, device) =>
     io <> device.module.io.port
   }
 }

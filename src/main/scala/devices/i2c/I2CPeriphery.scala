@@ -19,20 +19,14 @@ trait HasPeripheryI2C extends HasPeripheryBus {
 }
 
 trait HasPeripheryI2CBundle {
-  val i2cs: Vec[I2CPort]
-
-  def I2CtoGPIOPins(syncStages: Int = 0): Seq[I2CPinsIO] = i2cs.map { i =>
-    val pins = Module(new I2CGPIOPort(syncStages))
-    pins.io.i2c <> i
-    pins.io.pins
-  }
+  val i2c: Vec[I2CPort]
 }
 
 trait HasPeripheryI2CModuleImp extends LazyMultiIOModuleImp with HasPeripheryI2CBundle {
   val outer: HasPeripheryI2C
-  val i2cs = IO(Vec(outer.i2cParams.size, new I2CPort))
+  val i2c = IO(Vec(outer.i2cParams.size, new I2CPort))
 
-  (i2cs zip outer.i2c).foreach { case (io, device) =>
+  (i2c zip outer.i2c).foreach { case (io, device) =>
     io <> device.module.io.port
   }
 }

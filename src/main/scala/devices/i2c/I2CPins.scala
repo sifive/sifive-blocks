@@ -2,26 +2,28 @@
 package sifive.blocks.devices.i2c
 
 import Chisel._
-import sifive.blocks.devices.gpio.{GPIOPin, GPIOOutputPinCtrl}
+import chisel3.experimental.{withClockAndReset}
+import sifive.blocks.devices.pinctrl.{Pin, PinCtrl}
 import sifive.blocks.util.ShiftRegisterInit
 
 
-class I2CPinsIO extends Bundle {
-  val scl = new GPIOPin
-  val sda = new GPIOPin
-}
+class I2CPins[T <: Pin](pingen: () => T) extends Bundle {
 
-class I2CGPIOPort(syncStages: Int = 0) extends Module {
-  val io = new Bundle{
-    val i2c = new I2CPort().flip()
-    val pins = new I2CPinsIO
+  val scl: T = pingen()
+  val sda: T = pingen()
+
+  override def cloneType: this.type =
+    this.getClass.getConstructors.head.newInstance(pingen).asInstanceOf[this.type]
+
+  def fromPort(i2c: I2CPort, clock: Clock, reset: Bool, syncStages: Int = 0) = {
+    withClockAndReset(clock, reset) {
+      scl.outputPin(i2c.scl.out, pue=true.B, ie = true.B)
+      scl.o.oe := i2c.scl.oe
+      i2c.scl.in := ShiftRegisterInit(scl.i.ival, syncStages, Bool(true))
+
+      sda.outputPin(i2c.sda.out, pue=true.B, ie = true.B)
+      sda.o.oe := i2c.sda.oe
+      i2c.sda.in := ShiftRegisterInit(sda.i.ival, syncStages, Bool(true))
+    }
   }
-
-  GPIOOutputPinCtrl(io.pins.scl, io.i2c.scl.out, pue=true.B, ie = true.B)
-  io.pins.scl.o.oe := io.i2c.scl.oe
-  io.i2c.scl.in := ShiftRegisterInit(io.pins.scl.i.ival, syncStages, Bool(true))
-
-  GPIOOutputPinCtrl(io.pins.sda, io.i2c.sda.out, pue=true.B, ie = true.B)
-  io.pins.sda.o.oe := io.i2c.sda.oe
-  io.i2c.sda.in := ShiftRegisterInit(io.pins.sda.i.ival, syncStages, Bool(true))
 }
