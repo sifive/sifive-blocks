@@ -66,7 +66,7 @@ class SPIFlashTopModule[B <: SPIFlashTopBundle]
   flash.io.addr.valid := f.a.valid
   f.a.ready := flash.io.addr.ready
 
-  f.d.bits := outer.fnode.edgesIn.head.AccessAck(a, UInt(0), flash.io.data.bits)
+  f.d.bits := outer.fnode.edgesIn.head.AccessAck(a, flash.io.data.bits)
   f.d.valid := flash.io.data.valid
   flash.io.data.ready := f.d.ready
 
