@@ -82,7 +82,7 @@ class GPIOPortIO(c: GPIOParams) extends GenericParameterizedBundle(c) {
 // It would be better if the IOF were here and
 // we could do the pinmux inside.
 trait HasGPIOBundleContents extends Bundle {
-  val params: GPIOParams
+  def params: GPIOParams
   val port = new GPIOPortIO(params)
 }
 
