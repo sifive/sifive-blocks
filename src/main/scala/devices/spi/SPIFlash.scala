@@ -86,7 +86,7 @@ class SPIFlashMap(c: SPIFlashParamsBase) extends Module {
     }
   }
 
-  val (s_idle :: s_cmd :: s_addr :: s_pad :: s_data_pre :: s_data_post :: Nil) = Enum(UInt(), 6)
+  val (s_idle :: s_cmd :: s_addr :: s_pad :: s_data_pre :: s_data_post :: s_off :: Nil) = Enum(UInt(), 7)
   val state = Reg(init = s_idle)
 
   switch (state) {
@@ -105,10 +105,11 @@ class SPIFlashMap(c: SPIFlashParamsBase) extends Module {
           io.link.lock := Bool(false)
         }
       } .otherwise {
-        io.data.valid := io.addr.valid
-        io.addr.ready := io.data.ready
-        io.data.bits := UInt(0)
+        io.addr.ready := Bool(true)
         io.link.lock := Bool(false)
+        when (io.addr.valid) {
+          state := s_off
+        }
       }
     }
 
@@ -155,6 +156,14 @@ class SPIFlashMap(c: SPIFlashParamsBase) extends Module {
       io.link.tx.valid := Bool(false)
       io.data.valid := io.link.rx.valid
       when (io.data.fire()) {
+        state := s_idle
+      }
+    }
+
+    is (s_off) {
+      io.data.valid := Bool(true)
+      io.data.bits := UInt(0)
+      when (io.data.ready) {
         state := s_idle
       }
     }
