@@ -12,10 +12,10 @@ import sifive.blocks.util.ShiftRegisterInit
 case object PeripheryUARTKey extends Field[Seq[UARTParams]]
 
 trait HasPeripheryUART extends HasPeripheryBus with HasInterruptBus {
-  val uartParams = p(PeripheryUARTKey)
-  val divinit = (p(PeripheryBusParams).frequency / 115200).toInt
+  private val divinit = (p(PeripheryBusParams).frequency / 115200).toInt
+  val uartParams = p(PeripheryUARTKey).map(_.copy(divisorInit = divinit))
   val uarts = uartParams map { params =>
-    val uart = LazyModule(new TLUART(pbus.beatBytes, params.copy(divisorInit = divinit)))
+    val uart = LazyModule(new TLUART(pbus.beatBytes, params))
     uart.node := pbus.toVariableWidthSlaves
     ibus.fromSync := uart.intnode
     uart

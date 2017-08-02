@@ -44,7 +44,7 @@ case class PWMParams(
   cmpWidth: Int = 16)
 
 trait HasPWMBundleContents extends Bundle {
-  val params: PWMParams
+  def params: PWMParams
   val gpio = Vec(params.ncmp, Bool()).asOutput
 }
 
