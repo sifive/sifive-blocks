@@ -42,7 +42,12 @@ trait HasPeripheryMockAONModuleImp extends LazyMultiIOModuleImp with HasPeripher
   outer.aon.module.clock := Bool(false).asClock
   outer.aon.module.reset := Bool(true)
 
-  outer.clint.module.io.rtcTick := outer.aon.module.io.rtc.asUInt.toBool
+  // Synchronize the external toggle into the clint
+  val rtc_sync = ShiftRegister(outer.aon.module.io.rtc.asUInt.toBool, 3)
+  val rtc_last = Reg(init = Bool(false), next=rtc_sync)
+  val rtc_tick = Reg(init = Bool(false), next=(rtc_sync & (~rtc_last)))
+
+  outer.clint.module.io.rtcTick := rtc_tick
 
   outer.aon.module.io.ndreset := outer.debug.module.io.ctrl.ndreset
 }
