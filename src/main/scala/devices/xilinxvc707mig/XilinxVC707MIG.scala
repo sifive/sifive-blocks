@@ -10,20 +10,30 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
 import sifive.blocks.ip.xilinx.vc707mig.{VC707MIGIOClocksReset, VC707MIGIODDR, vc707mig}
 
-trait HasXilinxVC707MIGParameters {
+case class XilinxVC707MIGParams(
+  address : Seq[AddressSet]
+)
+
+class XilinxVC707MIGPads(depth : BigInt) extends VC707MIGIODDR(depth) {
+  def this(c : XilinxVC707MIGParams) {
+    this(AddressRange.fromSets(c.address).head.size)
+  }
 }
 
-class XilinxVC707MIGPads extends Bundle with VC707MIGIODDR
+class XilinxVC707MIGIO(depth : BigInt) extends VC707MIGIODDR(depth) with VC707MIGIOClocksReset
 
-class XilinxVC707MIGIO extends Bundle with VC707MIGIODDR
-                                      with VC707MIGIOClocksReset
-
-class XilinxVC707MIG(implicit p: Parameters) extends LazyModule with HasXilinxVC707MIGParameters {
+class XilinxVC707MIG(c : XilinxVC707MIGParams)(implicit p: Parameters) extends LazyModule {
+  val ranges = AddressRange.fromSets(c.address)
+  require (ranges.size == 1, "DDR range must be contiguous")
+  val offset = ranges.head.base
+  val depth = ranges.head.size
+  require((depth==0x40000000L) || (depth==0x100000000L)) //1GB or 4GB depth
+  
   val device = new MemoryDevice
   val node = TLInputNode()
   val axi4 = AXI4InternalOutputNode(Seq(AXI4SlavePortParameters(
-    slaves = Seq(AXI4SlaveParameters(
-      address = Seq(AddressSet(p(ExtMem).base, p(ExtMem).size-1)),
+      slaves = Seq(AXI4SlaveParameters(
+      address       = c.address,
       resources     = device.reg,
       regionType    = RegionType.UNCACHED,
       executable    = true,
@@ -48,12 +58,12 @@ class XilinxVC707MIG(implicit p: Parameters) extends LazyModule with HasXilinxVC
 
   lazy val module = new LazyModuleImp(this) {
     val io = new Bundle {
-      val port = new XilinxVC707MIGIO
+      val port = new XilinxVC707MIGIO(depth)
       val tl = node.bundleIn
     }
 
     //MIG black box instantiation
-    val blackbox = Module(new vc707mig)
+    val blackbox = Module(new vc707mig(depth))
 
     //pins to top level
 
@@ -102,9 +112,12 @@ class XilinxVC707MIG(implicit p: Parameters) extends LazyModule with HasXilinxVC
     //app_ref_ack             := unconnected
     //app_zq_ack              := unconnected
 
+    val awaddr = axi_async.aw.bits.addr - UInt(offset)
+    val araddr = axi_async.ar.bits.addr - UInt(offset)
+
     //slave AXI interface write address ports
     blackbox.io.s_axi_awid    := axi_async.aw.bits.id
-    blackbox.io.s_axi_awaddr  := axi_async.aw.bits.addr //truncation ??
+    blackbox.io.s_axi_awaddr  := awaddr //truncated
     blackbox.io.s_axi_awlen   := axi_async.aw.bits.len
     blackbox.io.s_axi_awsize  := axi_async.aw.bits.size
     blackbox.io.s_axi_awburst := axi_async.aw.bits.burst
@@ -130,7 +143,7 @@ class XilinxVC707MIG(implicit p: Parameters) extends LazyModule with HasXilinxVC
 
     //slave AXI interface read address ports
     blackbox.io.s_axi_arid    := axi_async.ar.bits.id
-    blackbox.io.s_axi_araddr  := axi_async.ar.bits.addr //truncation ??
+    blackbox.io.s_axi_araddr  := araddr // truncated
     blackbox.io.s_axi_arlen   := axi_async.ar.bits.len
     blackbox.io.s_axi_arsize  := axi_async.ar.bits.size
     blackbox.io.s_axi_arburst := axi_async.ar.bits.burst
