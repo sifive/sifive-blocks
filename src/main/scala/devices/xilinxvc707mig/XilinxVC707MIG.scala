@@ -11,8 +11,7 @@ import freechips.rocketchip.tilelink._
 import sifive.blocks.ip.xilinx.vc707mig.{VC707MIGIOClocksReset, VC707MIGIODDR, vc707mig}
 
 case class XilinxVC707MIGParams(
-  address : Seq[AddressSet],
-  depthGB : Int
+  depthGB : Int 
 )
 
 class XilinxVC707MIGPads(depthGB : Integer) extends VC707MIGIODDR(depthGB)
@@ -20,18 +19,18 @@ class XilinxVC707MIGPads(depthGB : Integer) extends VC707MIGIODDR(depthGB)
 class XilinxVC707MIGIO(depthGB : Integer) extends VC707MIGIODDR(depthGB) with VC707MIGIOClocksReset
 
 class XilinxVC707MIG(c : XilinxVC707MIGParams)(implicit p: Parameters) extends LazyModule {
-  // Supported depth configurations
-  require((c.depthGB==1) || (c.depthGB==4),"XilinxVC707MIG supports 1GB and 4GB depth configuraton only")
+  require((c.depthGB == 1) || (c.depthGB == 4))
+
   // Suppoted address map configuratons
-  if(c.depthGB==1) require(c.address == Seq(AddressSet(0x80000000L ,  0x80000000L-1)))   //2GB   @ 2GB
-  if(c.depthGB==4) require(c.address == Seq(AddressSet(0x80000000L,   0x80000000L-1),    //2GB   @ 2GB
-                                            AddressSet(0x2080000000L, 0x80000000L-1)))   //2GB   @ 130GB
+  val address = if(c.depthGB == 1) Seq(AddressSet(0x80000000L ,  0x80000000L-1))       //2GB   @ 2GB
+                else Seq(AddressSet(0x80000000L,   0x80000000L-1),       //2GB   @ 2GB
+                         AddressSet(0x2080000000L, 0x80000000L-1))       //2GB   @ 130GB
   
   val device = new MemoryDevice
   val node = TLInputNode()
   val axi4 = AXI4InternalOutputNode(Seq(AXI4SlavePortParameters(
       slaves = Seq(AXI4SlaveParameters(
-      address       = c.address,
+      address       = address,
       resources     = device.reg,
       regionType    = RegionType.UNCACHED,
       executable    = true,
