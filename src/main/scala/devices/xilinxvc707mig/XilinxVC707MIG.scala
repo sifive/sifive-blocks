@@ -24,7 +24,7 @@ class XilinxVC707MIG(c : XilinxVC707MIGParams)(implicit p: Parameters) extends L
   val node = TLInputNode()
   val axi4 = AXI4InternalOutputNode(Seq(AXI4SlavePortParameters(
     slaves = Seq(AXI4SlaveParameters(
-      address = Seq(AddressSet(p(ExtMem).base, p(ExtMem).size-1)),
+      address = p(AXI4MemPortKey).address,
       resources     = device.reg,
       regionType    = RegionType.UNCACHED,
       executable    = true,
