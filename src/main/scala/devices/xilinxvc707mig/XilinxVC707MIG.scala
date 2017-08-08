@@ -11,6 +11,7 @@ import freechips.rocketchip.tilelink._
 import sifive.blocks.ip.xilinx.vc707mig.{VC707MIGIOClocksReset, VC707MIGIODDR, vc707mig}
 
 case class XilinxVC707MIGParams(
+  address : Seq[AddressSet],
   depthGB : Int
 )
 
@@ -19,12 +20,18 @@ class XilinxVC707MIGPads(depthGB : Integer) extends VC707MIGIODDR(depthGB)
 class XilinxVC707MIGIO(depthGB : Integer) extends VC707MIGIODDR(depthGB) with VC707MIGIOClocksReset
 
 class XilinxVC707MIG(c : XilinxVC707MIGParams)(implicit p: Parameters) extends LazyModule {
+  // Supported depth configurations
   require((c.depthGB==1) || (c.depthGB==4),"XilinxVC707MIG supports 1GB and 4GB depth configuraton only")
+  // Suppoted address map configuratons
+  if(c.depthGB==1) require(c.address == Seq(AddressSet(0x80000000L ,  0x80000000L-1)))   //2GB   @ 2GB
+  if(c.depthGB==4) require(c.address == Seq(AddressSet(0x80000000L,   0x80000000L-1),    //2GB   @ 2GB
+                                            AddressSet(0x2080000000L, 0x80000000L-1)))   //2GB   @ 130GB
+  
   val device = new MemoryDevice
   val node = TLInputNode()
   val axi4 = AXI4InternalOutputNode(Seq(AXI4SlavePortParameters(
-    slaves = Seq(AXI4SlaveParameters(
-      address = p(AXI4MemPortKey).address,
+      slaves = Seq(AXI4SlaveParameters(
+      address       = c.address,
       resources     = device.reg,
       regionType    = RegionType.UNCACHED,
       executable    = true,
@@ -103,9 +110,21 @@ class XilinxVC707MIG(c : XilinxVC707MIGParams)(implicit p: Parameters) extends L
     //app_ref_ack             := unconnected
     //app_zq_ack              := unconnected
 
+    //if(bits(37)==1) {  (upper address range)
+    // axiaddress = least sig 37 bits of address
+    //else{ (low address range)
+    // axiaddress = address ^ 0x8000000
+    //}
+
+    val awaddr = axi_async.aw.bits.addr;
+    val awbit31 = awaddr(37) & awaddr(31)
+
+    val araddr = axi_async.ar.bits.addr;
+    val arbit31 = araddr(37) & araddr(31)
+
     //slave AXI interface write address ports
     blackbox.io.s_axi_awid    := axi_async.aw.bits.id
-    blackbox.io.s_axi_awaddr  := axi_async.aw.bits.addr //truncation ??
+    blackbox.io.s_axi_awaddr  := awaddr //truncated
     blackbox.io.s_axi_awlen   := axi_async.aw.bits.len
     blackbox.io.s_axi_awsize  := axi_async.aw.bits.size
     blackbox.io.s_axi_awburst := axi_async.aw.bits.burst
@@ -131,7 +150,7 @@ class XilinxVC707MIG(c : XilinxVC707MIGParams)(implicit p: Parameters) extends L
 
     //slave AXI interface read address ports
     blackbox.io.s_axi_arid    := axi_async.ar.bits.id
-    blackbox.io.s_axi_araddr  := axi_async.ar.bits.addr //truncation ??
+    blackbox.io.s_axi_araddr  := araddr // truncated
     blackbox.io.s_axi_arlen   := axi_async.ar.bits.len
     blackbox.io.s_axi_arsize  := axi_async.ar.bits.size
     blackbox.io.s_axi_arburst := axi_async.ar.bits.burst
