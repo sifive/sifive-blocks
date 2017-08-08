@@ -10,15 +10,16 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
 import sifive.blocks.ip.xilinx.vc707mig.{VC707MIGIOClocksReset, VC707MIGIODDR, vc707mig}
 
-trait HasXilinxVC707MIGParameters {
-}
+case class XilinxVC707MIGParams(
+  depthGB : Int
+)
 
-class XilinxVC707MIGPads extends Bundle with VC707MIGIODDR
+class XilinxVC707MIGPads(depthGB : Integer) extends VC707MIGIODDR(depthGB)
 
-class XilinxVC707MIGIO extends Bundle with VC707MIGIODDR
-                                      with VC707MIGIOClocksReset
+class XilinxVC707MIGIO(depthGB : Integer) extends VC707MIGIODDR(depthGB) with VC707MIGIOClocksReset
 
-class XilinxVC707MIG(implicit p: Parameters) extends LazyModule with HasXilinxVC707MIGParameters {
+class XilinxVC707MIG(c : XilinxVC707MIGParams)(implicit p: Parameters) extends LazyModule {
+  require((c.depthGB==1) || (c.depthGB==4),"XilinxVC707MIG supports 1GB and 4GB depth configuraton only")
   val device = new MemoryDevice
   val node = TLInputNode()
   val axi4 = AXI4InternalOutputNode(Seq(AXI4SlavePortParameters(
@@ -48,12 +49,12 @@ class XilinxVC707MIG(implicit p: Parameters) extends LazyModule with HasXilinxVC
 
   lazy val module = new LazyModuleImp(this) {
     val io = new Bundle {
-      val port = new XilinxVC707MIGIO
+      val port = new XilinxVC707MIGIO(c.depthGB)
       val tl = node.bundleIn
     }
 
     //MIG black box instantiation
-    val blackbox = Module(new vc707mig)
+    val blackbox = Module(new vc707mig(c.depthGB))
 
     //pins to top level
 

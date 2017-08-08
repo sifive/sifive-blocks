@@ -3,13 +3,15 @@ package sifive.blocks.ip.xilinx.vc707mig
 
 import Chisel._
 import chisel3.experimental.{Analog,attach}
+import freechips.rocketchip.util.GenericParameterizedBundle
 import freechips.rocketchip.config._
 
 // IP VLNV: xilinx.com:customize_ip:vc707mig:1.0
 // Black Box
 
-trait VC707MIGIODDR extends Bundle {
-  val ddr3_addr             = Bits(OUTPUT,14)
+class VC707MIGIODDR(depthGB : Integer) extends GenericParameterizedBundle(depthGB) {
+  require((depthGB==1) || (depthGB==4),"VC707MIGIODDR supports 1GB and 4GB depth configuraton only")
+  val ddr3_addr             = Bits(OUTPUT,if(depthGB==1) 14 else 16)
   val ddr3_ba               = Bits(OUTPUT,3)
   val ddr3_ras_n            = Bool(OUTPUT)
   val ddr3_cas_n            = Bool(OUTPUT)
@@ -44,10 +46,13 @@ trait VC707MIGIOClocksReset extends Bundle {
 
 //scalastyle:off
 //turn off linter: blackbox name must match verilog module 
-class vc707mig(implicit val p:Parameters) extends BlackBox
+class vc707mig(depthGB : Integer)(implicit val p:Parameters) extends BlackBox
 {
-  val io = new Bundle with VC707MIGIODDR
-                      with VC707MIGIOClocksReset {
+  require((depthGB==1) || (depthGB==4),"vc707mig supports 1GB and 4GB depth configuraton only")
+
+  override def desiredName = if(depthGB==4) "vc707mig4gb" else "vc707mig"
+
+  val io = new VC707MIGIODDR(depthGB) with VC707MIGIOClocksReset {
     // User interface signals
     val app_sr_req            = Bool(INPUT)
     val app_ref_req           = Bool(INPUT)
@@ -58,7 +63,7 @@ class vc707mig(implicit val p:Parameters) extends BlackBox
     //axi_s
     //slave interface write address ports
     val s_axi_awid            = Bits(INPUT,4)
-    val s_axi_awaddr          = Bits(INPUT,30)
+    val s_axi_awaddr          = Bits(INPUT,if(depthGB==1) 30 else 32)
     val s_axi_awlen           = Bits(INPUT,8)
     val s_axi_awsize          = Bits(INPUT,3)
     val s_axi_awburst         = Bits(INPUT,2)
@@ -81,7 +86,7 @@ class vc707mig(implicit val p:Parameters) extends BlackBox
     val s_axi_bvalid          = Bool(OUTPUT)
     //slave interface read address ports
     val s_axi_arid            = Bits(INPUT,4)
-    val s_axi_araddr          = Bits(INPUT,30)
+    val s_axi_araddr          = Bits(INPUT,if(depthGB==1) 30 else 32)
     val s_axi_arlen           = Bits(INPUT,8)
     val s_axi_arsize          = Bits(INPUT,3)
     val s_axi_arburst         = Bits(INPUT,2)

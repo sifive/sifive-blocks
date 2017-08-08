@@ -2,13 +2,16 @@
 package sifive.blocks.devices.xilinxvc707mig
 
 import Chisel._
+import freechips.rocketchip.config._
 import freechips.rocketchip.coreplex.HasMemoryBus
 import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp}
+
+case object MemoryXilinxDDRKey extends Field[XilinxVC707MIGParams]
 
 trait HasMemoryXilinxVC707MIG extends HasMemoryBus {
   val module: HasMemoryXilinxVC707MIGModuleImp
 
-  val xilinxvc707mig = LazyModule(new XilinxVC707MIG)
+  val xilinxvc707mig = LazyModule(new XilinxVC707MIG(p(MemoryXilinxDDRKey)))
 
   require(nMemoryChannels == 1, "Coreplex must have 1 master memory port")
   xilinxvc707mig.node := memBuses.head.toDRAMController
@@ -24,7 +27,7 @@ trait HasMemoryXilinxVC707MIGBundle {
 trait HasMemoryXilinxVC707MIGModuleImp extends LazyMultiIOModuleImp
     with HasMemoryXilinxVC707MIGBundle {
   val outer: HasMemoryXilinxVC707MIG
-  val xilinxvc707mig = IO(new XilinxVC707MIGIO)
+  val xilinxvc707mig = IO(new XilinxVC707MIGIO(p(MemoryXilinxDDRKey).depthGB))
 
   xilinxvc707mig <> outer.xilinxvc707mig.module.io.port
 }
