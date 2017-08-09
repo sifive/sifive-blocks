@@ -22,7 +22,7 @@ class XilinxVC707MIG(c : XilinxVC707MIGParams)(implicit p: Parameters) extends L
   require((c.depthGB == 1) || (c.depthGB == 4))
 
   // Suppoted address map configuratons
-  val address = if(c.depthGB == 1) Seq(AddressSet(0x80000000L ,  0x80000000L-1))       //2GB   @ 2GB
+  val address = if(c.depthGB == 1) Seq(AddressSet(0x80000000L ,  0x40000000L-1))       //1GB   @ 2GB
                 else Seq(AddressSet(0x80000000L,   0x80000000L-1),       //2GB   @ 2GB
                          AddressSet(0x2080000000L, 0x80000000L-1))       //2GB   @ 130GB
   
