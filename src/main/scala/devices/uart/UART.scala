@@ -69,10 +69,14 @@ class UARTTx(c: UARTParams)(implicit p: Parameters) extends UARTModule(c)(p) {
   val out = Reg(init = Bits(1, 1))
   io.out := out
 
+  val plusarg_tx = PlusArg("uart_tx", 1, "Enable/disable the TX to speed up simulation").orR
+
   val busy = (counter =/= UInt(0))
   io.in.ready := io.en && !busy
   when (io.in.fire()) {
-    printf("%c", io.in.bits)
+    printf("UART TX (%x): %c\n", io.in.bits, io.in.bits)
+  }
+  when (io.in.fire() && plusarg_tx) {
     shifter := Cat(io.in.bits, Bits(0, 1))
     counter := Mux1H((0 until uartStopBits).map(i =>
       (io.nstop === UInt(i)) -> UInt(n + i + 1)))
