@@ -69,10 +69,12 @@ class UARTTx(c: UARTParams)(implicit p: Parameters) extends UARTModule(c)(p) {
   val out = Reg(init = Bits(1, 1))
   io.out := out
 
+  // Report the UART registers so we can backdoor functionality in simulation
+  ElaborationArtefacts.add(f"uart-${c.address}%x.json", s"""{"counter":["${counter.pathName}"],"shifter":["${shifter.pathName}"]}\n""")
+
   val busy = (counter =/= UInt(0))
   io.in.ready := io.en && !busy
   when (io.in.fire()) {
-    printf("%c", io.in.bits)
     shifter := Cat(io.in.bits, Bits(0, 1))
     counter := Mux1H((0 until uartStopBits).map(i =>
       (io.nstop === UInt(i)) -> UInt(n + i + 1)))
