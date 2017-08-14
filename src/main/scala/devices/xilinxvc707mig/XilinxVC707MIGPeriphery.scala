@@ -4,7 +4,7 @@ package sifive.blocks.devices.xilinxvc707mig
 import Chisel._
 import freechips.rocketchip.config._
 import freechips.rocketchip.coreplex.HasMemoryBus
-import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp}
+import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp, AddressRange}
 
 case object MemoryXilinxDDRKey extends Field[XilinxVC707MIGParams]
 
@@ -27,7 +27,10 @@ trait HasMemoryXilinxVC707MIGBundle {
 trait HasMemoryXilinxVC707MIGModuleImp extends LazyMultiIOModuleImp
     with HasMemoryXilinxVC707MIGBundle {
   val outer: HasMemoryXilinxVC707MIG
-  val xilinxvc707mig = IO(new XilinxVC707MIGIO(p(MemoryXilinxDDRKey).depthGB))
+  val ranges = AddressRange.fromSets(p(MemoryXilinxDDRKey).address)
+  require (ranges.size == 1, "DDR range must be contiguous")
+  val depth = ranges.head.size
+  val xilinxvc707mig = IO(new XilinxVC707MIGIO(depth))
 
   xilinxvc707mig <> outer.xilinxvc707mig.module.io.port
 }

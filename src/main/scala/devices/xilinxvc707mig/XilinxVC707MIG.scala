@@ -11,26 +11,29 @@ import freechips.rocketchip.tilelink._
 import sifive.blocks.ip.xilinx.vc707mig.{VC707MIGIOClocksReset, VC707MIGIODDR, vc707mig}
 
 case class XilinxVC707MIGParams(
-  depthGB : Int 
+  address : Seq[AddressSet]
 )
 
-class XilinxVC707MIGPads(depthGB : Integer) extends VC707MIGIODDR(depthGB)
+class XilinxVC707MIGPads(depth : BigInt) extends VC707MIGIODDR(depth) {
+  def this(c : XilinxVC707MIGParams) {
+    this(AddressRange.fromSets(c.address).head.size)
+  }
+}
 
-class XilinxVC707MIGIO(depthGB : Integer) extends VC707MIGIODDR(depthGB) with VC707MIGIOClocksReset
+class XilinxVC707MIGIO(depth : BigInt) extends VC707MIGIODDR(depth) with VC707MIGIOClocksReset
 
 class XilinxVC707MIG(c : XilinxVC707MIGParams)(implicit p: Parameters) extends LazyModule {
-  require((c.depthGB == 1) || (c.depthGB == 4))
-
-  // Suppoted address map configuratons
-  val address = if(c.depthGB == 1) Seq(AddressSet(0x80000000L ,  0x40000000L-1))       //1GB   @ 2GB
-                else Seq(AddressSet(0x80000000L,   0x80000000L-1),       //2GB   @ 2GB
-                         AddressSet(0x2080000000L, 0x80000000L-1))       //2GB   @ 130GB
+  val ranges = AddressRange.fromSets(c.address)
+  require (ranges.size == 1, "DDR range must be contiguous")
+  val offset = ranges.head.base
+  val depth = ranges.head.size
+  require((depth==0x40000000L) || (depth==0x100000000L)) //1GB or 4GB depth
   
   val device = new MemoryDevice
   val node = TLInputNode()
   val axi4 = AXI4InternalOutputNode(Seq(AXI4SlavePortParameters(
       slaves = Seq(AXI4SlaveParameters(
-      address       = address,
+      address       = c.address,
       resources     = device.reg,
       regionType    = RegionType.UNCACHED,
       executable    = true,
@@ -55,12 +58,12 @@ class XilinxVC707MIG(c : XilinxVC707MIGParams)(implicit p: Parameters) extends L
 
   lazy val module = new LazyModuleImp(this) {
     val io = new Bundle {
-      val port = new XilinxVC707MIGIO(c.depthGB)
+      val port = new XilinxVC707MIGIO(depth)
       val tl = node.bundleIn
     }
 
     //MIG black box instantiation
-    val blackbox = Module(new vc707mig(c.depthGB))
+    val blackbox = Module(new vc707mig(depth))
 
     //pins to top level
 
@@ -109,17 +112,8 @@ class XilinxVC707MIG(c : XilinxVC707MIGParams)(implicit p: Parameters) extends L
     //app_ref_ack             := unconnected
     //app_zq_ack              := unconnected
 
-    //if(bits(37)==1) {  (upper address range)
-    // axiaddress = least sig 37 bits of address
-    //else{ (low address range)
-    // axiaddress = address ^ 0x8000000
-    //}
-
-    val awaddr = axi_async.aw.bits.addr;
-    val awbit31 = awaddr(37) & awaddr(31)
-
-    val araddr = axi_async.ar.bits.addr;
-    val arbit31 = araddr(37) & araddr(31)
+    val awaddr = axi_async.aw.bits.addr - UInt(offset)
+    val araddr = axi_async.ar.bits.addr - UInt(offset)
 
     //slave AXI interface write address ports
     blackbox.io.s_axi_awid    := axi_async.aw.bits.id
