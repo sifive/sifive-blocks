@@ -27,7 +27,7 @@ class XilinxVC707MIG(c : XilinxVC707MIGParams)(implicit p: Parameters) extends L
   require (ranges.size == 1, "DDR range must be contiguous")
   val offset = ranges.head.base
   val depth = ranges.head.size
-  require((depth==0x40000000L) || (depth==0x100000000L)) //1GB or 4GB depth
+  require((depth<=0x100000000L),"vc707mig supports upto 4GB depth configuraton")
   
   val device = new MemoryDevice
   val node = TLInputNode()

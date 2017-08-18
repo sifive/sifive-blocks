@@ -10,8 +10,8 @@ import freechips.rocketchip.config._
 // Black Box
 
 class VC707MIGIODDR(depth : BigInt) extends GenericParameterizedBundle(depth) {
-  require((depth==0x40000000L) || (depth==0x100000000L),"VC707MIGIODDR supports 1GB and 4GB depth configuraton only")
-  val ddr3_addr             = Bits(OUTPUT,if(depth==0x40000000L) 14 else 16)
+  require((depth<=0x100000000L),"VC707MIGIODDR supports upto 4GB depth configuraton")
+  val ddr3_addr             = Bits(OUTPUT,if(depth<=0x40000000L) 14 else 16)
   val ddr3_ba               = Bits(OUTPUT,3)
   val ddr3_ras_n            = Bool(OUTPUT)
   val ddr3_cas_n            = Bool(OUTPUT)
@@ -48,11 +48,9 @@ trait VC707MIGIOClocksReset extends Bundle {
 //turn off linter: blackbox name must match verilog module 
 class vc707mig(depth : BigInt)(implicit val p:Parameters) extends BlackBox
 {
-  private val oneGB  : BigInt = 0x40000000L
-  private val fourGB : BigInt = 0x100000000L
-  require((depth==oneGB) || (depth==fourGB),"vc707mig supports 1GB and 4GB depth configuraton only")
+  require((depth<=0x100000000L),"vc707mig supports upto 4GB depth configuraton")
 
-  override def desiredName = if(depth==fourGB) "vc707mig4gb" else "vc707mig"
+  override def desiredName = if(depth<=0x40000000) "vc707mig" else "vc707mig4gb"
 
   val io = new VC707MIGIODDR(depth) with VC707MIGIOClocksReset {
     // User interface signals
@@ -65,7 +63,7 @@ class vc707mig(depth : BigInt)(implicit val p:Parameters) extends BlackBox
     //axi_s
     //slave interface write address ports
     val s_axi_awid            = Bits(INPUT,4)
-    val s_axi_awaddr          = Bits(INPUT,if(depth==oneGB) 30 else 32)
+    val s_axi_awaddr          = Bits(INPUT,if(depth<=0x40000000) 30 else 32)
     val s_axi_awlen           = Bits(INPUT,8)
     val s_axi_awsize          = Bits(INPUT,3)
     val s_axi_awburst         = Bits(INPUT,2)
@@ -88,7 +86,7 @@ class vc707mig(depth : BigInt)(implicit val p:Parameters) extends BlackBox
     val s_axi_bvalid          = Bool(OUTPUT)
     //slave interface read address ports
     val s_axi_arid            = Bits(INPUT,4)
-    val s_axi_araddr          = Bits(INPUT,if(depth==oneGB) 30 else 32)
+    val s_axi_araddr          = Bits(INPUT,if(depth<=0x40000000) 30 else 32)
     val s_axi_arlen           = Bits(INPUT,8)
     val s_axi_arsize          = Bits(INPUT,3)
     val s_axi_arburst         = Bits(INPUT,2)
