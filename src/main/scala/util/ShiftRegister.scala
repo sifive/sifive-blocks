@@ -10,6 +10,9 @@ object ShiftRegisterInit {
     }
 }
 
+
+// Similar to the Chisel ShiftRegister but allows the user to suggest a
+// name to the registers within the module that get instantiated
 object ShiftRegister
 {
   /** Returns the n-cycle delayed version of the input signal.
