@@ -9,3 +9,43 @@ object ShiftRegisterInit {
       case (next, _) => Reg(next, next = next, init = init)
     }
 }
+
+object ShiftRegister
+{
+  /** Returns the n-cycle delayed version of the input signal.
+    *
+    * @param in input to delay
+    * @param n number of cycles to delay
+    * @param en enable the shift
+    * @param name set the elaborated name of the registers.
+    */
+  def apply[T <: Chisel.Data](in: T, n: Int, en: Chisel.Bool = Chisel.Bool(true), name: Option[String] = None): T = {
+    // The order of tests reflects the expected use cases.
+    if (n != 0) {
+      val r = Chisel.RegEnable(apply(in, n-1, en, name), en)
+      if (name.isDefined) r.suggestName(s"${name.get}_sync_${n-1}")
+      r
+    } else {
+      in
+    }
+  }
+
+  /** Returns the n-cycle delayed version of the input signal with reset initialization.
+    *
+    * @param in input to delay
+    * @param n number of cycles to delay
+    * @param resetData reset value for each register in the shift
+    * @param en enable the shift
+    * @param name set the elaborated name of the registers.
+    */
+  def apply[T <: Chisel.Data](in: T, n: Int, resetData: T, en: Chisel.Bool, name: Option[String]): T = {
+    // The order of tests reflects the expected use cases.
+    if (n != 0) {
+      val r = Chisel.RegEnable(apply(in, n-1, resetData, en, name), resetData, en)
+      if (name.isDefined) r.suggestName(s"${name.get}_sync_${n-1}")
+      r
+    } else {
+      in
+    }
+  }
+}
