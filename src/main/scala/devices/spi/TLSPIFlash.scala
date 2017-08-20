@@ -11,6 +11,7 @@ import freechips.rocketchip.util.HeterogeneousBag
 trait SPIFlashParamsBase extends SPIParamsBase {
   val fAddress: BigInt
   val fSize: BigInt
+  val fBufferDepth: Int
 
   val insnAddrBytes: Int
   val insnPadLenBits: Int
@@ -22,6 +23,7 @@ trait SPIFlashParamsBase extends SPIParamsBase {
 case class SPIFlashParams(
     rAddress: BigInt,
     fAddress: BigInt,
+    fBufferDepth: Int = 0,
     rSize: BigInt = 0x1000,
     fSize: BigInt = 0x20000000,
     rxDepth: Int = 8,

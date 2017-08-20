@@ -43,7 +43,7 @@ trait HasPeripherySPIFlash extends HasPeripheryBus with HasInterruptBus {
     qspi.rnode := pbus.toVariableWidthSlaves
     qspi.fnode :=
       TLFragmenter(1, pbus.blockBytes)(
-      TLBuffer(BufferParams(8), BufferParams.none)(
+      TLBuffer(BufferParams(params.fBufferDepth), BufferParams.none)(
       pbus.toFixedWidthSlaves))
     ibus.fromSync := qspi.intnode
     qspi
