@@ -4,8 +4,8 @@ package sifive.blocks.devices.spi
 import Chisel._
 import freechips.rocketchip.config.Field
 import freechips.rocketchip.coreplex.{HasPeripheryBus, HasInterruptBus}
-import freechips.rocketchip.diplomacy.{LazyModule,LazyMultiIOModuleImp}
-import freechips.rocketchip.tilelink.{TLFragmenter}
+import freechips.rocketchip.diplomacy.{LazyModule,LazyMultiIOModuleImp,BufferParams}
+import freechips.rocketchip.tilelink.{TLFragmenter,TLBuffer}
 import freechips.rocketchip.util.HeterogeneousBag
 
 case object PeripherySPIKey extends Field[Seq[SPIParams]]
@@ -41,7 +41,10 @@ trait HasPeripherySPIFlash extends HasPeripheryBus with HasInterruptBus {
   val qspis = spiFlashParams map { params =>
     val qspi = LazyModule(new TLSPIFlash(pbus.beatBytes, params))
     qspi.rnode := pbus.toVariableWidthSlaves
-    qspi.fnode := TLFragmenter(1, pbus.blockBytes)(pbus.toFixedWidthSlaves)
+    qspi.fnode :=
+      TLFragmenter(1, pbus.blockBytes)(
+      TLBuffer(BufferParams(params.fBufferDepth), BufferParams.none)(
+      pbus.toFixedWidthSlaves))
     ibus.fromSync := qspi.intnode
     qspi
   }
