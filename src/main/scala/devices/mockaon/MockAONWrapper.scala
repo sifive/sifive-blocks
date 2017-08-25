@@ -7,7 +7,7 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
 import sifive.blocks.devices.pinctrl.{EnhancedPin}
-import sifive.blocks.util.{DeglitchShiftRegister, ResetCatchAndSync}
+import sifive.blocks.util.{DeglitchShiftRegister}
 
 /* The wrapper handles the Clock and Reset Generation for The AON block itself,
  and instantiates real pad controls (aka pull-ups)*/
