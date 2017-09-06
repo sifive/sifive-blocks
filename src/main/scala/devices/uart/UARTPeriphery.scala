@@ -4,10 +4,10 @@ package sifive.blocks.devices.uart
 import Chisel._
 import chisel3.experimental.{withClockAndReset}
 import freechips.rocketchip.config.Field
+import freechips.rocketchip.util.ShiftRegInit
 import freechips.rocketchip.coreplex.{HasPeripheryBus, PeripheryBusParams, HasInterruptBus}
 import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp}
 import sifive.blocks.devices.pinctrl.{Pin}
-import sifive.blocks.util.ShiftRegisterInit
 
 case object PeripheryUARTKey extends Field[Seq[UARTParams]]
 
@@ -51,7 +51,7 @@ class UARTPins[T <: Pin] (pingen: () => T) extends Bundle {
     withClockAndReset(clock, reset) {
       txd.outputPin(uart.txd)
       val rxd_t = rxd.inputPin()
-      uart.rxd := ShiftRegisterInit(rxd_t, syncStages, Bool(true))
+      uart.rxd := ShiftRegInit(rxd_t, n = syncStages, init = Bool(true))
     }
   }
 }

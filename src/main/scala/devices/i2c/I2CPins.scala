@@ -3,9 +3,8 @@ package sifive.blocks.devices.i2c
 
 import Chisel._
 import chisel3.experimental.{withClockAndReset}
+import freechips.rocketchip.util.ShiftRegInit
 import sifive.blocks.devices.pinctrl.{Pin, PinCtrl}
-import sifive.blocks.util.ShiftRegisterInit
-
 
 class I2CPins[T <: Pin](pingen: () => T) extends Bundle {
 
@@ -19,11 +18,11 @@ class I2CPins[T <: Pin](pingen: () => T) extends Bundle {
     withClockAndReset(clock, reset) {
       scl.outputPin(i2c.scl.out, pue=true.B, ie = true.B)
       scl.o.oe := i2c.scl.oe
-      i2c.scl.in := ShiftRegisterInit(scl.i.ival, syncStages, Bool(true))
+      i2c.scl.in := ShiftRegInit(scl.i.ival, syncStages, init = Bool(true))
 
       sda.outputPin(i2c.sda.out, pue=true.B, ie = true.B)
       sda.o.oe := i2c.sda.oe
-      i2c.sda.in := ShiftRegisterInit(sda.i.ival, syncStages, Bool(true))
+      i2c.sda.in := ShiftRegInit(sda.i.ival, syncStages, init = Bool(true))
     }
   }
 }

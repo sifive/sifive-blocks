@@ -2,7 +2,7 @@
 package sifive.blocks.devices.spi
 
 import Chisel._
-import sifive.blocks.util.ShiftRegisterInit
+import freechipchips.rocketchip.util.ShiftRegInit
 
 class SPIMicroOp(c: SPIParamsBase) extends SPIBundle(c) {
   val fn = Bits(width = 1)
@@ -39,8 +39,8 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
   val last = Wire(init = Bool(false))
   // Delayed versions
   val setup_d = Reg(next = setup)
-  val sample_d = ShiftRegisterInit(sample, c.sampleDelay, Bool(false))
-  val last_d = ShiftRegisterInit(last, c.sampleDelay, Bool(false))
+  val sample_d = ShiftRegInit(sample, c.sampleDelay, init = Bool(false))
+  val last_d = ShiftRegInit(last, c.sampleDelay, init = Bool(false))
 
   val scnt = Reg(init = UInt(0, c.countBits))
   val tcnt = Reg(io.ctrl.sck.div)
