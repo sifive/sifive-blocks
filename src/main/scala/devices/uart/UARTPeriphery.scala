@@ -51,7 +51,7 @@ class UARTPins[T <: Pin] (pingen: () => T) extends Bundle {
     withClockAndReset(clock, reset) {
       txd.outputPin(uart.txd)
       val rxd_t = rxd.inputPin()
-      uart.rxd := SynchronizerShiftRegInit(rxd_t, n = syncStages, init = Bool(true))
+      uart.rxd := SynchronizerShiftRegInit(rxd_t, n = syncStages, init = Bool(true), name = Some("uart_rxd_sync"))
     }
   }
 }
