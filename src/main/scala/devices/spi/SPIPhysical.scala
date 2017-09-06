@@ -2,7 +2,7 @@
 package sifive.blocks.devices.spi
 
 import Chisel._
-import freechipchips.rocketchip.util.ShiftRegInit
+import freechips.rocketchip.util.ShiftRegInit
 
 class SPIMicroOp(c: SPIParamsBase) extends SPIBundle(c) {
   val fn = Bits(width = 1)
