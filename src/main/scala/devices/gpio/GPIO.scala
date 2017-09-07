@@ -4,6 +4,7 @@ package sifive.blocks.devices.gpio
 import Chisel._
 import sifive.blocks.devices.pinctrl.{PinCtrl, Pin, BasePin, EnhancedPin, EnhancedPinCtrl}
 import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.util.SynchronizerShiftReg
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util.{AsyncResetRegVec, GenericParameterizedBundle}
@@ -106,7 +107,7 @@ trait HasGPIOModuleContents extends Module with HasRegMap {
   // Synchronize Input to get valueReg
   val inVal = Wire(UInt(0, width=c.width))
   inVal := Vec(io.port.pins.map(_.i.ival)).asUInt
-  val inSyncReg  = ShiftRegister(inVal, 3)
+  val inSyncReg  = SynchronizerShiftReg(inVal, 3, Some("inSyncReg"))
   val valueReg   = Reg(init = UInt(0, c.width), next = inSyncReg)
 
   // Interrupt Configuration

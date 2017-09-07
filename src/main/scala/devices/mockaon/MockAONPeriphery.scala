@@ -3,6 +3,7 @@ package sifive.blocks.devices.mockaon
 
 import Chisel._
 import freechips.rocketchip.config.Field
+import freechips.rocketchip.util.SynchronizerShiftReg
 import freechips.rocketchip.coreplex.{HasPeripheryBus, HasInterruptBus}
 import freechips.rocketchip.devices.debug.HasPeripheryDebug
 import freechips.rocketchip.devices.tilelink.HasPeripheryClint
@@ -43,7 +44,7 @@ trait HasPeripheryMockAONModuleImp extends LazyMultiIOModuleImp with HasPeripher
   outer.aon.module.reset := Bool(true)
 
   // Synchronize the external toggle into the clint
-  val rtc_sync = ShiftRegister(outer.aon.module.io.rtc.asUInt.toBool, 3)
+  val rtc_sync = SynchronizerShiftReg(outer.aon.module.io.rtc.asUInt.toBool, 3, Some("rtc"))
   val rtc_last = Reg(init = Bool(false), next=rtc_sync)
   val rtc_tick = Reg(init = Bool(false), next=(rtc_sync & (~rtc_last)))
 
