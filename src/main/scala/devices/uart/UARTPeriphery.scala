@@ -5,14 +5,14 @@ import Chisel._
 import chisel3.experimental.{withClockAndReset}
 import freechips.rocketchip.config.Field
 import freechips.rocketchip.util.SyncResetSynchronizerShiftReg
-import freechips.rocketchip.coreplex.{HasPeripheryBus, PeripheryBusParams, HasInterruptBus}
+import freechips.rocketchip.coreplex.{HasPeripheryBus, PeripheryBusKey, HasInterruptBus}
 import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp}
 import sifive.blocks.devices.pinctrl.{Pin}
 
 case object PeripheryUARTKey extends Field[Seq[UARTParams]]
 
 trait HasPeripheryUART extends HasPeripheryBus with HasInterruptBus {
-  private val divinit = (p(PeripheryBusParams).frequency / 115200).toInt
+  private val divinit = (p(PeripheryBusKey).frequency / 115200).toInt
   val uartParams = p(PeripheryUARTKey).map(_.copy(divisorInit = divinit))
   val uarts = uartParams map { params =>
     val uart = LazyModule(new TLUART(pbus.beatBytes, params))
