@@ -5,11 +5,18 @@ import Chisel._
 import chisel3.experimental.{withClockAndReset}
 import sifive.blocks.devices.pinctrl.{PinCtrl, Pin}
 
-class SPIPins[T <: Pin] (pingen: ()=> T, c: SPIParamsBase) extends SPIBundle(c) {
+class SPISignals[T <: Data] (pingen: ()=> T, c: SPIParamsBase) extends SPIBundle(c) {
 
   val sck = pingen()
   val dq  = Vec(4, pingen())
   val cs  = Vec(c.csWidth, pingen())
+
+  override def cloneType: this.type =
+    this.getClass.getConstructors.head.newInstance(pingen, c).asInstanceOf[this.type]
+
+}
+
+class SPIPins[T <: Pin] (pingen: ()=> T, c: SPIParamsBase) extends SPISignals(pingen, c) {
 
   override def cloneType: this.type =
     this.getClass.getConstructors.head.newInstance(pingen, c).asInstanceOf[this.type]
