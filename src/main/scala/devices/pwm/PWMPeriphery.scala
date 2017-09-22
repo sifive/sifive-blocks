@@ -13,26 +13,6 @@ class PWMPortIO(val c: PWMParams) extends Bundle {
   override def cloneType: this.type = new PWMPortIO(c).asInstanceOf[this.type]
 }
 
-class PWMSignals[T <: Data] (pingen: ()=> T, val c: PWMParams) extends Bundle {
-
-  val pwm: Vec[T] = Vec(c.ncmp, pingen())
-
-  override def cloneType: this.type =
-    this.getClass.getConstructors.head.newInstance(pingen, c).asInstanceOf[this.type]
-}
-
-
-class PWMPins[T <: Pin] (pingen: ()=> T, val c: PWMParams) extends PWMSignals[T](pingen, c) {
-
-  override def cloneType: this.type =
-    this.getClass.getConstructors.head.newInstance(pingen, c).asInstanceOf[this.type]
-
-  def fromPort(port: PWMPortIO) {
-    (pwm zip port.port)  foreach {case (pin, port) =>
-      pin.outputPin(port)
-    }
-  }
-}
 
 case object PeripheryPWMKey extends Field[Seq[PWMParams]]
 
