@@ -30,8 +30,6 @@ class MockAONWrapperBundle extends Bundle {
 
 class MockAONWrapper(w: Int, c: MockAONParams)(implicit p: Parameters) extends LazyModule {
 
-  val node = TLAsyncInputNode()
-  val intnode = IntOutputNode()
   val aon = LazyModule(new TLMockAON(w, c))
 
   // We only need to isolate the signals
@@ -45,20 +43,18 @@ class MockAONWrapper(w: Int, c: MockAONParams)(implicit p: Parameters) extends L
   val isolation = LazyModule(new TLIsolation(fOut = isoOut, fIn = isoIn))
   val crossing = LazyModule(new TLAsyncCrossingSink(depth = 1))
 
-  isolation.node := node
+  val node: TLAsyncInwardNode = isolation.node
   crossing.node := isolation.node
-  val crossing_monitor = (aon.node := crossing.node)
+  aon.node := crossing.node
 
   // crossing lives outside in Periphery
-  intnode := aon.intnode
+  val intnode: IntOutwardNode = aon.intnode
 
   lazy val module = new LazyModuleImp(this) {
-    val io = new MockAONWrapperBundle {
-      val in = node.bundleIn
-      val ip = intnode.bundleOut
+    val io = IO(new MockAONWrapperBundle {
       val rtc  = Clock(OUTPUT)
       val ndreset = Bool(INPUT)
-    }
+    })
 
     val aon_io = aon.module.io
     val pins = io.pins
@@ -121,11 +117,6 @@ class MockAONWrapper(w: Int, c: MockAONParams)(implicit p: Parameters) extends L
 
     crossing.module.clock := lfclk
     crossing.module.reset := crossing_slave_reset
-
-    crossing_monitor.foreach { lm =>
-      lm.module.clock := lfclk
-      lm.module.reset := crossing_slave_reset
-    }
 
     // Note that aon.moff.corerst is synchronous
     // to aon.module.clock, so this is safe.

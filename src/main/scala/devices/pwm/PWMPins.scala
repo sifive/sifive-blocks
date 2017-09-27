@@ -4,7 +4,7 @@ package sifive.blocks.devices.pwm
 import Chisel._
 import freechips.rocketchip.config.Field
 import freechips.rocketchip.coreplex.{HasPeripheryBus, HasInterruptBus}
-import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp}
+import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
 import freechips.rocketchip.util.HeterogeneousBag
 import sifive.blocks.devices.pinctrl.{Pin}
 

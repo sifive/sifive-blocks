@@ -6,7 +6,7 @@ import chisel3.experimental.{withClockAndReset}
 import freechips.rocketchip.config.Field
 import freechips.rocketchip.util.SyncResetSynchronizerShiftReg
 import freechips.rocketchip.coreplex.{HasPeripheryBus, PeripheryBusKey, HasInterruptBus}
-import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp}
+import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
 import sifive.blocks.devices.pinctrl.{Pin}
 
 class UARTSignals[T <: Data] (pingen: () => T) extends Bundle {

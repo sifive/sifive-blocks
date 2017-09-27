@@ -4,7 +4,7 @@ package sifive.blocks.devices.gpio
 import Chisel._
 import freechips.rocketchip.config.Field
 import freechips.rocketchip.coreplex.{HasPeripheryBus, HasInterruptBus}
-import freechips.rocketchip.diplomacy.{LazyModule,LazyMultiIOModuleImp}
+import freechips.rocketchip.diplomacy.{LazyModule,LazyModuleImp}
 import freechips.rocketchip.util.HeterogeneousBag
 
 case object PeripheryGPIOKey extends Field[Seq[GPIOParams]]
@@ -23,7 +23,7 @@ trait HasPeripheryGPIOBundle {
   val gpio: HeterogeneousBag[GPIOPortIO]
 }
 
-trait HasPeripheryGPIOModuleImp extends LazyMultiIOModuleImp with HasPeripheryGPIOBundle {
+trait HasPeripheryGPIOModuleImp extends LazyModuleImp with HasPeripheryGPIOBundle {
   val outer: HasPeripheryGPIO
   val gpio = IO(HeterogeneousBag(outer.gpioParams.map(new GPIOPortIO(_))))
 

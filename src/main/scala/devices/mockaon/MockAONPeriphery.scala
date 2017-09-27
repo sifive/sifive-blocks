@@ -7,7 +7,7 @@ import freechips.rocketchip.util.SynchronizerShiftReg
 import freechips.rocketchip.coreplex.{HasPeripheryBus, HasInterruptBus}
 import freechips.rocketchip.devices.debug.HasPeripheryDebug
 import freechips.rocketchip.devices.tilelink.HasPeripheryClint
-import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp}
+import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
 import freechips.rocketchip.tilelink.{IntXing, TLAsyncCrossingSource}
 import freechips.rocketchip.util.ResetCatchAndSync
 
@@ -32,7 +32,7 @@ trait HasPeripheryMockAONBundle {
   }
 }
 
-trait HasPeripheryMockAONModuleImp extends LazyMultiIOModuleImp with HasPeripheryMockAONBundle {
+trait HasPeripheryMockAONModuleImp extends LazyModuleImp with HasPeripheryMockAONBundle {
   val outer: HasPeripheryMockAON
   val aon = IO(new MockAONWrapperBundle)
 

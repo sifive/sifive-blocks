@@ -47,15 +47,12 @@ case class SPIParams(
   require(sampleDelay >= 0)
 }
 
-class SPITopBundle(val i: HeterogeneousBag[Vec[Bool]], val r: HeterogeneousBag[TLBundle]) extends Bundle
-
-class SPITopModule[B <: SPITopBundle](c: SPIParamsBase, bundle: => B, outer: TLSPIBase)
+class SPITopModule(c: SPIParamsBase, outer: TLSPIBase)
   extends LazyModuleImp(outer) {
 
-  val io = new Bundle {
+  val io = IO(new Bundle {
     val port = new SPIPortIO(c)
-    val tl = bundle
-  }
+  })
 
   val ctrl = Reg(init = SPIControl.init(c))
 
@@ -72,7 +69,8 @@ class SPITopModule[B <: SPITopBundle](c: SPIParamsBase, bundle: => B, outer: TLS
 
   val ie = Reg(init = new SPIInterrupts().fromBits(Bits(0)))
   val ip = fifo.io.ip
-  io.tl.i(0)(0) := (ip.txwm && ie.txwm) || (ip.rxwm && ie.rxwm)
+  val (io_int, _) = outer.intnode.out(0)
+  io_int(0) := (ip.txwm && ie.txwm) || (ip.rxwm && ie.rxwm)
 
   protected val regmapBase = Seq(
     SPICRs.sckdiv -> Seq(RegField(c.divisorBits, ctrl.sck.div)),
@@ -115,7 +113,7 @@ abstract class TLSPIBase(w: Int, c: SPIParamsBase)(implicit p: Parameters) exten
 }
 
 class TLSPI(w: Int, c: SPIParams)(implicit p: Parameters) extends TLSPIBase(w,c)(p) {
-  lazy val module = new SPITopModule(c, new SPITopBundle(intnode.bundleOut, rnode.bundleIn), this) {
+  lazy val module = new SPITopModule(c, this) {
     mac.io.link <> fifo.io.link
     rnode.regmap(regmapBase:_*)
   }

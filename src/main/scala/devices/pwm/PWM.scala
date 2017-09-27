@@ -2,6 +2,7 @@
 package sifive.blocks.devices.pwm
 
 import Chisel._
+import chisel3.experimental.MultiIOModule
 import Chisel.ImplicitConversions._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.regmapper._
@@ -48,7 +49,7 @@ trait HasPWMBundleContents extends Bundle {
   val gpio = Vec(params.ncmp, Bool()).asOutput
 }
 
-trait HasPWMModuleContents extends Module with HasRegMap {
+trait HasPWMModuleContents extends MultiIOModule with HasRegMap {
   val io: HasPWMBundleContents
   val params: PWMParams
 
