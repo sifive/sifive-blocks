@@ -4,7 +4,7 @@ package sifive.blocks.devices.spi
 import Chisel._
 import freechips.rocketchip.config.Field
 import freechips.rocketchip.coreplex.{HasPeripheryBus, HasInterruptBus}
-import freechips.rocketchip.diplomacy.{LazyModule,LazyMultiIOModuleImp,BufferParams}
+import freechips.rocketchip.diplomacy.{LazyModule,LazyModuleImp,BufferParams}
 import freechips.rocketchip.tilelink.{TLFragmenter,TLBuffer}
 import freechips.rocketchip.util.HeterogeneousBag
 
@@ -25,7 +25,7 @@ trait HasPeripherySPIBundle {
 
 }
 
-trait HasPeripherySPIModuleImp extends LazyMultiIOModuleImp with HasPeripherySPIBundle {
+trait HasPeripherySPIModuleImp extends LazyModuleImp with HasPeripherySPIBundle {
   val outer: HasPeripherySPI
   val spi = IO(HeterogeneousBag(outer.spiParams.map(new SPIPortIO(_))))
 
@@ -55,7 +55,7 @@ trait HasPeripherySPIFlashBundle {
 
 }
 
-trait HasPeripherySPIFlashModuleImp extends LazyMultiIOModuleImp with HasPeripherySPIFlashBundle {
+trait HasPeripherySPIFlashModuleImp extends LazyModuleImp with HasPeripherySPIFlashBundle {
   val outer: HasPeripherySPIFlash
   val qspi = IO(HeterogeneousBag(outer.spiFlashParams.map(new SPIPortIO(_))))
 

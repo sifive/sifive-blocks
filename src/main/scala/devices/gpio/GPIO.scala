@@ -2,6 +2,7 @@
 package sifive.blocks.devices.gpio
 
 import Chisel._
+import chisel3.experimental.MultiIOModule
 import sifive.blocks.devices.pinctrl.{PinCtrl, Pin, BasePin, EnhancedPin, EnhancedPinCtrl}
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util.SynchronizerShiftReg
@@ -87,7 +88,7 @@ trait HasGPIOBundleContents extends Bundle {
   val port = new GPIOPortIO(params)
 }
 
-trait HasGPIOModuleContents extends Module with HasRegMap {
+trait HasGPIOModuleContents extends MultiIOModule with HasRegMap {
   val io: HasGPIOBundleContents
   val params: GPIOParams
   val c = params

@@ -5,7 +5,7 @@ import Chisel._
 import chisel3.experimental.{withClockAndReset}
 import freechips.rocketchip.config.Field
 import freechips.rocketchip.coreplex.{HasPeripheryBus, PeripheryBusKey, HasInterruptBus}
-import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp}
+import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
 
 case object PeripheryUARTKey extends Field[Seq[UARTParams]]
 
@@ -29,7 +29,7 @@ trait HasPeripheryUARTBundle {
 
 }
 
-trait HasPeripheryUARTModuleImp extends LazyMultiIOModuleImp with HasPeripheryUARTBundle {
+trait HasPeripheryUARTModuleImp extends LazyModuleImp with HasPeripheryUARTBundle {
   val outer: HasPeripheryUART
   val uart = IO(Vec(outer.uartParams.size, new UARTPortIO))
 

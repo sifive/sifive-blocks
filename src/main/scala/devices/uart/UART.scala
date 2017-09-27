@@ -2,6 +2,7 @@
 package sifive.blocks.devices.uart
 
 import Chisel._
+import chisel3.experimental.MultiIOModule
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
@@ -198,7 +199,7 @@ class UARTInterrupts extends Bundle {
   val txwm = Bool()
 }
 
-trait HasUARTTopModuleContents extends Module with HasUARTParameters with HasRegMap {
+trait HasUARTTopModuleContents extends MultiIOModule with HasUARTParameters with HasRegMap {
   val io: HasUARTTopBundleContents
   implicit val p: Parameters
   def params: UARTParams

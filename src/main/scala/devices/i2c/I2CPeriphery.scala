@@ -4,7 +4,7 @@ package sifive.blocks.devices.i2c
 import Chisel._
 import freechips.rocketchip.config.Field
 import freechips.rocketchip.coreplex.{HasPeripheryBus, HasInterruptBus}
-import freechips.rocketchip.diplomacy.{LazyModule, LazyMultiIOModuleImp}
+import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
 
 case object PeripheryI2CKey extends Field[Seq[I2CParams]]
 
@@ -22,7 +22,7 @@ trait HasPeripheryI2CBundle {
   val i2c: Vec[I2CPort]
 }
 
-trait HasPeripheryI2CModuleImp extends LazyMultiIOModuleImp with HasPeripheryI2CBundle {
+trait HasPeripheryI2CModuleImp extends LazyModuleImp with HasPeripheryI2CBundle {
   val outer: HasPeripheryI2C
   val i2c = IO(Vec(outer.i2cParams.size, new I2CPort))
 

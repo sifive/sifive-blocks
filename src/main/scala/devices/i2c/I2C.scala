@@ -42,6 +42,7 @@
 package sifive.blocks.devices.i2c
 
 import Chisel._
+import chisel3.experimental.MultiIOModule
 import freechips.rocketchip.config._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
@@ -64,7 +65,7 @@ trait HasI2CBundleContents extends Bundle {
   val port = new I2CPort
 }
 
-trait HasI2CModuleContents extends Module with HasRegMap {
+trait HasI2CModuleContents extends MultiIOModule with HasRegMap {
   val io: HasI2CBundleContents
   val params: I2CParams
 
