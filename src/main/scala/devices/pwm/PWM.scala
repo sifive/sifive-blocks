@@ -18,6 +18,7 @@ class PWM(val ncmp: Int = 4, val cmpWidth: Int = 16) extends GenericTimer {
   protected lazy val feed = count.carryOut(scale + UInt(cmpWidth))
   protected lazy val countEn = Wire(Bool())
   override protected lazy val oneShot = RegEnable(io.regs.cfg.write.bits(13) && !countReset, Bool(false), (io.regs.cfg.write.valid && unlocked) || countReset)
+  override protected lazy val extra  = RegEnable(io.regs.cfg.write.bits(20 + ncmp - 1, 20), init = 0.U, enable = io.regs.cfg.write.valid && unlocked)
   override protected lazy val center = RegEnable(io.regs.cfg.write.bits(16 + ncmp - 1, 16), io.regs.cfg.write.valid && unlocked)
   override protected lazy val gang = RegEnable(io.regs.cfg.write.bits(24 + ncmp - 1, 24), io.regs.cfg.write.valid && unlocked)
   override protected lazy val deglitch = RegEnable(io.regs.cfg.write.bits(10), io.regs.cfg.write.valid && unlocked)(0)
@@ -33,7 +34,10 @@ class PWM(val ncmp: Int = 4, val cmpWidth: Int = 16) extends GenericTimer {
   lazy val io = new GenericTimerIO {
     val gpio = Vec(ncmp, Bool()).asOutput
   }
-  io.gpio := io.gpio.fromBits(ip & ~(gang & Cat(ip(0), ip >> 1)))
+
+  val invert = extra
+
+  io.gpio := io.gpio.fromBits((ip & ~(gang & Cat(ip(0), ip >> 1))) ^ invert)
   countEn := countAlways || oneShot
 }
 
