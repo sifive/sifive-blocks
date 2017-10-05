@@ -38,6 +38,7 @@ abstract class GenericTimer extends Module {
   protected def sticky: Bool = Bool(false)
   protected def oneShot: Bool = Bool(false)
   protected def center: UInt = UInt(0)
+  protected def extra: UInt = UInt(0)
   protected def gang: UInt = UInt(0)
   protected val scaleWidth = 4
   protected val regWidth = 32
@@ -76,8 +77,9 @@ abstract class GenericTimer extends Module {
   protected val countReset = feed || (zerocmp && elapsed(0))
   when (countReset) { count := 0 }
 
-  io.regs.cfg.read := Cat(ip, gang | UInt(0, maxcmp), UInt(0, maxcmp), center | UInt(0, maxcmp),
-                          UInt(0, 2), countAwake || oneShot, countAlways, UInt(0, 1), deglitch, zerocmp, rsten || sticky, UInt(0, 8-scaleWidth), scale)
+  io.regs.cfg.read := Cat(ip, gang | UInt(0, maxcmp), extra | UInt(0, maxcmp), center | UInt(0, maxcmp),
+    UInt(0, 2), countAwake || oneShot, countAlways, UInt(0, 1), deglitch, zerocmp, rsten || sticky,
+    UInt(0, 8-scaleWidth),  scale)
   io.regs.countLo.read := count
   io.regs.countHi.read := count >> regWidth
   io.regs.s.read := s
