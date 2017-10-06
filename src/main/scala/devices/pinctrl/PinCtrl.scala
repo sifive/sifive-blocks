@@ -100,4 +100,11 @@ class EnhancedPin extends Pin() {
     this.o.ds   := ds
     this.o.ie   := ie
   }
+
+  def toBasePin(): BasePin = {
+
+    val base_pin = Wire(new BasePin())
+    base_pin <> this
+    base_pin
+  }
 }
