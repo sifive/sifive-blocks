@@ -6,6 +6,7 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
+import freechips.rocketchip.interrupts._
 import sifive.blocks.devices.pinctrl.{EnhancedPin}
 import sifive.blocks.util.{DeglitchShiftRegister}
 

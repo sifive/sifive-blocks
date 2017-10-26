@@ -6,6 +6,7 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
+import freechips.rocketchip.interrupts._
 import freechips.rocketchip.util.HeterogeneousBag
 import sifive.blocks.util.{NonBlockingEnqueue, NonBlockingDequeue}
 

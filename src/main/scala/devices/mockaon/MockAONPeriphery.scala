@@ -8,7 +8,8 @@ import freechips.rocketchip.coreplex.{HasPeripheryBus, HasInterruptBus}
 import freechips.rocketchip.devices.debug.HasPeripheryDebug
 import freechips.rocketchip.devices.tilelink.HasPeripheryClint
 import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
-import freechips.rocketchip.tilelink.{IntXing, TLAsyncCrossingSource}
+import freechips.rocketchip.tilelink.{TLAsyncCrossingSource}
+import freechips.rocketchip.interrupts._
 import freechips.rocketchip.util.ResetCatchAndSync
 
 case object PeripheryMockAONKey extends Field[MockAONParams]
