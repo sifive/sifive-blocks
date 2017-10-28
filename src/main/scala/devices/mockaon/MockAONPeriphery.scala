@@ -22,8 +22,8 @@ trait HasPeripheryMockAON extends HasPeripheryBus
   // are in the proper clock domain.
   val mockAONParams= p(PeripheryMockAONKey)
   val aon = LazyModule(new MockAONWrapper(pbus.beatBytes, mockAONParams))
-  aon.node := pbus.toAsyncVariableWidthSlaves(sync = 3)
-  ibus.fromAsync := aon.intnode
+  aon.node := TLAsyncCrossingSource() := pbus.toVariableWidthSlaves
+  ibus.fromSync := IntSyncCrossingSink() := aon.intnode
 }
 
 trait HasPeripheryMockAONBundle {

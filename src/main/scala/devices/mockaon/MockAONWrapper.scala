@@ -44,12 +44,10 @@ class MockAONWrapper(w: Int, c: MockAONParams)(implicit p: Parameters) extends L
   val isolation = LazyModule(new TLIsolation(fOut = isoOut, fIn = isoIn))
   val crossing = LazyModule(new TLAsyncCrossingSink(depth = 1))
 
-  val node: TLAsyncInwardNode = isolation.node
-  crossing.node := isolation.node
-  aon.node := crossing.node
+  val node = aon.node := crossing.node := isolation.node
 
   // crossing lives outside in Periphery
-  val intnode: IntOutwardNode = aon.intnode
+  val intnode = IntSyncCrossingSource(alreadyRegistered = true) := aon.intnode
 
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new MockAONWrapperBundle {
