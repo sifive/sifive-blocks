@@ -131,7 +131,9 @@ class PMU(val c: PMUConfig) extends Module {
     val resetCauses = new ResetCauses().asInput
   }
 
-  val core = Module(new PMUCore(c)(resetIn = Reg(next = Reg(next = reset))))
+  val coreReset = Reg(next = Reg(next = reset))
+  val core = Module(new PMUCore(c)(resetIn = coreReset))
+
   io <> core.io
   core.io.wakeup.reset := false // this is implied by resetting the PMU
 
