@@ -168,10 +168,10 @@ trait HasGPIOModuleContents extends MultiIOModule with HasRegMap {
   val swPinCtrl = Wire(Vec(c.width, new EnhancedPinCtrl()))
 
   // This strips off the valid.
-  val iof0Ctrl = Wire(Vec(c.width, new EnhancedPinCtrl()))
-  val iof1Ctrl = Wire(Vec(c.width, new EnhancedPinCtrl()))
+  val iof0Ctrl = Wire(Vec(c.width, new IOFCtrl()))
+  val iof1Ctrl = Wire(Vec(c.width, new IOFCtrl()))
 
-  val iofCtrl = Wire(Vec(c.width, new EnhancedPinCtrl()))
+  val iofCtrl = Wire(Vec(c.width, new IOFCtrl()))
   val iofPlusSwPinCtrl = Wire(Vec(c.width, new EnhancedPinCtrl()))
 
   for (pin <- 0 until c.width) {
