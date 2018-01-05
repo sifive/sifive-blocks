@@ -104,46 +104,38 @@ class UARTRx(c: UARTParams)(implicit p: Parameters) extends UARTModule(c)(p) {
   val debounce_max = (debounce === UInt(3))
   val debounce_min = (debounce === UInt(0))
 
-  val prescaler = Reg(init = UInt(0, uartDivisorBits - uartOversample))
+  val prescaler = Reg(UInt(width = uartDivisorBits - uartOversample + 1))
   val start = Wire(init = Bool(false))
-  val busy = Wire(init = Bool(false))
-  val pulse = (prescaler === UInt(0)) && busy
+  val pulse = (prescaler === UInt(0))
 
-  when (busy) {
-    prescaler := prescaler - UInt(1)
-  }
-  when (start || pulse) {
-    prescaler := io.div >> uartOversample
-  }
+  private val dataCountBits = log2Floor(uartDataBits) + 1
+
+  val data_count = Reg(UInt(width = dataCountBits))
+  val data_last = (data_count === UInt(0))
+  val sample_count = Reg(UInt(width = uartOversample))
+  val sample_mid = (sample_count === UInt((uartOversampleFactor - uartNSamples + 1) >> 1))
+  val sample_last = (sample_count === UInt(0))
+  val countdown = Cat(data_count, sample_count) - UInt(1)
+
+  // Compensate for the divisor not being a multiple of the oversampling period.
+  // Let remainder k = (io.div % uartOversampleFactor).
+  // For the last k samples, extend the sampling delay by 1 cycle.
+  val remainder = io.div(uartOversample-1, 0)
+  val extend = (sample_count < remainder) // Pad head: (sample_count > ~remainder)
+  val restore = start || pulse
+  val prescaler_in = Mux(restore, io.div >> uartOversample, prescaler)
+  val prescaler_next = prescaler_in - Mux(restore && extend, UInt(0), UInt(1))
 
   val sample = Reg(Bits(width = uartNSamples))
   val voter = Majority(sample.toBools.toSet)
-  when (pulse) {
-    sample := Cat(sample, io.in)
-  }
-
-  private val delay0 = (uartOversampleFactor + uartNSamples) >> 1
-  private val delay1 = uartOversampleFactor
-
-  val timer = Reg(UInt(width = uartOversample + 1))
-  val counter = Reg(UInt(width = log2Floor(uartDataBits) + 1))
   val shifter = Reg(Bits(width = uartDataBits))
-  val expire = (timer === UInt(0)) && pulse
-
-  val sched = Wire(init = Bool(false))
-  when (pulse) {
-    timer := timer - UInt(1)
-  }
-  when (sched) {
-    timer := UInt(delay1-1)
-  }
 
   val valid = Reg(init = Bool(false))
   valid := Bool(false)
   io.out.valid := valid
   io.out.bits := shifter
 
-  val (s_idle :: s_start :: s_data :: Nil) = Enum(UInt(), 3)
+  val (s_idle :: s_data :: Nil) = Enum(UInt(), 2)
   val state = Reg(init = s_idle)
 
   switch (state) {
@@ -154,36 +146,29 @@ class UARTRx(c: UARTParams)(implicit p: Parameters) extends UARTModule(c)(p) {
       when (!io.in) {
         debounce := debounce + UInt(1)
         when (debounce_max) {
-          state := s_start
-          start := Bool(true)
-          timer := UInt(delay0-1)
-        }
-      }
-    }
-
-    is (s_start) {
-      busy := Bool(true)
-      when (expire) {
-        sched := Bool(true)
-        when (voter) {
-          state := s_idle
-        } .otherwise {
           state := s_data
-          counter := UInt(uartDataBits)
+          start := Bool(true)
+          prescaler := prescaler_next
+          data_count := UInt(uartDataBits+1)
+          sample_count := UInt(uartOversampleFactor - 1)
         }
       }
     }
 
     is (s_data) {
-      busy := Bool(true)
-      when (expire) {
-        counter := counter - UInt(1)
-        when (counter === UInt(0)) {
-          state := s_idle
-          valid := Bool(true)
-        } .otherwise {
-          shifter := Cat(voter, shifter >> 1)
-          sched := Bool(true)
+      prescaler := prescaler_next
+      when (pulse) {
+        sample := Cat(sample, io.in)
+        data_count := countdown >> uartOversample
+        sample_count := countdown(uartOversample-1, 0)
+
+        when (sample_mid) {
+          when (data_last) {
+            state := s_idle
+            valid := Bool(true)
+          } .otherwise {
+            shifter := Cat(voter, shifter >> 1)
+          }
         }
       }
     }
