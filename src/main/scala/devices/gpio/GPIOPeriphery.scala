@@ -3,17 +3,18 @@ package sifive.blocks.devices.gpio
 
 import Chisel._
 import freechips.rocketchip.config.Field
-import freechips.rocketchip.coreplex.{HasPeripheryBus, HasInterruptBus}
+import freechips.rocketchip.subsystem.BaseSubsystem
 import freechips.rocketchip.diplomacy.{LazyModule,LazyModuleImp}
 import freechips.rocketchip.util.HeterogeneousBag
 
 case object PeripheryGPIOKey extends Field[Seq[GPIOParams]]
 
-trait HasPeripheryGPIO extends HasPeripheryBus with HasInterruptBus {
+trait HasPeripheryGPIO { this: BaseSubsystem =>
   val gpioParams = p(PeripheryGPIOKey)
-  val gpios = gpioParams map { params =>
-    val gpio = LazyModule(new TLGPIO(pbus.beatBytes, params))
-    gpio.node := pbus.toVariableWidthSlaves
+  val gpios = gpioParams.zipWithIndex.map { case(params, i) =>
+    val name = Some(s"gpio_$i")
+    val gpio = LazyModule(new TLGPIO(pbus.beatBytes, params)).suggestName(name)
+    pbus.toVariableWidthSlave(name) { gpio.node }
     ibus.fromSync := gpio.intnode
     gpio
   }
