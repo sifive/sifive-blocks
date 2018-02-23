@@ -488,16 +488,16 @@ trait HasI2CModuleContents extends MultiIOModule with HasRegMap {
 
   // hack: b/c the same register offset is used to write cmd and read status
   val nextCmd = Wire(UInt(8.W))
-  nextCmd := cmd.asUInt
   cmd := (new CommandBundle).fromBits(nextCmd)
+  nextCmd := cmd.asUInt & 0xFE.U  // clear IRQ_ACK bit (essentially 1 cycle pulse b/c it is overwritten by regmap below)
 
+  // Note: This wins over the regmap update of nextCmd (even if something tries to write them to 1, these values take priority).
   when (cmdAck || arbLost) {
     cmd.start := false.B    // clear command bits when done
     cmd.stop  := false.B    // or when aribitration lost
     cmd.read  := false.B
     cmd.write := false.B
   }
-  cmd.irqAck  := false.B    // clear IRQ_ACK bit (essentially 1 cycle pulse b/c it is overwritten by regmap below)
 
   status.receivedAck := receivedAck
   when (stopCond) {
@@ -514,11 +514,14 @@ trait HasI2CModuleContents extends MultiIOModule with HasRegMap {
     status.arbLost          := false.B
   }
   status.transferInProgress := cmd.read || cmd.write
-  status.irqFlag            := (cmdAck || arbLost || status.irqFlag) && !cmd.irqAck
+  status.irqFlag            := (cmdAck || arbLost || status.irqFlag) && !cmd.irqAck // interrupt request flag is always generated
 
 
   val statusReadReady = Reg(init = true.B)
-  when (!statusReadReady) {
+  when (cmdAck || arbLost) {    // => cmd.read or cmd.write deassert 1 cycle later => transferInProgress deassert 2 cycles later
+    statusReadReady := false.B  // do not allow status read if status.transferInProgress is going to change
+  }
+  .elsewhen (!statusReadReady) {
     statusReadReady := true.B
   }
 
