@@ -514,11 +514,14 @@ trait HasI2CModuleContents extends MultiIOModule with HasRegMap {
     status.arbLost          := false.B
   }
   status.transferInProgress := cmd.read || cmd.write
-  status.irqFlag            := (cmdAck || arbLost || status.irqFlag) && !cmd.irqAck
+  status.irqFlag            := (cmdAck || arbLost || status.irqFlag) && !cmd.irqAck // interrupt request flag is always generated
 
 
   val statusReadReady = Reg(init = true.B)
-  when (!statusReadReady) {
+  when (cmdAck || arbLost) {    // => cmd.read or cmd.write deassert 1 cycle later => transferInProgress deassert 2 cycles later
+    statusReadReady := false.B  // do not allow status read if status.transferInProgress is going to change
+  }
+  .elsewhen (!statusReadReady) {
     statusReadReady := true.B
   }
 
