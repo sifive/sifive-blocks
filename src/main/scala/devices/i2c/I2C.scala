@@ -202,7 +202,7 @@ trait HasI2CModuleContents extends MultiIOModule with HasRegMap {
        s_bit_wr_a    :: s_bit_wr_b    :: s_bit_wr_c    :: s_bit_wr_d    :: Nil) = Enum(UInt(), 18)
   val bitState    = Reg(init = s_bit_idle)
 
-  val arbLost     = Reg(init = false.B, next = (sdaChk && !sSDA && sdaOen) | ((bitState === s_bit_idle) && stopCond && !bitCmdStop))
+  val arbLost     = Reg(init = false.B, next = (sdaChk && !sSDA && sdaOen) | ((bitState =/= s_bit_idle) && stopCond && !bitCmdStop))
 
   // bit FSM
   when (arbLost) {
