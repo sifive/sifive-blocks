@@ -3,26 +3,22 @@ package sifive.blocks.devices.mockaon
 
 import Chisel._
 import freechips.rocketchip.config.Field
-import freechips.rocketchip.util.SynchronizerShiftReg
-import freechips.rocketchip.coreplex.{HasPeripheryBus, HasInterruptBus}
 import freechips.rocketchip.devices.debug.HasPeripheryDebug
-import freechips.rocketchip.devices.tilelink.HasPeripheryClint
+import freechips.rocketchip.devices.tilelink.HasPeripheryCLINT
 import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
-import freechips.rocketchip.tilelink.{TLAsyncCrossingSource}
 import freechips.rocketchip.interrupts._
-import freechips.rocketchip.util.ResetCatchAndSync
+import freechips.rocketchip.subsystem.BaseSubsystem
+import freechips.rocketchip.tilelink.{TLAsyncCrossingSource}
+import freechips.rocketchip.util.{ResetCatchAndSync, SynchronizerShiftReg}
 
 case object PeripheryMockAONKey extends Field[MockAONParams]
 
-trait HasPeripheryMockAON extends HasPeripheryBus
-    with HasInterruptBus
-    with HasPeripheryClint
-    with HasPeripheryDebug {
+trait HasPeripheryMockAON extends HasPeripheryCLINT with HasPeripheryDebug { this: BaseSubsystem =>
   // We override the clock & Reset here so that all synchronizers, etc
   // are in the proper clock domain.
   val mockAONParams= p(PeripheryMockAONKey)
   val aon = LazyModule(new MockAONWrapper(pbus.beatBytes, mockAONParams))
-  aon.node := TLAsyncCrossingSource() := pbus.toVariableWidthSlaves
+  pbus.toVariableWidthSlave(Some("aon")) { aon.node := TLAsyncCrossingSource() }
   ibus.fromSync := IntSyncCrossingSink() := aon.intnode
 }
 
