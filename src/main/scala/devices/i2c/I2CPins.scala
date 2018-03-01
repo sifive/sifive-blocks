@@ -6,13 +6,9 @@ import chisel3.experimental.{withClockAndReset}
 import freechips.rocketchip.util.SyncResetSynchronizerShiftReg
 import sifive.blocks.devices.pinctrl.{Pin, PinCtrl}
 
-class I2CSignals[T <: Data](pingen: () => T) extends Bundle {
-
+class I2CSignals[T <: Data](private val pingen: () => T) extends Bundle {
   val scl: T = pingen()
   val sda: T = pingen()
-
-  override def cloneType: this.type =
-    this.getClass.getConstructors.head.newInstance(pingen).asInstanceOf[this.type]
 }
 
 class I2CPins[T <: Pin](pingen: () => T) extends I2CSignals[T](pingen)

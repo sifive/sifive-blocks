@@ -9,17 +9,11 @@ import sifive.blocks.devices.pinctrl.{Pin}
 // even though it looks like something that more directly talks to
 // a pin. It also makes it possible to change the exact
 // type of pad this connects to.
-class GPIOSignals[T <: Data] (pingen: ()=> T,  c: GPIOParams) extends Bundle {
+class GPIOSignals[T <: Data](private val pingen: ()=> T, val c: GPIOParams) extends Bundle {
   val pins = Vec(c.width, pingen())
-
-  override def cloneType: this.type =
-    this.getClass.getConstructors.head.newInstance(pingen, c).asInstanceOf[this.type]
 }
 
-class GPIOPins[T <: Pin] (pingen: ()=> T,  c: GPIOParams) extends GPIOSignals[T](pingen, c) {
-  override def cloneType: this.type =
-    this.getClass.getConstructors.head.newInstance(pingen, c).asInstanceOf[this.type]
-}
+class GPIOPins[T <: Pin](pingen: ()=> T, c: GPIOParams) extends GPIOSignals[T](pingen, c)
 
 object GPIOPinsFromPort {
 
