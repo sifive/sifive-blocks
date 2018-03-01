@@ -3,7 +3,7 @@ package sifive.blocks.devices.spi
 
 import Chisel._
 
-abstract class SPIBundle(val c: SPIParamsBase) extends Bundle
+abstract class SPIBundle(private val c: SPIParamsBase) extends Bundle
 
 class SPIDataIO extends Bundle {
   val i = Bool(INPUT)

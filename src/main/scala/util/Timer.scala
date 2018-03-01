@@ -6,7 +6,7 @@ import Chisel.ImplicitConversions._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.util.WideCounter
 
-class SlaveRegIF(val w: Int) extends Bundle {
+class SlaveRegIF(private val w: Int) extends Bundle {
   val write = Valid(UInt(width = w)).flip
   val read = UInt(OUTPUT, w)
 

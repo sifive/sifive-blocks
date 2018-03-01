@@ -75,7 +75,7 @@ object BasePinToIOF {
 // level, and we have to do the pinmux
 // outside of RocketChipTop.
 
-class GPIOPortIO(val c: GPIOParams) extends Bundle {
+class GPIOPortIO(private val c: GPIOParams) extends Bundle {
   val pins = Vec(c.width, new EnhancedPin())
   val iof_0 = if (c.includeIOF) Some(Vec(c.width, new IOFPin).flip) else None
   val iof_1 = if (c.includeIOF) Some(Vec(c.width, new IOFPin).flip) else None

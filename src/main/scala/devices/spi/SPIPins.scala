@@ -5,7 +5,7 @@ import Chisel._
 import chisel3.experimental.{withClockAndReset}
 import sifive.blocks.devices.pinctrl.{PinCtrl, Pin}
 
-class SPISignals[T <: Data](val pingen: ()=> T, c: SPIParamsBase) extends SPIBundle(c) {
+class SPISignals[T <: Data](private val pingen: () => T, c: SPIParamsBase) extends SPIBundle(c) {
 
   val sck = pingen()
   val dq  = Vec(4, pingen())
