@@ -10,7 +10,6 @@ import sifive.blocks.devices.pinctrl.{Pin}
 
 class PWMPortIO(val c: PWMParams) extends Bundle {
   val port = Vec(c.ncmp, Bool()).asOutput
-  override def cloneType: this.type = new PWMPortIO(c).asInstanceOf[this.type]
 }
 
 

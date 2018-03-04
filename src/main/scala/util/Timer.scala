@@ -6,11 +6,9 @@ import Chisel.ImplicitConversions._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.util.WideCounter
 
-class SlaveRegIF(w: Int) extends Bundle {
+class SlaveRegIF(private val w: Int) extends Bundle {
   val write = Valid(UInt(width = w)).flip
   val read = UInt(OUTPUT, w)
-
-  override def cloneType: this.type = new SlaveRegIF(w).asInstanceOf[this.type]
 
   def toRegField(dummy: Int = 0): RegField = {
     def writeFn(valid: Bool, data: UInt): Bool = {

@@ -8,7 +8,7 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util.SynchronizerShiftReg
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
-import freechips.rocketchip.util.{AsyncResetRegVec, GenericParameterizedBundle}
+import freechips.rocketchip.util.AsyncResetRegVec
 
 case class GPIOParams(address: BigInt, width: Int, includeIOF: Boolean = false)
 
@@ -75,7 +75,7 @@ object BasePinToIOF {
 // level, and we have to do the pinmux
 // outside of RocketChipTop.
 
-class GPIOPortIO(c: GPIOParams) extends GenericParameterizedBundle(c) {
+class GPIOPortIO(private val c: GPIOParams) extends Bundle {
   val pins = Vec(c.width, new EnhancedPin())
   val iof_0 = if (c.includeIOF) Some(Vec(c.width, new IOFPin).flip) else None
   val iof_1 = if (c.includeIOF) Some(Vec(c.width, new IOFPin).flip) else None

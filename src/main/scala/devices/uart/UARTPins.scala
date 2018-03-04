@@ -6,15 +6,12 @@ import chisel3.experimental.{withClockAndReset}
 import freechips.rocketchip.util.SyncResetSynchronizerShiftReg
 import sifive.blocks.devices.pinctrl.{Pin}
 
-class UARTSignals[T <: Data] (pingen: () => T) extends Bundle {
+class UARTSignals[T <: Data](private val pingen: () => T) extends Bundle {
   val rxd = pingen()
   val txd = pingen()
-
-  override def cloneType: this.type =
-    this.getClass.getConstructors.head.newInstance(pingen).asInstanceOf[this.type]
 }
 
-class UARTPins[T <: Pin] (pingen: () => T) extends UARTSignals[T](pingen)
+class UARTPins[T <: Pin](pingen: () => T) extends UARTSignals[T](pingen)
 
 object UARTPinsFromPort {
   def apply[T <: Pin](pins: UARTSignals[T], uart: UARTPortIO, clock: Clock, reset: Bool, syncStages: Int = 0) {
