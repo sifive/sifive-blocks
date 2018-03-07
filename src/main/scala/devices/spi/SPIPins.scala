@@ -3,6 +3,7 @@ package sifive.blocks.devices.spi
 
 import Chisel._
 import chisel3.experimental.{withClockAndReset}
+import freechips.rocketchip.util.{SynchronizerShiftReg}
 import sifive.blocks.devices.pinctrl.{PinCtrl, Pin}
 
 class SPISignals[T <: Data](private val pingen: () => T, c: SPIParamsBase) extends SPIBundle(c) {
@@ -22,11 +23,11 @@ object SPIPinsFromPort {
     withClockAndReset(clock, reset) {
       pins.sck.outputPin(spi.sck, ds = driveStrength)
 
-      (pins.dq zip spi.dq).foreach {case (p, s) =>
+      (pins.dq zip spi.dq).zipWithIndex.foreach {case ((p, s), i) =>
         p.outputPin(s.o, pue = Bool(true), ds = driveStrength)
         p.o.oe := s.oe
         p.o.ie := ~s.oe
-        s.i := ShiftRegister(p.i.ival, syncStages)
+        s.i := SynchronizerShiftReg(p.i.ival, syncStages, name = Some(s"spi_dq_${i}_sync"))
       }
 
       (pins.cs zip spi.cs) foreach { case (c, s) =>
