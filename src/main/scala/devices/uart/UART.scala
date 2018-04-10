@@ -232,7 +232,7 @@ trait HasUARTTopModuleContents extends MultiIOModule with HasUARTParameters with
 
     UARTCtrlRegs.txctrl -> RegFieldGroup("txctrl",Some("Serial transmit control"),Seq[RegField](
       RegField(1, txen, RegFieldDesc("txen","Transmit enable", reset=Some(0))),
-      RegField(stopCountBits, nstop, RegFieldDesc("nstop","Number of stop bits", reset=Some(0)))),
+      RegField(stopCountBits, nstop, RegFieldDesc("nstop","Number of stop bits", reset=Some(0))))),
     UARTCtrlRegs.rxctrl -> Seq(RegField(1, rxen, RegFieldDesc("txen","Receive enable", reset=Some(0)))),
     UARTCtrlRegs.txmark -> Seq(RegField(txCountBits, txwm, RegFieldDesc("txcnt","Transmit watermark level", reset=Some(0)))),
     UARTCtrlRegs.rxmark -> Seq(RegField(rxCountBits, rxwm, RegFieldDesc("rxcnt","Receive watermark level", reset=Some(0)))),
