@@ -18,14 +18,14 @@ object NonBlockingEnqueue {
           enq.valid := valid && !quash
           enq.bits := data
           Bool(true)
-        })),
+        }), RegFieldDesc("data","Transmit data")),
       RegField(regWidth - enqWidth - 1),
       RegField(1,
         !enq.ready,
         RegWriteFn((valid, data) =>  {
           quash := valid && data(0)
           Bool(true)
-        })))
+        }), RegFieldDesc("full","Transmit FIFO full", volatile=true)))
   }
 }
 
@@ -40,8 +40,9 @@ object NonBlockingDequeue {
         RegReadFn(ready => {
           deq.ready := ready
           (Bool(true), deq.bits)
-        })),
+        }), RegFieldDesc("data","Receive data", volatile=true)),
       RegField(regWidth - deqWidth - 1),
-      RegField.r(1, !deq.valid))
+      RegField.r(1, !deq.valid,
+                 RegFieldDesc("empty","Receive FIFO empty", volatile=true)))
   }
 }

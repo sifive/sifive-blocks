@@ -227,26 +227,38 @@ trait HasUARTTopModuleContents extends MultiIOModule with HasUARTParameters with
   interrupts(0) := (ip.txwm && ie.txwm) || (ip.rxwm && ie.rxwm)
 
   regmap(
-    UARTCtrlRegs.txfifo -> NonBlockingEnqueue(txq.io.enq),
-    UARTCtrlRegs.rxfifo -> NonBlockingDequeue(rxq.io.deq),
+    UARTCtrlRegs.txfifo -> RegFieldGroup("txdata",Some("Transmit data"),
+                           NonBlockingEnqueue(txq.io.enq)),
+    UARTCtrlRegs.rxfifo -> RegFieldGroup("rxdata",Some("Receive data"),
+                           NonBlockingDequeue(rxq.io.deq)),
 
-    UARTCtrlRegs.txctrl -> RegFieldGroup("txctrl",Some("Serial transmit control"),Seq[RegField](
-      RegField(1, txen, RegFieldDesc("txen","Transmit enable", reset=Some(0))),
-      RegField(stopCountBits, nstop, RegFieldDesc("nstop","Number of stop bits", reset=Some(0))))),
-    UARTCtrlRegs.rxctrl -> Seq(RegField(1, rxen, RegFieldDesc("txen","Receive enable", reset=Some(0)))),
-    UARTCtrlRegs.txmark -> Seq(RegField(txCountBits, txwm, RegFieldDesc("txcnt","Transmit watermark level", reset=Some(0)))),
-    UARTCtrlRegs.rxmark -> Seq(RegField(rxCountBits, rxwm, RegFieldDesc("rxcnt","Receive watermark level", reset=Some(0)))),
+    UARTCtrlRegs.txctrl -> RegFieldGroup("txctrl",Some("Serial transmit control"),Seq(
+      RegField(1, txen,
+               RegFieldDesc("txen","Transmit enable", reset=Some(0))),
+      RegField(stopCountBits, nstop,
+               RegFieldDesc("nstop","Number of stop bits", reset=Some(0))))),
+    UARTCtrlRegs.rxctrl -> Seq(RegField(1, rxen,
+               RegFieldDesc("txen","Receive enable", reset=Some(0)))),
+    UARTCtrlRegs.txmark -> Seq(RegField(txCountBits, txwm,
+               RegFieldDesc("txcnt","Transmit watermark level", reset=Some(0)))),
+    UARTCtrlRegs.rxmark -> Seq(RegField(rxCountBits, rxwm,
+               RegFieldDesc("rxcnt","Receive watermark level", reset=Some(0)))),
 
-    UARTCtrlRegs.ie -> RegFieldGroup("ie",Some("Serial interrupt enable"),Seq[RegField](
-      RegField(1, ie.txwm, RegFieldDesc("txwm_ie","Transmit watermark interrupt enable", reset=Some(0))),
-      RegField(1, ie.rxwm, RegFieldDesc("rxwm_ie","Receive watermark interrupt enable", reset=Some(0))))),
+    UARTCtrlRegs.ie -> RegFieldGroup("ie",Some("Serial interrupt enable"),Seq(
+      RegField(1, ie.txwm,
+               RegFieldDesc("txwm_ie","Transmit watermark interrupt enable", reset=Some(0))),
+      RegField(1, ie.rxwm,
+               RegFieldDesc("rxwm_ie","Receive watermark interrupt enable", reset=Some(0))))),
 
-    UARTCtrlRegs.ip -> RegFieldGroup("ip",Some("Serial interrupt pending"),Seq[RegField](
-      RegField.r(1, ip.txwm, RegFieldDesc("txwm_ip","Transmit watermark interrupt pending")),
-      RegField.r(1, ip.rxwm, RegFieldDesc("rxwm_ip","Receive watermark interrupt pending")))),
+    UARTCtrlRegs.ip -> RegFieldGroup("ip",Some("Serial interrupt pending"),Seq(
+      RegField.r(1, ip.txwm,
+                 RegFieldDesc("txwm_ip","Transmit watermark interrupt pending", volatile=true)),
+      RegField.r(1, ip.rxwm,
+                 RegFieldDesc("rxwm_ip","Receive watermark interrupt pending", volatile=true)))),
 
     UARTCtrlRegs.div -> Seq(
-      RegField(uartDivisorBits, div, RegFieldDesc("div","Baud rate divisor",reset=Some(uartDivisorInit))))
+      RegField(uartDivisorBits, div,
+                 RegFieldDesc("div","Baud rate divisor",reset=Some(uartDivisorInit))))
   )
 }
 

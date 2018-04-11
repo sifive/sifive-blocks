@@ -78,17 +78,26 @@ class SPIFlashTopModule(c: SPIFlashParamsBase, outer: TLSPIFlashBase)
   arb.io.sel := !flash_en
 
   protected val regmapFlash = Seq(
-    SPICRs.insnmode -> Seq(RegField(1, flash_en, RegFieldDesc("flash_en","SPIFlash mode select", reset=Some(1)))),
-    SPICRs.insnfmt -> RegFieldGroup("ffmtlen",Some("SPIFlash instruction length"),Seq[RegField](
-      RegField(1, insn.cmd.en, RegFieldDesc("cmd_en","Enable sending of command", reset=Some(1))),
-      RegField(c.insnAddrLenBits, insn.addr.len, RegFieldDesc("cmd_en","Number of address bytes", reset=Some(3))),
-      RegField(c.insnPadLenBits, insn.pad.cnt, RegFieldDesc("cmd_en","Number of dummy cycles", reset=Some(0))))),
-    SPICRs.insnproto -> RegFieldGroup("ffmtproto",Some("SPIFlash instruction format"),Seq[RegField](
-      RegField(SPIProtocol.width, insn.cmd.proto, RegFieldDesc("cmd_proto","Protocol for transmitting command", reset=Some(0))),
-      RegField(SPIProtocol.width, insn.addr.proto, RegFieldDesc("addr_proto","Protocol for transmitting address and padding", reset=Some(0))),
-      RegField(SPIProtocol.width, insn.data.proto, RegFieldDesc("data_proto","Protocol for transmitting receiving data", reset=Some(0))))),
-    SPICRs.insncmd -> Seq(RegField(c.insnCmdBits, insn.cmd.code, RegFieldDesc("cmd_code","Value of command byte", reset=Some(3)))),
-    SPICRs.insnpad -> Seq(RegField(c.frameBits, insn.pad.code, RegFieldDesc("pad_code","First 8 bits to transmit during dummy cycles", reset=Some(0)))))
+    SPICRs.insnmode -> Seq(RegField(1, flash_en,
+                           RegFieldDesc("flash_en","SPIFlash mode select", reset=Some(1)))),
+    SPICRs.insnfmt -> RegFieldGroup("ffmtlen",Some("SPIFlash instruction length"),Seq(
+      RegField(1, insn.cmd.en,
+               RegFieldDesc("cmd_en","Enable sending of command", reset=Some(1))),
+      RegField(c.insnAddrLenBits, insn.addr.len,
+               RegFieldDesc("cmd_en","Number of address bytes", reset=Some(3))),
+      RegField(c.insnPadLenBits, insn.pad.cnt,
+               RegFieldDesc("cmd_en","Number of dummy cycles", reset=Some(0))))),
+    SPICRs.insnproto -> RegFieldGroup("ffmtproto",Some("SPIFlash instruction format"),Seq(
+      RegField(SPIProtocol.width, insn.cmd.proto,
+               RegFieldDesc("cmd_proto","Protocol for transmitting command", reset=Some(0))),
+      RegField(SPIProtocol.width, insn.addr.proto,
+               RegFieldDesc("addr_proto","Protocol for transmitting address and padding", reset=Some(0))),
+      RegField(SPIProtocol.width, insn.data.proto,
+               RegFieldDesc("data_proto","Protocol for transmitting receiving data", reset=Some(0))))),
+    SPICRs.insncmd -> Seq(RegField(c.insnCmdBits, insn.cmd.code,
+                          RegFieldDesc("cmd_code","Value of command byte", reset=Some(3)))),
+    SPICRs.insnpad -> Seq(RegField(c.frameBits, insn.pad.code,
+                          RegFieldDesc("pad_code","First 8 bits to transmit during dummy cycles", reset=Some(0)))))
 }
 
 abstract class TLSPIFlashBase(w: Int, c: SPIFlashParamsBase)(implicit p: Parameters) extends TLSPIBase(w,c)(p) {

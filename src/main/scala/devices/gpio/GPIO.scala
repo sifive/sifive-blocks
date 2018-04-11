@@ -135,29 +135,47 @@ trait HasGPIOModuleContents extends MultiIOModule with HasRegMap {
   val rise = ~valueReg & inSyncReg;
   val fall = valueReg & ~inSyncReg;
 
-  val iofEnFields =  if (c.includeIOF) (Seq(RegField.rwReg(c.width, iofEnReg.io, Some(RegFieldDesc("iof_en","HW I/O functon enable", reset=Some(0)))))) else (Seq(RegField(c.width)))
-  val iofSelFields = if (c.includeIOF) (Seq(RegField(c.width, iofSelReg, RegFieldDesc("iof_sel","HW I/O function select", reset=Some(0))))) else (Seq(RegField(c.width)))
-
+  val iofEnFields =  if (c.includeIOF) (Seq(RegField.rwReg(c.width, iofEnReg.io,
+                        Some(RegFieldDesc("iof_en","HW I/O functon enable", reset=Some(0))))))
+                     else (Seq(RegField(c.width)))
+  val iofSelFields = if (c.includeIOF) (Seq(RegField(c.width, iofSelReg,
+                        RegFieldDesc("iof_sel","HW I/O function select", reset=Some(0)))))
+                     else (Seq(RegField(c.width)))
 
   // Note that these are out of order.
   regmap(
-    GPIOCtrlRegs.value     -> Seq(RegField.r(c.width, valueReg, RegFieldDesc("value","Pin value", reset=Some(0)))),
-    GPIOCtrlRegs.output_en -> Seq(RegField.rwReg(c.width, oeReg.io, Some(RegFieldDesc("output_en","Pin output enable", reset=Some(0))))),
-    GPIOCtrlRegs.rise_ie   -> Seq(RegField(c.width, riseIeReg, RegFieldDesc("rise_ie","Rise interrupt enable", reset=Some(0)))),
-    GPIOCtrlRegs.rise_ip   -> Seq(RegField.w1ToClear(c.width, riseIpReg, rise, Some(RegFieldDesc("rise_ip","Rise interrupt pending")))),
-    GPIOCtrlRegs.fall_ie   -> Seq(RegField(c.width, fallIeReg, RegFieldDesc("fall_ie", "Fall interrupt enable", reset=Some(0)))),
-    GPIOCtrlRegs.fall_ip   -> Seq(RegField.w1ToClear(c.width, fallIpReg, fall, Some(RegFieldDesc("fall_ip","Fall interrupt pending")))),
-    GPIOCtrlRegs.high_ie   -> Seq(RegField(c.width, highIeReg, RegFieldDesc("high_ie","High interrupt enable", reset=Some(0)))),
-    GPIOCtrlRegs.high_ip   -> Seq(RegField.w1ToClear(c.width, highIpReg, valueReg, Some(RegFieldDesc("high_ip","High interrupt pending")))),
-    GPIOCtrlRegs.low_ie    -> Seq(RegField(c.width, lowIeReg, RegFieldDesc("low_ie","Low interrupt enable", reset=Some(0)))),
-    GPIOCtrlRegs.low_ip    -> Seq(RegField.w1ToClear(c.width,lowIpReg, ~valueReg, Some(RegFieldDesc("low_ip","Low interrupt pending")))),
-    GPIOCtrlRegs.port      -> Seq(RegField(c.width, portReg, RegFieldDesc("port","Output port value", reset=Some(0)))),
-    GPIOCtrlRegs.pullup_en -> Seq(RegField.rwReg(c.width, pueReg.io, Some(RegFieldDesc("pue","Internal pull-up enable", reset=Some(0))))),
+    GPIOCtrlRegs.value     -> Seq(RegField.r(c.width, valueReg,
+                                  RegFieldDesc("input_value","Pin value", volatile=true))),
+    GPIOCtrlRegs.output_en -> Seq(RegField.rwReg(c.width, oeReg.io,
+                                  Some(RegFieldDesc("output_en","Pin output enable", reset=Some(0))))),
+    GPIOCtrlRegs.rise_ie   -> Seq(RegField(c.width, riseIeReg,
+                                  RegFieldDesc("rise_ie","Rise interrupt enable", reset=Some(0)))),
+    GPIOCtrlRegs.rise_ip   -> Seq(RegField.w1ToClear(c.width, riseIpReg, rise,
+                                  Some(RegFieldDesc("rise_ip","Rise interrupt pending", volatile=true)))),
+    GPIOCtrlRegs.fall_ie   -> Seq(RegField(c.width, fallIeReg,
+                                  RegFieldDesc("fall_ie", "Fall interrupt enable", reset=Some(0)))),
+    GPIOCtrlRegs.fall_ip   -> Seq(RegField.w1ToClear(c.width, fallIpReg, fall,
+                                  Some(RegFieldDesc("fall_ip","Fall interrupt pending", volatile=true)))),
+    GPIOCtrlRegs.high_ie   -> Seq(RegField(c.width, highIeReg,
+                                  RegFieldDesc("high_ie","High interrupt enable", reset=Some(0)))),
+    GPIOCtrlRegs.high_ip   -> Seq(RegField.w1ToClear(c.width, highIpReg, valueReg,
+                                  Some(RegFieldDesc("high_ip","High interrupt pending", volatile=true)))),
+    GPIOCtrlRegs.low_ie    -> Seq(RegField(c.width, lowIeReg,
+                                  RegFieldDesc("low_ie","Low interrupt enable", reset=Some(0)))),
+    GPIOCtrlRegs.low_ip    -> Seq(RegField.w1ToClear(c.width,lowIpReg, ~valueReg,
+                                  Some(RegFieldDesc("low_ip","Low interrupt pending", volatile=true)))),
+    GPIOCtrlRegs.port      -> Seq(RegField(c.width, portReg,
+                                  RegFieldDesc("output_value","Output value", reset=Some(0)))),
+    GPIOCtrlRegs.pullup_en -> Seq(RegField.rwReg(c.width, pueReg.io,
+                                  Some(RegFieldDesc("pue","Internal pull-up enable", reset=Some(0))))),
     GPIOCtrlRegs.iof_en    -> iofEnFields,
     GPIOCtrlRegs.iof_sel   -> iofSelFields,
-    GPIOCtrlRegs.drive     -> Seq(RegField(c.width, dsReg, RegFieldDesc("ds","Pin drive strength selection", reset=Some(0)))),
-    GPIOCtrlRegs.input_en  -> Seq(RegField.rwReg(c.width, ieReg.io, Some(RegFieldDesc("input_en","Pin input enable", reset=Some(0))))),
-    GPIOCtrlRegs.out_xor   -> Seq(RegField(c.width, xorReg, RegFieldDesc("out_xor","Output XOR (invert) enable", reset=Some(0))))
+    GPIOCtrlRegs.drive     -> Seq(RegField(c.width, dsReg,
+                                  RegFieldDesc("ds","Pin drive strength selection", reset=Some(0)))),
+    GPIOCtrlRegs.input_en  -> Seq(RegField.rwReg(c.width, ieReg.io,
+                                  Some(RegFieldDesc("input_en","Pin input enable", reset=Some(0))))),
+    GPIOCtrlRegs.out_xor   -> Seq(RegField(c.width, xorReg,
+                                  RegFieldDesc("out_xor","Output XOR (invert) enable", reset=Some(0))))
   )
 
   //--------------------------------------------------
