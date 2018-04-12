@@ -527,10 +527,20 @@ trait HasI2CModuleContents extends MultiIOModule with HasRegMap {
 
   // statusReadReady,
   regmap(
-    I2CCtrlRegs.prescaler_lo -> Seq(RegField(8, prescaler.lo)),
-    I2CCtrlRegs.prescaler_hi -> Seq(RegField(8, prescaler.hi)),
-    I2CCtrlRegs.control      -> control.elements.map{ case(name, e) => RegField(e.getWidth, e.asInstanceOf[UInt]) }.toSeq,
-    I2CCtrlRegs.data         -> Seq(RegField(8, r = RegReadFn(receivedData),  w = RegWriteFn(transmitData))),
+    I2CCtrlRegs.prescaler_lo -> Seq(RegField(8, prescaler.lo,
+                                    RegFieldDesc("prescaler_lo","I2C prescaler, low byte", reset=Some(0)))),
+    I2CCtrlRegs.prescaler_hi -> Seq(RegField(8, prescaler.hi,
+                                    RegFieldDesc("prescaler_hi","I2C prescaler, high byte", reset=Some(0)))),
+    I2CCtrlRegs.control      -> RegFieldGroup("control",
+                                Some("Control"),
+				control.elements.map{
+				    case(name, e) => RegField(e.getWidth,
+				                              e.asInstanceOf[UInt],
+							      RegFieldDesc(name, s"Sets the ${name}" ,
+							      reset=Some(0)))
+				}.toSeq),
+    I2CCtrlRegs.data         -> Seq(RegField(8, r = RegReadFn(receivedData),  w = RegWriteFn(transmitData),
+                                RegFieldDesc("data","I2C tx and rx data", volatile=true, reset=Some(0)))),
     I2CCtrlRegs.cmd_status   -> Seq(RegField(8, r = RegReadFn{ ready =>
                                                                (statusReadReady, status.asUInt)
                                                              },
@@ -540,8 +550,8 @@ trait HasI2CModuleContents extends MultiIOModule with HasRegMap {
                                                                  nextCmd := data
                                                              }
                                                              true.B
-                                                }
-                                                )))
+                                                }),
+                                    RegFieldDesc("cmd_status","On write, update I2C command.  On Read, report I2C status", volatile=true)))
   )
 
   // tie off unused bits

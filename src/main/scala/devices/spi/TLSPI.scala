@@ -74,36 +74,57 @@ class SPITopModule(c: SPIParamsBase, outer: TLSPIBase)
   io_int(0) := (ip.txwm && ie.txwm) || (ip.rxwm && ie.rxwm)
 
   protected val regmapBase = Seq(
-    SPICRs.sckdiv -> Seq(RegField(c.divisorBits, ctrl.sck.div)),
-    SPICRs.sckmode -> Seq(
-      RegField(1, ctrl.sck.pha),
-      RegField(1, ctrl.sck.pol)),
-    SPICRs.csid -> Seq(RegField(c.csIdBits, ctrl.cs.id)),
-    SPICRs.csdef -> ctrl.cs.dflt.map(x => RegField(1, x)),
-    SPICRs.csmode -> Seq(RegField(SPICSMode.width, ctrl.cs.mode)),
-    SPICRs.dcssck -> Seq(RegField(c.delayBits, ctrl.dla.cssck)),
-    SPICRs.dsckcs -> Seq(RegField(c.delayBits, ctrl.dla.sckcs)),
-    SPICRs.dintercs -> Seq(RegField(c.delayBits, ctrl.dla.intercs)),
-    SPICRs.dinterxfr -> Seq(RegField(c.delayBits, ctrl.dla.interxfr)),
+    SPICRs.sckdiv -> Seq(RegField(c.divisorBits, ctrl.sck.div,
+                         RegFieldDesc("sckdiv","Serial clock divisor", reset=Some(3)))),
+    SPICRs.sckmode ->  RegFieldGroup("sckmode",Some("Serial clock mode"),Seq(
+      RegField(1, ctrl.sck.pha,
+               RegFieldDesc("sckmode_pha","Serial clock phase", reset=Some(0))),
+      RegField(1, ctrl.sck.pol,
+               RegFieldDesc("sckmode_pol","Serial clock polarity", reset=Some(0))))),
+    SPICRs.csid -> Seq(RegField(c.csIdBits, ctrl.cs.id,
+                       RegFieldDesc("csid","Chip select id", reset=Some(0)))),
+    SPICRs.csdef -> ctrl.cs.dflt.map(x => RegField(1, x,
+                    RegFieldDesc("csdef","Chip select default", reset=Some(1)))),
+    SPICRs.csmode -> Seq(RegField(SPICSMode.width, ctrl.cs.mode,
+                         RegFieldDesc("csmode","Chip select mode", reset=Some(SPICSMode.Auto.litValue())))),
+    SPICRs.dcssck -> Seq(RegField(c.delayBits, ctrl.dla.cssck,
+                         RegFieldDesc("cssck","CS to SCK delay", reset=Some(1)))),
+    SPICRs.dsckcs -> Seq(RegField(c.delayBits, ctrl.dla.sckcs,
+                         RegFieldDesc("sckcs","SCK to CS delay", reset=Some(1)))),
+    SPICRs.dintercs -> Seq(RegField(c.delayBits, ctrl.dla.intercs,
+                           RegFieldDesc("intercs","Minimum CS inactive time", reset=Some(1)))),
+    SPICRs.dinterxfr -> Seq(RegField(c.delayBits, ctrl.dla.interxfr,
+                            RegFieldDesc("interxfr","Minimum interframe delay", reset=Some(0)))),
 
-    SPICRs.fmt -> Seq(
-      RegField(SPIProtocol.width, ctrl.fmt.proto),
-      RegField(SPIEndian.width, ctrl.fmt.endian),
-      RegField(SPIDirection.width, ctrl.fmt.iodir)),
-    SPICRs.len -> Seq(RegField(c.lengthBits, ctrl.fmt.len)),
+    SPICRs.fmt -> RegFieldGroup("fmt",Some("Serial frame format"),Seq(
+      RegField(SPIProtocol.width, ctrl.fmt.proto,
+               RegFieldDesc("proto","SPI Protocol", reset=Some(SPIProtocol.Single.litValue()))),
+      RegField(SPIEndian.width, ctrl.fmt.endian,
+               RegFieldDesc("endian","SPI Endianness", reset=Some(SPIEndian.MSB.litValue()))),
+      RegField(SPIDirection.width, ctrl.fmt.iodir,
+               RegFieldDesc("iodir","SPI I/O Direction", reset=Some(SPIDirection.Rx.litValue()))))),
+    SPICRs.len -> Seq(RegField(c.lengthBits, ctrl.fmt.len,
+                      RegFieldDesc("len","Number of bits per frame", reset=Some(math.min(c.frameBits, 8))))),
 
-    SPICRs.txfifo -> NonBlockingEnqueue(fifo.io.tx),
-    SPICRs.rxfifo -> NonBlockingDequeue(fifo.io.rx),
+    SPICRs.txfifo -> RegFieldGroup("txdata",Some("Transmit data"),
+                     NonBlockingEnqueue(fifo.io.tx)),
+    SPICRs.rxfifo -> RegFieldGroup("rxdata",Some("Receive data"),
+                     NonBlockingDequeue(fifo.io.rx)),
 
-    SPICRs.txmark -> Seq(RegField(c.txDepthBits, ctrl.wm.tx)),
-    SPICRs.rxmark -> Seq(RegField(c.rxDepthBits, ctrl.wm.rx)),
-
-    SPICRs.ie -> Seq(
-      RegField(1, ie.txwm),
-      RegField(1, ie.rxwm)),
-    SPICRs.ip -> Seq(
-      RegField.r(1, ip.txwm),
-      RegField.r(1, ip.rxwm)))
+    SPICRs.txmark -> Seq(RegField(c.txDepthBits, ctrl.wm.tx,
+                         RegFieldDesc("txmark","Transmit watermark", reset=Some(0)))),
+    SPICRs.rxmark -> Seq(RegField(c.rxDepthBits, ctrl.wm.rx,
+                         RegFieldDesc("rxmark","Receive watermark", reset=Some(0)))),
+    SPICRs.ie -> RegFieldGroup("ie",Some("SPI interrupt enable"),Seq(
+      RegField(1, ie.txwm,
+      RegFieldDesc("txwm_ie","Transmit watermark interupt enable", reset=Some(0))),
+      RegField(1, ie.rxwm,
+      RegFieldDesc("rxwm_ie","Receive watermark interupt enable", reset=Some(0))))),
+    SPICRs.ip -> RegFieldGroup("ip",Some("SPI interrupt pending"),Seq(
+      RegField.r(1, ip.txwm,
+      RegFieldDesc("txwm_ip","Transmit watermark interupt pending", volatile=true)),
+      RegField.r(1, ip.rxwm,
+      RegFieldDesc("rxwm_ip","Receive watermark interupt pending", volatile=true)))))
 }
 
 abstract class TLSPIBase(w: Int, c: SPIParamsBase)(implicit p: Parameters) extends LazyModule {
