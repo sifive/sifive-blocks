@@ -47,13 +47,17 @@ class MSIMaster(targets: Seq[MSITarget])(implicit p: Parameters) extends LazyMod
     val local   = if (interrupts.isEmpty) UInt(0) else Cat(interrupts.reverse)
     val pending = remote ^ local
     val select  = ~(leftOR(pending) << 1) & pending
+    val address = Mux1H(select, targetMap)
+    val lowBits = log2Ceil(masterEdge.manager.beatBytes)
+    val shift   = if (lowBits > 0) address(lowBits-1, 0) else UInt(0)
+    val data    = (select & local).orR
 
     io.a.valid := pending.orR && !busy
     io.a.bits := masterEdge.Put(
       fromSource = UInt(0),
-      toAddress  = Mux1H(select, targetMap),
+      toAddress  = address,
       lgSize     = UInt(0),
-      data       = (select & local).orR)._2
+      data       = data << (shift << 3))._2
 
     // When A is sent, toggle our model of the remote state
     when (io.a.fire()) {
