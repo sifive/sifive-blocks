@@ -4,7 +4,7 @@ package sifive.blocks.devices.mockaon
 import Chisel._
 import freechips.rocketchip.config.Field
 import freechips.rocketchip.devices.debug.HasPeripheryDebug
-import freechips.rocketchip.devices.tilelink.HasPeripheryCLINT
+import freechips.rocketchip.devices.tilelink.CanHavePeripheryCLINT
 import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.subsystem.BaseSubsystem
@@ -13,7 +13,7 @@ import freechips.rocketchip.util.{ResetCatchAndSync, SynchronizerShiftReg}
 
 case object PeripheryMockAONKey extends Field[MockAONParams]
 
-trait HasPeripheryMockAON extends HasPeripheryCLINT with HasPeripheryDebug { this: BaseSubsystem =>
+trait HasPeripheryMockAON extends CanHavePeripheryCLINT with HasPeripheryDebug { this: BaseSubsystem =>
   // We override the clock & Reset here so that all synchronizers, etc
   // are in the proper clock domain.
   val mockAONParams= p(PeripheryMockAONKey)
@@ -45,7 +45,9 @@ trait HasPeripheryMockAONModuleImp extends LazyModuleImp with HasPeripheryMockAO
   val rtc_last = Reg(init = Bool(false), next=rtc_sync)
   val rtc_tick = Reg(init = Bool(false), next=(rtc_sync & (~rtc_last)))
 
-  outer.clint.module.io.rtcTick := rtc_tick
+  outer.clintOpt.foreach { clint =>
+    clint.module.io.rtcTick := rtc_tick
+  }
 
   outer.aon.module.io.ndreset := outer.debug.module.io.ctrl.ndreset
 }
