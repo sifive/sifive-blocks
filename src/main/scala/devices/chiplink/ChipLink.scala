@@ -160,8 +160,8 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
     sourceE.io.q <> FromAsyncBundle(rx.io.e)
 
     val tx = Module(new TX(info))
-    tx.clock := io.port.c2b.clk
-    tx.reset := io.port.c2b.rst
+    tx.clock := io.c2b_clk
+    tx.reset := io.c2b_rst
     io.port.c2b.data := tx.io.c2b_data
     io.port.c2b.send := tx.io.c2b_send
     io.port.c2b.clk  := tx.io.c2b_clk
