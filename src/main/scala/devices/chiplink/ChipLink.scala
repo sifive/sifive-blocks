@@ -160,6 +160,8 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
     sourceE.io.q <> FromAsyncBundle(rx.io.e)
 
     val tx = Module(new TX(info))
+    tx.clock := io.port.c2b.clk
+    tx.reset := io.port.c2b.rst
     io.port.c2b.data := tx.io.c2b_data
     io.port.c2b.send := tx.io.c2b_send
     sinkA.io.a <> in .a
@@ -174,8 +176,6 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
       tx.io.sd <> sinkD.io.q
       tx.io.se <> sinkE.io.q
     } else {
-      tx.clock := io.port.c2b.clk
-      tx.reset := io.port.c2b.rst
       tx.io.a <> ToAsyncBundle(sinkA.io.q, params.crossingDepth)
       tx.io.b <> ToAsyncBundle(sinkB.io.q, params.crossingDepth)
       tx.io.c <> ToAsyncBundle(sinkC.io.q, params.crossingDepth)
