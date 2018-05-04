@@ -164,6 +164,8 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
     tx.reset := io.port.c2b.rst
     io.port.c2b.data := tx.io.c2b_data
     io.port.c2b.send := tx.io.c2b_send
+    io.port.c2b.clk  := tx.io.c2b_clk
+    io.port.c2b.rst  := tx.io.c2b_rst
     sinkA.io.a <> in .a
     sinkB.io.b <> out.b
     sinkC.io.c <> in .c
@@ -194,10 +196,6 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
     sourceC.io.d_tlSource := sinkD.io.c_tlSource
     sourceD.io.e_tlSink := sinkE.io.d_tlSink
     sinkE.io.d_clSink := sourceD.io.e_clSink
-
-    // Create the TX clock domain from input
-    io.port.c2b.clk := io.c2b_clk
-    io.port.c2b.rst := io.c2b_rst
 
     // Disable ChipLink while RX+TX are in reset
     val do_bypass = ResetCatchAndSync(clock, rx.reset) || ResetCatchAndSync(clock, tx.reset)
