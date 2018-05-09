@@ -91,7 +91,7 @@ class GenericTimerCfgRegIFC (
     val write_extra = Vec.fill(maxcmp){false.B}
     val write_center = Vec.fill(maxcmp){false.B}
 
-    RegFieldGroup(s"${prefix}cfg", Some("${prefix} Configuration"),
+    RegFieldGroup(s"${prefix}cfg", Some(s"${prefix} Configuration"),
       Seq(
         RegField(scaleWidth, RegReadFn(read.scale), RegWriteFn((v, d) => writeFn(v, d, write.scale, write_scale)), descs.scale),
         RegField(8-scaleWidth),
