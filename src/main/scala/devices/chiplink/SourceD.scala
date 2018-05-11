@@ -62,13 +62,14 @@ class SourceD(info: ChipLinkInfo) extends Module
   val stall = d_first && !sink_ok
   val xmit  = q_last || state === s_data
 
-  io.d.bits.opcode := q_opcode
-  io.d.bits.param  := q_param
-  io.d.bits.size   := q_size
-  io.d.bits.source := Vec(muxes.map { m => m(q_source) })(q_domain)
-  io.d.bits.sink   := Mux(q_grant, sink, UInt(0))
-  io.d.bits.data   := io.q.bits
-  io.d.bits.error  := Bool(false) // !!! frack => need packet footer?
+  io.d.bits.opcode  := q_opcode
+  io.d.bits.param   := q_param
+  io.d.bits.size    := q_size
+  io.d.bits.source  := Vec(muxes.map { m => m(q_source) })(q_domain)
+  io.d.bits.sink    := Mux(q_grant, sink, UInt(0))
+  io.d.bits.denied  := Bool(false)
+  io.d.bits.data    := io.q.bits
+  io.d.bits.corrupt := Bool(false)
 
   io.d.valid := (io.q.valid && !stall) &&  xmit
   io.q.ready := (io.d.ready && !stall) || !xmit
