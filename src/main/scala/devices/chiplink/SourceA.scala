@@ -83,6 +83,7 @@ class SourceA(info: ChipLinkInfo) extends Module
   a.bits.address := info.makeError(q_legal, q_address)
   a.bits.mask    := MaskGen(q_address0, q_size, info.params.dataBytes)
   a.bits.data    := io.q.bits
+  a.bits.corrupt := Bool(false)
 
   val stall = a_first && !source_ok
   val xmit = q_last || state === s_data

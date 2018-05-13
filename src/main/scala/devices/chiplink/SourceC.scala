@@ -72,7 +72,7 @@ class SourceC(info: ChipLinkInfo) extends Module
   io.c.bits.source  := Mux(q_release, source, UInt(0)) // always domain 0
   io.c.bits.address := info.makeError(q_legal, q_address)
   io.c.bits.data    := io.q.bits
-  io.c.bits.error   := Bool(false) // !!! need a packet footer
+  io.c.bits.corrupt := Bool(false)
 
   val stall = c_first && !source_ok
   val xmit = q_last || state === s_data

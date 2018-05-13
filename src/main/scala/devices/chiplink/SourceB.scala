@@ -61,6 +61,7 @@ class SourceB(info: ChipLinkInfo) extends Module
   b.bits.address := Cat(q_address1, q_address0)
   b.bits.mask    := MaskGen(q_address0, q_size, info.params.dataBytes)
   b.bits.data    := io.q.bits
+  b.bits.corrupt := Bool(false)
 
   val xmit = q_last || state === s_data
   b.valid := io.q.valid &&  xmit
