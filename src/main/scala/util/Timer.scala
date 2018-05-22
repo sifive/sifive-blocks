@@ -185,11 +185,11 @@ trait GenericTimer {
   require(ncmp > 0)
 
   protected def countLo_desc: RegFieldDesc = if (countWidth > regWidth) {
-    RegFieldDesc(s"${prefix}countLo", "Low bits of Counter", volatile=true)
+    RegFieldDesc(s"${prefix}countlo", "Low bits of Counter", volatile=true)
   } else  {
     RegFieldDesc(s"${prefix}count", "Counter Register", volatile=true)
   }
-  protected def countHi_desc: RegFieldDesc = if (countWidth > regWidth) RegFieldDesc(s"${prefix}countHi", "High bits of Counter", volatile=true) else RegFieldDesc.reserved
+  protected def countHi_desc: RegFieldDesc = if (countWidth > regWidth) RegFieldDesc(s"${prefix}counthi", "High bits of Counter", volatile=true) else RegFieldDesc.reserved
   protected def s_desc: RegFieldDesc = RegFieldDesc(s"${prefix}s", "Scaled value of Counter", access=RegFieldAccessType.R, volatile=true)
   protected def cmp_desc: Seq[RegFieldDesc] = Seq.tabulate(ncmp){ i => RegFieldDesc(s"${prefix}cmp${i}", s"Comparator ${i}")}
   protected def feed_desc: RegFieldDesc = RegFieldDesc(s"${prefix}feed", "Feed register")
