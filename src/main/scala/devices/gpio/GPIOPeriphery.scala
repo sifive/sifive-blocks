@@ -15,7 +15,7 @@ trait HasPeripheryGPIO { this: BaseSubsystem =>
     val name = Some(s"gpio_$i")
     val gpio = LazyModule(new TLGPIO(pbus.beatBytes, params)).suggestName(name)
     pbus.toVariableWidthSlave(name) { gpio.node }
-    ibus.fromSync := gpio.intnode
+    ibus.fromAsync := gpio.intnode
     gpio
   }
 }

@@ -5,18 +5,20 @@ import Chisel._
 import chisel3.experimental.{withClockAndReset}
 import freechips.rocketchip.config.Field
 import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
-import freechips.rocketchip.subsystem.{BaseSubsystem, PeripheryBusKey}
+import freechips.rocketchip.subsystem.{BaseSubsystem, PeripheryBus, PeripheryBusKey}
 
 case object PeripheryUARTKey extends Field[Seq[UARTParams]]
 
 trait HasPeripheryUART { this: BaseSubsystem =>
+  val pbus: PeripheryBus
+
   private val divinit = (p(PeripheryBusKey).frequency / 115200).toInt
   val uartParams = p(PeripheryUARTKey).map(_.copy(divisorInit = divinit))
   val uarts = uartParams.zipWithIndex.map { case(params, i) =>
     val name = Some(s"uart_$i")
     val uart = LazyModule(new TLUART(pbus.beatBytes, params)).suggestName(name)
     pbus.toVariableWidthSlave(name) { uart.node }
-    ibus.fromSync := uart.intnode
+    ibus.fromAsync := uart.intnode
     uart
   }
 }
@@ -36,5 +38,6 @@ trait HasPeripheryUARTModuleImp extends LazyModuleImp with HasPeripheryUARTBundl
 
   (uart zip outer.uarts).foreach { case (io, device) =>
     io <> device.module.io.port
+    device.module.clock := outer.pbus.module.clock
   }
 }

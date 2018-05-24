@@ -3,7 +3,7 @@ package sifive.blocks.devices.spi
 
 import Chisel._
 import freechips.rocketchip.config.Field
-import freechips.rocketchip.subsystem.BaseSubsystem
+import freechips.rocketchip.subsystem.{BaseSubsystem, PeripheryBus}
 import freechips.rocketchip.diplomacy.{LazyModule,LazyModuleImp,BufferParams}
 import freechips.rocketchip.tilelink.{TLFragmenter,TLBuffer}
 import freechips.rocketchip.util.HeterogeneousBag
@@ -11,12 +11,14 @@ import freechips.rocketchip.util.HeterogeneousBag
 case object PeripherySPIKey extends Field[Seq[SPIParams]]
 
 trait HasPeripherySPI { this: BaseSubsystem =>
+  val pbus: PeripheryBus
+
   val spiParams = p(PeripherySPIKey)  
   val spis = spiParams.zipWithIndex.map { case(params, i) =>
     val name = Some(s"spi_$i")
     val spi = LazyModule(new TLSPI(pbus.beatBytes, params)).suggestName(name)
     pbus.toVariableWidthSlave(name) { spi.rnode }
-    ibus.fromSync := spi.intnode
+    ibus.fromAsync := spi.intnode
     spi
   }
 }
@@ -32,12 +34,15 @@ trait HasPeripherySPIModuleImp extends LazyModuleImp with HasPeripherySPIBundle 
 
   (spi zip outer.spis).foreach { case (io, device) =>
     io <> device.module.io.port
+    device.module.clock := outer.pbus.module.clock
   }
 }
 
 case object PeripherySPIFlashKey extends Field[Seq[SPIFlashParams]]
 
 trait HasPeripherySPIFlash { this: BaseSubsystem =>
+  val pbus: PeripheryBus
+
   val spiFlashParams = p(PeripherySPIFlashKey)  
   val qspis = spiFlashParams.zipWithIndex.map { case(params, i) =>
     val name = Some(s"qspi_$i")
@@ -47,7 +52,7 @@ trait HasPeripherySPIFlash { this: BaseSubsystem =>
       TLFragmenter(1, pbus.blockBytes) :=
         TLBuffer(BufferParams(params.fBufferDepth), BufferParams.none)
     }
-    ibus.fromSync := qspi.intnode
+    ibus.fromAsync := qspi.intnode
     qspi
   }
 }
@@ -63,5 +68,6 @@ trait HasPeripherySPIFlashModuleImp extends LazyModuleImp with HasPeripherySPIFl
 
   (qspi zip outer.qspis) foreach { case (io, device) => 
     io <> device.module.io.port
+    device.module.clock := outer.pbus.module.clock
   }
 }
