@@ -63,13 +63,13 @@ class SourceD(info: ChipLinkInfo) extends Module
   val xmit  = q_last || state === s_data
 
   io.d.bits.opcode  := q_opcode
-  io.d.bits.param   := q_param
+  io.d.bits.param   := q_param(1,0)
   io.d.bits.size    := q_size
   io.d.bits.source  := Vec(muxes.map { m => m(q_source) })(q_domain)
   io.d.bits.sink    := Mux(q_grant, sink, UInt(0))
-  io.d.bits.denied  := Bool(false)
+  io.d.bits.denied  := q_param >> 2
   io.d.bits.data    := io.q.bits
-  io.d.bits.corrupt := Bool(false)
+  io.d.bits.corrupt := io.d.bits.denied && info.edgeIn.hasData(io.d.bits)
 
   io.d.valid := (io.q.valid && !stall) &&  xmit
   io.q.ready := (io.d.ready && !stall) || !xmit
