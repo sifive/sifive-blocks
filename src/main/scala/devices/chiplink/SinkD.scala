@@ -46,7 +46,7 @@ class SinkD(info: ChipLinkInfo) extends Module
   val header = info.encode(
     format = UInt(3),
     opcode = d.bits.opcode,
-    param  = d.bits.param,
+    param  = Cat(d.bits.denied, d.bits.param),
     size   = d.bits.size,
     domain = d.bits.source >> log2Ceil(info.params.sourcesPerDomain),
     source = Mux(relack, io.c_clSource, io.a_clSource))

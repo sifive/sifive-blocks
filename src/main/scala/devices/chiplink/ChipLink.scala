@@ -28,6 +28,8 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
         supportsPutFull    = params.fullXfer,
         supportsPutPartial = params.fullXfer,
         supportsHint       = params.fullXfer,
+        mayDenyPut         = true,
+        mayDenyGet         = true,
         fifoId             = Some(0))) ++
       maybeManager(params.TLC, a => TLManagerParameters(
         address            = a,
@@ -42,6 +44,8 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
         supportsPutFull    = params.fullXfer,
         supportsPutPartial = params.fullXfer,
         supportsHint       = params.fullXfer,
+        mayDenyPut         = true,
+        mayDenyGet         = true,
         fifoId             = Some(0))),
     beatBytes  = 4,
     endSinkId  = params.sinks,
