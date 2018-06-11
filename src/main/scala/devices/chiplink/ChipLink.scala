@@ -2,6 +2,7 @@
 package sifive.blocks.devices.chiplink
 
 import Chisel._
+import chisel3.experimental.withClock
 import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
@@ -149,7 +150,8 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
 
     val rx = Module(new RX(info))
     rx.clock := io.port.b2c.clk
-    rx.reset := io.port.b2c.rst
+    rx.reset := AsyncResetReg(io.port.b2c.rst, io.port.b2c.clk, reset, true, None)
+    // ^^^ Clock recovery is safe, because b2c.rst is high longer than reset
     rx.io.b2c_data := io.port.b2c.data
     rx.io.b2c_send := io.port.b2c.send
     out.a <> sourceA.io.a
