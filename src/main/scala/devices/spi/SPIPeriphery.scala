@@ -11,8 +11,6 @@ import freechips.rocketchip.util.HeterogeneousBag
 case object PeripherySPIKey extends Field[Seq[SPIParams]]
 
 trait HasPeripherySPI { this: BaseSubsystem =>
-  val pbus: PeripheryBus
-
   val spiParams = p(PeripherySPIKey)  
   val spis = spiParams.zipWithIndex.map { case(params, i) =>
     val name = Some(s"spi_$i")
@@ -34,15 +32,12 @@ trait HasPeripherySPIModuleImp extends LazyModuleImp with HasPeripherySPIBundle 
 
   (spi zip outer.spis).foreach { case (io, device) =>
     io <> device.module.io.port
-    device.module.clock := outer.pbus.module.clock
   }
 }
 
 case object PeripherySPIFlashKey extends Field[Seq[SPIFlashParams]]
 
 trait HasPeripherySPIFlash { this: BaseSubsystem =>
-  val pbus: PeripheryBus
-
   val spiFlashParams = p(PeripherySPIFlashKey)  
   val qspis = spiFlashParams.zipWithIndex.map { case(params, i) =>
     val name = Some(s"qspi_$i")
@@ -68,6 +63,5 @@ trait HasPeripherySPIFlashModuleImp extends LazyModuleImp with HasPeripherySPIFl
 
   (qspi zip outer.qspis) foreach { case (io, device) => 
     io <> device.module.io.port
-    device.module.clock := outer.pbus.module.clock
   }
 }

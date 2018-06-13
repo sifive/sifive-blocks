@@ -6,6 +6,7 @@ import chisel3.experimental.MultiIOModule
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util._
 
 import sifive.blocks.util.{NonBlockingEnqueue, NonBlockingDequeue}
@@ -19,7 +20,8 @@ case class UARTParams(
   oversample: Int = 4,
   nSamples: Int = 3,
   nTxEntries: Int = 8,
-  nRxEntries: Int = 8)
+  nRxEntries: Int = 8,
+  crossingType: SubsystemClockCrossing = SynchronousCrossing())
 
 trait HasUARTParameters {
   def c: UARTParams
@@ -267,3 +269,6 @@ class TLUART(w: Int, c: UARTParams)(implicit p: Parameters)
   extends TLRegisterRouter(c.address, "serial", Seq("sifive,uart0"), interrupts = 1, beatBytes = w)(
   new TLRegBundle(c, _)    with HasUARTTopBundleContents)(
   new TLRegModule(c, _, _) with HasUARTTopModuleContents)
+  with HasCrossing {
+  val crossing = c.crossingType
+}

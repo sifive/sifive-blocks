@@ -8,9 +8,14 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util.SynchronizerShiftReg
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util.AsyncResetRegVec
 
-case class GPIOParams(address: BigInt, width: Int, includeIOF: Boolean = false)
+case class GPIOParams(
+  address: BigInt,
+  width: Int,
+  includeIOF: Boolean = false,
+  crossingType: SubsystemClockCrossing = SynchronousCrossing())
 
 // This is the actual IOF interface.pa
 // Add a valid bit to indicate whether
@@ -249,3 +254,6 @@ class TLGPIO(w: Int, c: GPIOParams)(implicit p: Parameters)
   extends TLRegisterRouter(c.address, "gpio", Seq("sifive,gpio0"), interrupts = c.width, beatBytes = w)(
   new TLRegBundle(c, _)    with HasGPIOBundleContents)(
   new TLRegModule(c, _, _) with HasGPIOModuleContents)
+  with HasCrossing {
+  val crossing = c.crossingType
+}

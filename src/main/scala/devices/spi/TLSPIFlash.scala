@@ -6,6 +6,7 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util.HeterogeneousBag
 
 trait SPIFlashParamsBase extends SPIParamsBase {
@@ -31,7 +32,8 @@ case class SPIFlashParams(
     csWidth: Int = 1,
     delayBits: Int = 8,
     divisorBits: Int = 12,
-    sampleDelay: Int = 2)
+    sampleDelay: Int = 2,
+    crossingType: SubsystemClockCrossing = SynchronousCrossing())
   extends SPIFlashParamsBase {
   val frameBits = 8
   val insnAddrBytes = 4
@@ -113,7 +115,9 @@ abstract class TLSPIFlashBase(w: Int, c: SPIFlashParamsBase)(implicit p: Paramet
     beatBytes = 1)))
 }
 
-class TLSPIFlash(w: Int, c: SPIFlashParams)(implicit p: Parameters) extends TLSPIFlashBase(w,c)(p) {
+class TLSPIFlash(w: Int, c: SPIFlashParams)(implicit p: Parameters) extends TLSPIFlashBase(w,c)(p) with HasCrossing {
+  val crossing = c.crossingType
+
   lazy val module = new SPIFlashTopModule(c, this) {
 
     arb.io.inner(0) <> flash.io.link

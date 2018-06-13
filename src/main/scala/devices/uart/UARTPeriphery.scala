@@ -10,8 +10,6 @@ import freechips.rocketchip.subsystem.{BaseSubsystem, PeripheryBus, PeripheryBus
 case object PeripheryUARTKey extends Field[Seq[UARTParams]]
 
 trait HasPeripheryUART { this: BaseSubsystem =>
-  val pbus: PeripheryBus
-
   private val divinit = (p(PeripheryBusKey).frequency / 115200).toInt
   val uartParams = p(PeripheryUARTKey).map(_.copy(divisorInit = divinit))
   val uarts = uartParams.zipWithIndex.map { case(params, i) =>
@@ -38,6 +36,5 @@ trait HasPeripheryUARTModuleImp extends LazyModuleImp with HasPeripheryUARTBundl
 
   (uart zip outer.uarts).foreach { case (io, device) =>
     io <> device.module.io.port
-    device.module.clock := outer.pbus.module.clock
   }
 }

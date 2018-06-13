@@ -17,8 +17,8 @@ trait HasPeripheryMockAON extends CanHavePeripheryCLINT with HasPeripheryDebug {
   // We override the clock & Reset here so that all synchronizers, etc
   // are in the proper clock domain.
   val mockAONParams= p(PeripheryMockAONKey)
-  val aon = LazyModule(new MockAONWrapper(pbus.beatBytes, mockAONParams))
-  pbus.toVariableWidthSlave(Some("aon")) { aon.node := TLAsyncCrossingSource() }
+  val aon = LazyModule(new MockAONWrapper(sbus.control_bus.beatBytes, mockAONParams))
+  sbus.control_bus.toVariableWidthSlave(Some("aon")) { aon.node := TLAsyncCrossingSource() }
   ibus.fromSync := IntSyncCrossingSink() := aon.intnode
 }
 

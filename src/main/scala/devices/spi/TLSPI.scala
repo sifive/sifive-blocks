@@ -7,6 +7,7 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.interrupts._
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util.HeterogeneousBag
 import sifive.blocks.util.{NonBlockingEnqueue, NonBlockingDequeue}
 
@@ -41,7 +42,9 @@ case class SPIParams(
     frameBits: Int = 8,
     delayBits: Int = 8,
     divisorBits: Int = 12,
-    sampleDelay: Int = 2)
+    sampleDelay: Int = 2,
+    crossingType: SubsystemClockCrossing = SynchronousCrossing()
+    )
   extends SPIParamsBase {
 
   require(frameBits >= 4)
@@ -134,7 +137,10 @@ abstract class TLSPIBase(w: Int, c: SPIParamsBase)(implicit p: Parameters) exten
   val intnode = IntSourceNode(IntSourcePortSimple(resources = device.int))
 }
 
-class TLSPI(w: Int, c: SPIParams)(implicit p: Parameters) extends TLSPIBase(w,c)(p) {
+class TLSPI(w: Int, c: SPIParams)(implicit p: Parameters)
+  extends TLSPIBase(w,c)(p)
+  with HasCrossing{
+  val crossing = c.crossingType
   lazy val module = new SPITopModule(c, this) {
     mac.io.link <> fifo.io.link
     rnode.regmap(regmapBase:_*)
