@@ -3,7 +3,7 @@ package sifive.blocks.devices.spi
 
 import Chisel._
 import freechips.rocketchip.config.Field
-import freechips.rocketchip.subsystem.{BaseSubsystem, PeripheryBus}
+import freechips.rocketchip.subsystem.{BaseSubsystem}
 import freechips.rocketchip.diplomacy.{LazyModule,LazyModuleImp,BufferParams}
 import freechips.rocketchip.tilelink.{TLFragmenter,TLBuffer}
 import freechips.rocketchip.util.HeterogeneousBag

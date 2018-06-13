@@ -3,7 +3,7 @@ package sifive.blocks.devices.i2c
 
 import Chisel._
 import freechips.rocketchip.config.Field
-import freechips.rocketchip.subsystem.{BaseSubsystem, PeripheryBus}
+import freechips.rocketchip.subsystem.{BaseSubsystem}
 import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
 
 case object PeripheryI2CKey extends Field[Seq[I2CParams]]

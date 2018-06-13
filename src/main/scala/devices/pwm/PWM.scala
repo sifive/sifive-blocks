@@ -13,7 +13,7 @@ import sifive.blocks.util.{GenericTimer, GenericTimerIO, DefaultGenericTimerCfgD
 
 // Core PWM Functionality  & Register Interface
 
-class PWM(val ncmp: Int = 4, val cmpWidth: Int = 16) extends MultiIOModule with GenericTimer{
+class PWM(val ncmp: Int = 4, val cmpWidth: Int = 16) extends MultiIOModule with GenericTimer {
 
   def orR(v: Vec[Bool]): Bool = v.foldLeft(Bool(false))( _||_ )
 

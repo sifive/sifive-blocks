@@ -8,7 +8,7 @@ import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink.TLBusBypass
 import freechips.rocketchip.util._
 
-class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyModule() with LazyScope{
+class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyModule() {
 
   val device = new SimpleBus("chiplink", Seq("sifive,chiplink"))
 
