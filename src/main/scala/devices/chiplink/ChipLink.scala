@@ -79,7 +79,7 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
     val io = IO(new Bundle {
       val port = new WideDataLayerPort(params)
       val bypass = Bool(OUTPUT)
-      // When not syncTX, these drive the TX domain
+      // These are fed to port.c2b.{clk,rst} -- must be specified by creator
       val c2b_clk = Clock(INPUT)
       val c2b_rst = Bool(INPUT)
     })
@@ -164,8 +164,6 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
     sourceE.io.q <> FromAsyncBundle(rx.io.e)
 
     val tx = Module(new TX(info))
-    io.port.c2b.clk := tx.clock
-    io.port.c2b.rst := tx.reset
     io.port.c2b.data := tx.io.c2b_data
     io.port.c2b.send := tx.io.c2b_send
     sinkA.io.a <> in .a
@@ -180,9 +178,8 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
       tx.io.sd <> sinkD.io.q
       tx.io.se <> sinkE.io.q
     } else {
-      // Create the TX clock domain from input
-      tx.clock := io.c2b_clk
-      tx.reset := io.c2b_rst
+      tx.clock := io.port.c2b.clk
+      tx.reset := io.port.c2b.rst
       tx.io.a <> ToAsyncBundle(sinkA.io.q, params.crossingDepth)
       tx.io.b <> ToAsyncBundle(sinkB.io.q, params.crossingDepth)
       tx.io.c <> ToAsyncBundle(sinkC.io.q, params.crossingDepth)
@@ -201,6 +198,10 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
     sourceC.io.d_tlSource := sinkD.io.c_tlSource
     sourceD.io.e_tlSink := sinkE.io.d_tlSink
     sinkE.io.d_clSink := sourceD.io.e_clSink
+
+    // Create the TX clock domain from input
+    io.port.c2b.clk := io.c2b_clk
+    io.port.c2b.rst := io.c2b_rst
 
     // Disable ChipLink while RX+TX are in reset
     val do_bypass = ResetCatchAndSync(clock, rx.reset) || ResetCatchAndSync(clock, tx.reset)
