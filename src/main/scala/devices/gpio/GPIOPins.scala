@@ -2,6 +2,7 @@
 package sifive.blocks.devices.gpio
 
 import Chisel._
+import chisel3.experimental.{withClockAndReset}
 import sifive.blocks.devices.pinctrl.{Pin}
 
 // While this is a bit pendantic, it keeps the GPIO
@@ -16,6 +17,17 @@ class GPIOSignals[T <: Data](private val pingen: () => T, private val c: GPIOPar
 class GPIOPins[T <: Pin](pingen: () => T, c: GPIOParams) extends GPIOSignals[T](pingen, c)
 
 object GPIOPinsFromPort {
+
+  def apply[T <: Pin](pins: GPIOSignals[T], port: GPIOPortIO, clock: Clock, reset: Bool){
+
+    // This will just match up the components of the Bundle that
+    // exist in both.
+    withClockAndReset(clock, reset) {
+      (pins.pins zip port.pins) foreach {case (pin, port) =>
+        pin <> port
+      }
+    }
+  }
 
   def apply[T <: Pin](pins: GPIOSignals[T], port: GPIOPortIO){
 

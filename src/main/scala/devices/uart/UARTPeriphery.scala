@@ -5,7 +5,7 @@ import Chisel._
 import chisel3.experimental.{withClockAndReset}
 import freechips.rocketchip.config.Field
 import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
-import freechips.rocketchip.subsystem.{BaseSubsystem, PeripheryBusKey}
+import freechips.rocketchip.subsystem.{BaseSubsystem, PeripheryBus, PeripheryBusKey}
 
 case object PeripheryUARTKey extends Field[Seq[UARTParams]]
 
@@ -16,7 +16,7 @@ trait HasPeripheryUART { this: BaseSubsystem =>
     val name = Some(s"uart_$i")
     val uart = LazyModule(new TLUART(pbus.beatBytes, params)).suggestName(name)
     pbus.toVariableWidthSlave(name) { uart.node }
-    ibus.fromSync := uart.intnode
+    ibus.fromAsync := uart.intnode
     uart
   }
 }

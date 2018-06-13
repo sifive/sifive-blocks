@@ -46,9 +46,12 @@ import chisel3.experimental.MultiIOModule
 import freechips.rocketchip.config._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util.{AsyncResetRegVec, Majority}
 
-case class I2CParams(address: BigInt)
+case class I2CParams(
+  address: BigInt,
+  crossingType: SubsystemClockCrossing = SynchronousCrossing())
 
 class I2CPin extends Bundle {
   val in  = Bool(INPUT)
@@ -567,3 +570,6 @@ class TLI2C(w: Int, c: I2CParams)(implicit p: Parameters)
   extends TLRegisterRouter(c.address, "i2c", Seq("sifive,i2c0"), interrupts = 1, beatBytes = w)(
   new TLRegBundle(c, _)    with HasI2CBundleContents)(
   new TLRegModule(c, _, _) with HasI2CModuleContents)
+  with HasCrossing {
+  val crossing = c.crossingType
+}

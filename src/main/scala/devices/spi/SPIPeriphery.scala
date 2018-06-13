@@ -3,7 +3,7 @@ package sifive.blocks.devices.spi
 
 import Chisel._
 import freechips.rocketchip.config.Field
-import freechips.rocketchip.subsystem.BaseSubsystem
+import freechips.rocketchip.subsystem.{BaseSubsystem}
 import freechips.rocketchip.diplomacy.{LazyModule,LazyModuleImp,BufferParams}
 import freechips.rocketchip.tilelink.{TLFragmenter,TLBuffer}
 import freechips.rocketchip.util.HeterogeneousBag
@@ -16,7 +16,7 @@ trait HasPeripherySPI { this: BaseSubsystem =>
     val name = Some(s"spi_$i")
     val spi = LazyModule(new TLSPI(pbus.beatBytes, params)).suggestName(name)
     pbus.toVariableWidthSlave(name) { spi.rnode }
-    ibus.fromSync := spi.intnode
+    ibus.fromAsync := spi.intnode
     spi
   }
 }
@@ -47,7 +47,7 @@ trait HasPeripherySPIFlash { this: BaseSubsystem =>
       TLFragmenter(1, pbus.blockBytes) :=
         TLBuffer(BufferParams(params.fBufferDepth), BufferParams.none)
     }
-    ibus.fromSync := qspi.intnode
+    ibus.fromAsync := qspi.intnode
     qspi
   }
 }

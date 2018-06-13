@@ -21,7 +21,7 @@ trait HasPeripheryPWM { this: BaseSubsystem =>
     val name = Some(s"pwm_$i")
     val pwm = LazyModule(new TLPWM(pbus.beatBytes, params)).suggestName(name)
     pbus.toVariableWidthSlave(name) { pwm.node }
-    ibus.fromSync := pwm.intnode
+    ibus.fromAsync := pwm.intnode
     pwm
   }
 }

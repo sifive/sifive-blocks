@@ -7,6 +7,7 @@ import Chisel.ImplicitConversions._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util._
 import sifive.blocks.util.{GenericTimer, GenericTimerIO, DefaultGenericTimerCfgDescs}
 
@@ -60,7 +61,8 @@ case class PWMParams(
   size: Int = 0x1000,
   regBytes: Int = 4,
   ncmp: Int = 4,
-  cmpWidth: Int = 16)
+  cmpWidth: Int = 16,
+  crossingType: SubsystemClockCrossing = SynchronousCrossing())
 
 trait HasPWMBundleContents extends Bundle {
   def params: PWMParams
@@ -83,3 +85,6 @@ class TLPWM(w: Int, c: PWMParams)(implicit p: Parameters)
   extends TLRegisterRouter(c.address, "pwm", Seq("sifive,pwm0"), interrupts = c.ncmp, size = c.size, beatBytes = w)(
   new TLRegBundle(c, _)    with HasPWMBundleContents)(
   new TLRegModule(c, _, _) with HasPWMModuleContents)
+  with HasCrossing{
+  val crossing = c.crossingType
+}
