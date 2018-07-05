@@ -21,7 +21,8 @@ class RX(info: ChipLinkInfo) extends Module
 
   // Immediately register our input data
   val b2c_data = RegNext(RegNext(io.b2c_data))
-  val b2c_send = RegNext(RegNext(io.b2c_send, Bool(false)), Bool(false))
+  val b2c_send = RegNext(RegNext(io.b2c_send), Bool(false))
+  // b2c_send is NOT cleared on the first RegNext because this module's reset has a flop on it
 
   // Fit b2c into the firstlast API
   val beat = Wire(Decoupled(UInt(width = info.params.dataBits)))

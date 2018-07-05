@@ -8,6 +8,8 @@ import freechips.rocketchip.util._
 class TX(info: ChipLinkInfo) extends Module
 {
   val io = new Bundle {
+    val c2b_clk  = Clock(OUTPUT)
+    val c2b_rst  = Bool(OUTPUT)
     val c2b_send = Bool(OUTPUT)
     val c2b_data = UInt(OUTPUT, info.params.dataBits)
     val a = new AsyncBundle(info.params.crossingDepth, new DataLayer(info.params)).flip
@@ -90,6 +92,8 @@ class TX(info: ChipLinkInfo) extends Module
   first := (grant & lasts).orR
 
   // Form the output beat
+  io.c2b_clk  := clock
+  io.c2b_rst  := AsyncResetReg(Bool(false), clock, reset, true, None)
   io.c2b_send := RegNext(RegNext(first || (state & valid) =/= UInt(0), Bool(false)), Bool(false))
   io.c2b_data := RegNext(Mux1H(RegNext(grant), RegNext(Vec(ioF.map(_.bits.data)))))
 
