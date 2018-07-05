@@ -5,6 +5,7 @@ import Chisel._
 import chisel3.experimental.MultiIOModule
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.regmapper._
+import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util._
@@ -269,6 +270,10 @@ class TLUART(w: Int, c: UARTParams)(implicit p: Parameters)
   extends TLRegisterRouter(c.address, "serial", Seq("sifive,uart0"), interrupts = 1, beatBytes = w)(
   new TLRegBundle(c, _)    with HasUARTTopBundleContents)(
   new TLRegModule(c, _, _) with HasUARTTopModuleContents)
-  with HasCrossing {
+  with HasCrossing
+{
   val crossing = c.crossingType
+  ResourceBinding {
+    Resource(ResourceAnchors.aliases, "uart").bind(ResourceReference(device.label))
+  }
 }
