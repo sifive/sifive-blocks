@@ -132,7 +132,15 @@ class SPITopModule(c: SPIParamsBase, outer: TLSPIBase)
 
 abstract class TLSPIBase(w: Int, c: SPIParamsBase)(implicit p: Parameters) extends LazyModule {
   require(isPow2(c.rSize))
-  val device = new SimpleDevice("spi", Seq("sifive,spi0"))
+  val device = new SimpleDevice("spi", Seq("sifive,spi0")) {
+    override def describe(resources: ResourceBindings): Description = {
+      val Description(name, mapping) = super.describe(resources)
+      val extra = Map(
+        "#address-cells" -> Seq(ResourceInt(1)),
+        "#size-cells" -> Seq(ResourceInt(0)))
+      Description(name, mapping ++ extra)
+    }
+  }
   val rnode = TLRegisterNode(address = Seq(AddressSet(c.rAddress, c.rSize-1)), device = device, beatBytes = w)
   val intnode = IntSourceNode(IntSourcePortSimple(resources = device.int))
 }

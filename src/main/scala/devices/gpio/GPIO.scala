@@ -6,6 +6,7 @@ import chisel3.experimental.MultiIOModule
 import sifive.blocks.devices.pinctrl.{PinCtrl, Pin, BasePin, EnhancedPin, EnhancedPinCtrl}
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util.SynchronizerShiftReg
+import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.subsystem._
@@ -254,6 +255,12 @@ class TLGPIO(w: Int, c: GPIOParams)(implicit p: Parameters)
   extends TLRegisterRouter(c.address, "gpio", Seq("sifive,gpio0"), interrupts = c.width, beatBytes = w)(
   new TLRegBundle(c, _)    with HasGPIOBundleContents)(
   new TLRegModule(c, _, _) with HasGPIOModuleContents)
-  with HasCrossing {
+  with HasCrossing
+{
   val crossing = c.crossingType
+  override def extraResources(resources: ResourceBindings) = Map(
+    "gpio-controller"      -> Nil,
+    "#gpio-cells"          -> Seq(ResourceInt(2)),
+    "interrupt-controller" -> Nil,
+    "#interrupt-cells"     -> Seq(ResourceInt(2)))
 }
