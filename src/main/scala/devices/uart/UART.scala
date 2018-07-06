@@ -274,6 +274,6 @@ class TLUART(w: Int, c: UARTParams)(implicit p: Parameters)
 {
   val crossing = c.crossingType
   ResourceBinding {
-    Resource(ResourceAnchors.aliases, "uart").bind(ResourceReference(device.label))
+    Resource(ResourceAnchors.aliases, "uart").bind(ResourceAlias(device.label))
   }
 }
