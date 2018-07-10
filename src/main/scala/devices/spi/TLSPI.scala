@@ -130,6 +130,32 @@ class SPITopModule(c: SPIParamsBase, outer: TLSPIBase)
       RegFieldDesc("rxwm_ip","Receive watermark interupt pending", volatile=true)))))
 }
 
+class MMCDevice(spi: Device, maxMHz: Double = 20) extends SimpleDevice("mmc", Seq("mmc-spi-slot")) {
+  override def parent = Some(spi)
+  override def describe(resources: ResourceBindings): Description = {
+    val Description(name, mapping) = super.describe(resources)
+    val extra = Map(
+      "voltage-ranges"    -> Seq(ResourceInt(3300), ResourceInt(3300)),
+      "disable-wp"        -> Nil,
+      "spi-max-frequency" -> Seq(ResourceInt(maxMHz * 1000000)))
+    Description(name, mapping ++ extra)
+  }
+}
+
+class FlashDevice(spi: Device, bits: Int = 4, maxMHz: Double = 50, compat: Seq[String] = Nil) extends SimpleDevice("flash", compat :+ "jedec,spi-nor") {
+  require (bits == 1 || bits == 2 || bits == 4)
+  override def parent = Some(spi)
+  override def describe(resources: ResourceBindings): Description = {
+    val Description(name, mapping) = super.describe(resources)
+    val extra = Map(
+      "m25p,fast-read"    -> Nil,
+      "spi-tx-bus-width"  -> Seq(ResourceInt(bits)),
+      "spi-rx-bus-width"  -> Seq(ResourceInt(bits)),
+      "spi-max-frequency" -> Seq(ResourceInt(maxMHz * 1000000)))
+    Description(name, mapping ++ extra)
+  }
+}
+
 abstract class TLSPIBase(w: Int, c: SPIParamsBase)(implicit p: Parameters) extends LazyModule {
   require(isPow2(c.rSize))
   val device = new SimpleDevice("spi", Seq("sifive,spi0")) {
