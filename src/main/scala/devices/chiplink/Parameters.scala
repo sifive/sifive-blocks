@@ -6,7 +6,7 @@ import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
 
-case class ChipLinkParams(TLUH: Seq[AddressSet], TLC: Seq[AddressSet], sourceBits: Int = 6, sinkBits: Int = 5, syncTX: Boolean = false, fpgaReset: Option[Clock => Bool] = None)
+case class ChipLinkParams(TLUH: Seq[AddressSet], TLC: Seq[AddressSet], sourceBits: Int = 6, sinkBits: Int = 5, syncTX: Boolean = false, fpgaReset: Boolean = false)
 {
   val domains = 8 // hard-wired into chiplink protocol
   require (sourceBits >= log2Ceil(domains))
