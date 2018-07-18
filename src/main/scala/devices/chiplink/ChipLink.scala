@@ -82,6 +82,8 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
       // When not syncTX, these drive the TX domain
       val c2b_clk = Clock(INPUT)
       val c2b_rst = Bool(INPUT)
+      // If fpgaReset, we need a pulse that arrives before b2c_clk locks
+      val fpga_reset = if (params.fpgaReset) Some(Bool(INPUT)) else None
     })
 
     // Ensure downstream devices support our requirements
@@ -153,14 +155,14 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
     // The off-chip reset is registered internally to improve timing
     // The RX module buffers incoming data by one cycle to compensate the reset delay
     // It is required that the internal reset be high even when the b2c.clk does not run
-    params.fpgaReset match {
+    io.fpga_reset match {
       case None =>
         // b2c.rst is actually synchronous to b2c.clk, so one flop is enough
         rx.reset := AsyncResetReg(Bool(false), io.port.b2c.clk, io.port.b2c.rst, true, None)
-      case Some(resetGen) =>
+      case Some(resetPulse) =>
         // For high performance, FPGA IO buffer registers must feed IO into D, not reset
         // However, FPGA registers also support an initial block to generate a reset pulse
-        rx.reset := AsyncResetReg(io.port.b2c.rst, io.port.b2c.clk, resetGen(io.port.b2c.clk), true, None)
+        rx.reset := AsyncResetReg(io.port.b2c.rst, io.port.b2c.clk, resetPulse, true, None)
     }
 
     rx.io.b2c_data := io.port.b2c.data
