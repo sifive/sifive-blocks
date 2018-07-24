@@ -42,16 +42,15 @@
 package sifive.blocks.devices.i2c
 
 import Chisel._
-import chisel3.experimental.MultiIOModule
-import freechips.rocketchip.config._
+import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.interrupts._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
-import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util.{AsyncResetRegVec, Majority}
 
 case class I2CParams(
-  address: BigInt,
-  crossingType: SubsystemClockCrossing = SynchronousCrossing())
+  address: BigInt)
 
 class I2CPin extends Bundle {
   val in  = Bool(INPUT)
@@ -64,13 +63,19 @@ class I2CPort extends Bundle {
   val sda = new I2CPin
 }
 
-trait HasI2CBundleContents extends Bundle {
-  val port = new I2CPort
-}
+abstract class I2C(busWidthBytes: Int, params: I2CParams)(implicit p: Parameters)
+    extends PeripheralPuncher(
+      PeripheralPuncherParams(
+        name = "i2c",
+        compat = Seq("sifive,i2c0"),
+        base = params.address,
+        beatBytes = busWidthBytes),
+      new I2CPort)
+    with HasCrossableInterrupts {
 
-trait HasI2CModuleContents extends MultiIOModule with HasRegMap {
-  val io: HasI2CBundleContents
-  val params: I2CParams
+  override def nInterrupts = 1
+
+  lazy val module = new LazyModuleImp(this) {
 
   val I2C_CMD_NOP   = UInt(0x00)
   val I2C_CMD_START = UInt(0x01)
@@ -119,8 +124,8 @@ trait HasI2CModuleContents extends MultiIOModule with HasRegMap {
 
   //////// Bit level ////////
 
-  io.port.scl.out := false.B                           // i2c clock line output
-  io.port.sda.out := false.B                           // i2c data line output
+  port.scl.out := false.B                           // i2c clock line output
+  port.sda.out := false.B                           // i2c data line output
 
   // filter SCL and SDA signals; (attempt to) remove glitches
   val filterCnt = Reg(init = UInt(0, 14.W))
@@ -135,8 +140,8 @@ trait HasI2CModuleContents extends MultiIOModule with HasRegMap {
   val fSCL      = Reg(init = UInt(0x7, 3.W))
   val fSDA      = Reg(init = UInt(0x7, 3.W))
   when (!(filterCnt.orR)) {
-    fSCL := Cat(fSCL, io.port.scl.in)
-    fSDA := Cat(fSDA, io.port.sda.in)
+    fSCL := Cat(fSCL, port.scl.in)
+    fSDA := Cat(fSDA, port.sda.in)
   }
 
   val sSCL      = Reg(init = true.B, next = Majority(fSCL))
@@ -145,7 +150,7 @@ trait HasI2CModuleContents extends MultiIOModule with HasRegMap {
   val dSCL      = Reg(init = true.B, next = sSCL)
   val dSDA      = Reg(init = true.B, next = sSDA)
 
-  val dSCLOen   = Reg(next = io.port.scl.oe) // delayed scl_oen
+  val dSCLOen   = Reg(next = port.scl.oe) // delayed scl_oen
 
   // detect start condition => detect falling edge on SDA while SCL is high
   // detect stop  condition => detect rising  edge on SDA while SCL is high
@@ -154,12 +159,12 @@ trait HasI2CModuleContents extends MultiIOModule with HasRegMap {
 
   // master drives SCL high, but another master pulls it low
   // master start counting down its low cycle now (clock synchronization)
-  val sclSync   = dSCL && !sSCL && io.port.scl.oe
+  val sclSync   = dSCL && !sSCL && port.scl.oe
 
   // slave_wait is asserted when master wants to drive SCL high, but the slave pulls it low
   // slave_wait remains asserted until the slave releases SCL
   val slaveWait = Reg(init = false.B)
-  slaveWait := (io.port.scl.oe && !dSCLOen && !sSCL) || (slaveWait && !sSCL)
+  slaveWait := (port.scl.oe && !dSCLOen && !sSCL) || (slaveWait && !sSCL)
 
   val clkEn     = Reg(init = true.B)     // clock generation signals
   val cnt       = Reg(init = UInt(0, 16.W))  // clock divider counter (synthesis)
@@ -178,10 +183,10 @@ trait HasI2CModuleContents extends MultiIOModule with HasRegMap {
   }
 
   val sclOen     = Reg(init = true.B)
-  io.port.scl.oe := !sclOen
+  port.scl.oe := !sclOen
 
   val sdaOen     = Reg(init = true.B)
-  io.port.sda.oe := !sdaOen
+  port.sda.oe := !sdaOen
 
   val sdaChk     = Reg(init = false.B)       // check SDA output (Multi-master arbitration)
 
@@ -563,13 +568,28 @@ trait HasI2CModuleContents extends MultiIOModule with HasRegMap {
   status.reserved  := 0.U
 
   interrupts(0) := status.irqFlag & control.intEn
+}}
+
+case class AttachedI2CParams(
+  i2c: I2CParams,
+  controlXType: ClockCrossingType = NoCrossing,
+  intXType: ClockCrossingType = NoCrossing)
+
+object I2C {
+  def attach(params: AttachedI2CParams, controlBus: TLBusWrapper, intNode: IntInwardNode, mclock: Option[ModuleValue[Clock]])
+            (implicit p: Parameters, valName: ValName): TLI2C = {
+    val i2c = LazyModule(new TLI2C(controlBus.beatBytes, params.i2c))
+
+    controlBus.coupleTo(s"slave_named_${valName.name}") {
+      i2c.controlXing(params.controlXType) := TLFragmenter(controlBus.beatBytes, controlBus.blockBytes) := _
+    }
+    intNode := i2c.intXing(params.intXType)
+    InModuleBody { i2c.module.clock := mclock.map(_.getWrappedValue).getOrElse(controlBus.module.clock) }
+
+    i2c
+  }
 }
 
-// Magic TL2 Incantation to create a TL2 Slave
-class TLI2C(w: Int, c: I2CParams)(implicit p: Parameters)
-  extends TLRegisterRouter(c.address, "i2c", Seq("sifive,i2c0"), interrupts = 1, beatBytes = w)(
-  new TLRegBundle(c, _)    with HasI2CBundleContents)(
-  new TLRegModule(c, _, _) with HasI2CModuleContents)
-  with HasCrossing {
-  val crossing = c.crossingType
-}
+class TLI2C(busWidthBytes: Int, params: I2CParams)(implicit p: Parameters)
+  extends I2C(busWidthBytes, params)
+  with HasCrossableTLControlRegMap
