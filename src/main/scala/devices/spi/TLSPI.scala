@@ -151,15 +151,15 @@ class FlashDevice(spi: Device, bits: Int = 4, maxMHz: Double = 50, compat: Seq[S
   }
 }
 
-abstract class TLSPIBase(w: Int, c: SPIParamsBase)(implicit p: Parameters) extends PeripheralPuncher(
-      PeripheralPuncherParams(
+abstract class TLSPIBase(w: Int, c: SPIParamsBase)(implicit p: Parameters) extends IORegisterRouter(
+      RegisterRouterParams(
         name = "spi",
         compat = Seq("sifive,spi0"),
         base = c.rAddress,
         size = c.rSize,
         beatBytes = w),
       new SPIPortIO(c))
-    with HasCrossableInterrupts {
+    with HasInterruptSources {
   require(isPow2(c.rSize))
   override def extraResources(resources: ResourceBindings) = Map(
         "#address-cells" -> Seq(ResourceInt(1)),
@@ -168,8 +168,7 @@ abstract class TLSPIBase(w: Int, c: SPIParamsBase)(implicit p: Parameters) exten
 }
 
 class TLSPI(w: Int, c: SPIParams)(implicit p: Parameters)
-    extends TLSPIBase(w,c)(p)
-    with HasCrossableTLControlRegMap {
+    extends TLSPIBase(w,c)(p) with HasTLControlRegMap {
   lazy val module = new SPITopModule(c, this) {
     mac.io.link <> fifo.io.link
     regmap(regmapBase:_*)

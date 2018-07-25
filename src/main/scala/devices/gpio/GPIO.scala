@@ -32,16 +32,16 @@ case class GPIOParams(
   * abstract over the bus protocol to which it is being connected
   */
 abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
-    extends PeripheralPuncher(
-      PeripheralPuncherParams(
+    extends IORegisterRouter(
+      RegisterRouterParams(
         name = "gpio",
         compat = Seq("sifive,gpio0"),
         base = c.address,
         beatBytes = busWidthBytes),
       new GPIOPortIO(c))
-    with HasCrossableInterrupts {
+    with HasInterruptSources {
 
-  override def nInterrupts = c.width
+  def nInterrupts = c.width
   override def extraResources(resources: ResourceBindings) = Map(
     "gpio-controller"      -> Nil,
     "#gpio-cells"          -> Seq(ResourceInt(2)),
@@ -223,5 +223,4 @@ object GPIO {
 }
 
 class TLGPIO(busWidthBytes: Int, params: GPIOParams)(implicit p: Parameters)
-  extends GPIO(busWidthBytes, params)
-  with HasCrossableTLControlRegMap
+  extends GPIO(busWidthBytes, params) with HasTLControlRegMap

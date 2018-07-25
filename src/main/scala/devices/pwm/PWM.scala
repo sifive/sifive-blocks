@@ -68,17 +68,17 @@ class PWMPortIO(val c: PWMParams) extends Bundle {
 }
 
 abstract class PWM(busWidthBytes: Int, val params: PWMParams)(implicit p: Parameters)
-    extends PeripheralPuncher(
-      PeripheralPuncherParams(
+    extends IORegisterRouter(
+      RegisterRouterParams(
         name = "pwm",
         compat = Seq("sifive,pwm0"),
         base = params.address,
         size = params.size,
         beatBytes = busWidthBytes),
       new PWMPortIO(params))
-    with HasCrossableInterrupts {
+    with HasInterruptSources {
 
-  override def nInterrupts = params.ncmp
+  def nInterrupts = params.ncmp
 
   lazy val module = new LazyModuleImp(this) {
     val pwm = Module(new PWMTimer(params.ncmp, params.cmpWidth))
@@ -109,5 +109,4 @@ object PWM {
 }
 
 class TLPWM(busWidthBytes: Int, params: PWMParams)(implicit p: Parameters)
-  extends PWM(busWidthBytes, params)
-  with HasCrossableTLControlRegMap
+  extends PWM(busWidthBytes, params) with HasTLControlRegMap

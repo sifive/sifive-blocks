@@ -36,16 +36,16 @@ class UARTInterrupts extends Bundle {
 
 abstract class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
                    (implicit p: Parameters)
-    extends PeripheralPuncher(
-      PeripheralPuncherParams(
+    extends IORegisterRouter(
+      RegisterRouterParams(
         name = "serial",
         compat = Seq("sifive,uart0"), 
         base = c.address,
         beatBytes = busWidthBytes),
       new UARTPortIO)
-    with HasCrossableInterrupts {
+    with HasInterruptSources {
 
-  override def nInterrupts = 1
+  def nInterrupts = 1
 
   ResourceBinding {
     Resource(ResourceAnchors.aliases, "uart").bind(ResourceAlias(device.label))
@@ -154,5 +154,4 @@ object UART {
 }
 
 class TLUART(busWidthBytes: Int, params: UARTParams, divinit: Int)(implicit p: Parameters)
-  extends UART(busWidthBytes, params, divinit)
-  with HasCrossableTLControlRegMap
+  extends UART(busWidthBytes, params, divinit) with HasTLControlRegMap

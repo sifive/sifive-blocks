@@ -116,7 +116,7 @@ abstract class TLSPIFlashBase(w: Int, c: SPIFlashParamsBase)(implicit p: Paramet
 
 class TLSPIFlash(w: Int, c: SPIFlashParams)(implicit p: Parameters)
     extends TLSPIFlashBase(w,c)(p)
-    with HasCrossableTLControlRegMap {
+    with HasTLControlRegMap {
   lazy val module = new SPIFlashTopModule(c, this) {
 
     arb.io.inner(0) <> flash.io.link

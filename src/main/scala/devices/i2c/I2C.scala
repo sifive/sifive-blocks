@@ -64,16 +64,16 @@ class I2CPort extends Bundle {
 }
 
 abstract class I2C(busWidthBytes: Int, params: I2CParams)(implicit p: Parameters)
-    extends PeripheralPuncher(
-      PeripheralPuncherParams(
+    extends IORegisterRouter(
+      RegisterRouterParams(
         name = "i2c",
         compat = Seq("sifive,i2c0"),
         base = params.address,
         beatBytes = busWidthBytes),
       new I2CPort)
-    with HasCrossableInterrupts {
+    with HasInterruptSources {
 
-  override def nInterrupts = 1
+  def nInterrupts = 1
 
   lazy val module = new LazyModuleImp(this) {
 
@@ -591,5 +591,4 @@ object I2C {
 }
 
 class TLI2C(busWidthBytes: Int, params: I2CParams)(implicit p: Parameters)
-  extends I2C(busWidthBytes, params)
-  with HasCrossableTLControlRegMap
+  extends I2C(busWidthBytes, params) with HasTLControlRegMap
