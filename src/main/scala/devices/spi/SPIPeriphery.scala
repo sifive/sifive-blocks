@@ -22,7 +22,7 @@ trait HasPeripherySPIBundle {
 
 trait HasPeripherySPIModuleImp extends LazyModuleImp with HasPeripherySPIBundle {
   val outer: HasPeripherySPI
-  val spi = outer.spiNodes.map(_.makeIO())
+  val spi  = outer.spiNodes.zipWithIndex.map  { case(n,i) => n.makeIO()(ValName(s"spi_$i")) }
 }
 
 case object PeripherySPIFlashKey extends Field[Seq[SPIFlashParams]]
@@ -40,5 +40,5 @@ trait HasPeripherySPIFlashBundle {
 
 trait HasPeripherySPIFlashModuleImp extends LazyModuleImp with HasPeripherySPIFlashBundle {
   val outer: HasPeripherySPIFlash
-  val qspi = outer.qspiNodes.map(_.makeIO())
+  val qspi = outer.qspiNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"qspi_$i")) }
 }

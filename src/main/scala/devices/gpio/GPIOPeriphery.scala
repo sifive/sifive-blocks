@@ -20,5 +20,5 @@ trait HasPeripheryGPIOBundle {
 
 trait HasPeripheryGPIOModuleImp extends LazyModuleImp with HasPeripheryGPIOBundle {
   val outer: HasPeripheryGPIO
-  val gpio = outer.gpioNodes.map(_.makeIO())
+  val gpio = outer.gpioNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"gpio_$i")) }
 }

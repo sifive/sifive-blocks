@@ -22,5 +22,5 @@ trait HasPeripheryUARTBundle {
 
 trait HasPeripheryUARTModuleImp extends LazyModuleImp with HasPeripheryUARTBundle {
   val outer: HasPeripheryUART
-  val uart = outer.uartNodes.map(_.makeIO())
+  val uart = outer.uartNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"uart_$i")) }
 }

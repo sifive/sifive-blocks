@@ -21,5 +21,5 @@ trait HasPeripheryI2CBundle {
 
 trait HasPeripheryI2CModuleImp extends LazyModuleImp with HasPeripheryI2CBundle {
   val outer: HasPeripheryI2C
-  val i2c = outer.i2cNodes.map(_.makeIO())
+  val i2c  = outer.i2cNodes.zipWithIndex.map  { case(n,i) => n.makeIO()(ValName(s"i2c_$i")) }
 }
