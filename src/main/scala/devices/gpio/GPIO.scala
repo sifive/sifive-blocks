@@ -201,6 +201,9 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
   }}
 }
 
+class TLGPIO(busWidthBytes: Int, params: GPIOParams)(implicit p: Parameters)
+  extends GPIO(busWidthBytes, params) with HasTLControlRegMap
+
 case class AttachedGPIOParams(
   gpio: GPIOParams,
   controlXType: ClockCrossingType = NoCrossing,
@@ -221,6 +224,3 @@ object GPIO {
     gpio
   }
 }
-
-class TLGPIO(busWidthBytes: Int, params: GPIOParams)(implicit p: Parameters)
-  extends GPIO(busWidthBytes, params) with HasTLControlRegMap

@@ -88,6 +88,9 @@ abstract class PWM(busWidthBytes: Int, val params: PWMParams)(implicit p: Parame
   }
 }
 
+class TLPWM(busWidthBytes: Int, params: PWMParams)(implicit p: Parameters)
+  extends PWM(busWidthBytes, params) with HasTLControlRegMap
+
 case class AttachedPWMParams(
   pwm: PWMParams,
   controlXType: ClockCrossingType = NoCrossing,
@@ -107,6 +110,3 @@ object PWM {
     pwm
   }
 }
-
-class TLPWM(busWidthBytes: Int, params: PWMParams)(implicit p: Parameters)
-  extends PWM(busWidthBytes, params) with HasTLControlRegMap
