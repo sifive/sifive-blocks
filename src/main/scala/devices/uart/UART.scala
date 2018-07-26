@@ -151,6 +151,10 @@ object UART {
   def tieoff(port: UARTPortIO) {
     port.rxd := UInt(1)
   }
+
+  def loopback(port: UARTPortIO) {
+    port.rxd := port.txd
+  }
 }
 
 class TLUART(busWidthBytes: Int, params: UARTParams, divinit: Int)(implicit p: Parameters)
