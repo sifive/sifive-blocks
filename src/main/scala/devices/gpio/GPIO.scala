@@ -223,4 +223,17 @@ object GPIO {
 
     gpio
   }
+
+  def loopback(g: GPIOPortIO)(pinA: Int, pinB: Int) {
+    g.pins.foreach {p =>
+      p.i.ival := Mux(p.o.oe, p.o.oval, p.o.pue) & p.o.ie
+    }
+    val a = g.pins(pinA)
+    val b = g.pins(pinB)
+    // This logic is not QUITE right, it doesn't handle all the subtle cases.
+    // It is probably simpler to just hook a pad up here and use attach()
+    // to model this properly.
+    a.i.ival := Mux(b.o.oe, (b.o.oval | b.o.pue), (a.o.pue | (a.o.oe & a.o.oval))) & a.o.ie
+    b.i.ival := Mux(a.o.oe, (a.o.oval | b.o.pue), (b.o.pue | (b.o.oe & b.o.oval))) & b.o.ie
+  }
 }
