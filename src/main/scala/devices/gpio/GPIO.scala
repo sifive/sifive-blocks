@@ -2,102 +2,53 @@
 package sifive.blocks.devices.gpio
 
 import Chisel._
-import chisel3.experimental.MultiIOModule
 import sifive.blocks.devices.pinctrl.{PinCtrl, Pin, BasePin, EnhancedPin, EnhancedPinCtrl}
 import freechips.rocketchip.config.Parameters
-import freechips.rocketchip.util.SynchronizerShiftReg
 import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.interrupts._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
-import freechips.rocketchip.subsystem._
-import freechips.rocketchip.util.AsyncResetRegVec
-
-case class GPIOParams(
-  address: BigInt,
-  width: Int,
-  includeIOF: Boolean = false,
-  crossingType: SubsystemClockCrossing = SynchronousCrossing())
-
-// This is the actual IOF interface.pa
-// Add a valid bit to indicate whether
-// there is something actually connected
-// to this.
-class IOFCtrl extends PinCtrl {
-  val valid = Bool()
-}
-
-// By default,
-object IOFCtrl {
-  def apply(): IOFCtrl = {
-    val iof = Wire(new IOFCtrl())
-    iof.valid := Bool(false)
-    iof.oval  := Bool(false)
-    iof.oe    := Bool(false)
-    iof.ie    := Bool(false)
-    iof
-  }
-}
-
-// Package up the inputs and outputs
-// for the IOF
-class IOFPin extends Pin {
-  val o  = new IOFCtrl().asOutput
-
-  def default(): Unit = {
-    this.o.oval  := Bool(false)
-    this.o.oe    := Bool(false)
-    this.o.ie    := Bool(false)
-    this.o.valid := Bool(false)
-  }
-
-  def inputPin(pue: Bool = Bool(false) /*ignored*/): Bool = {
-    this.o.oval := Bool(false)
-    this.o.oe   := Bool(false)
-    this.o.ie   := Bool(true)
-    this.i.ival
-  }
-  def outputPin(signal: Bool,
-    pue: Bool = Bool(false), /*ignored*/
-    ds: Bool = Bool(false), /*ignored*/
-    ie: Bool = Bool(false)
-  ): Unit = {
-    this.o.oval := signal
-    this.o.oe   := Bool(true)
-    this.o.ie   := ie
-  }
-}
-
-// Connect both the i and o side of the pin,
-// and drive the valid signal for the IOF.
-object BasePinToIOF {
-  def apply(pin: BasePin, iof: IOFPin): Unit = {
-    iof <> pin
-    iof.o.valid := Bool(true)
-  }
-}
+import freechips.rocketchip.util.{AsyncResetRegVec, SynchronizerShiftReg}
 
 // This is sort of weird because
 // the IOF end up at the RocketChipTop
 // level, and we have to do the pinmux
 // outside of RocketChipTop.
+// It would be better if the IOF were here and
+// we could do the pinmux inside.
 
-class GPIOPortIO(private val c: GPIOParams) extends Bundle {
+class GPIOPortIO(val c: GPIOParams) extends Bundle {
   val pins = Vec(c.width, new EnhancedPin())
   val iof_0 = if (c.includeIOF) Some(Vec(c.width, new IOFPin).flip) else None
   val iof_1 = if (c.includeIOF) Some(Vec(c.width, new IOFPin).flip) else None
 }
 
-// It would be better if the IOF were here and
-// we could do the pinmux inside.
-trait HasGPIOBundleContents extends Bundle {
-  def params: GPIOParams
-  val port = new GPIOPortIO(params)
-}
+case class GPIOParams(
+  address: BigInt,
+  width: Int,
+  includeIOF: Boolean = false)
 
-trait HasGPIOModuleContents extends MultiIOModule with HasRegMap {
-  val io: HasGPIOBundleContents
-  val params: GPIOParams
-  val c = params
+/** The base GPIO peripheral functionality, which uses the regmap API to
+  * abstract over the bus protocol to which it is being connected
+  */
+abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
+    extends IORegisterRouter(
+      RegisterRouterParams(
+        name = "gpio",
+        compat = Seq("sifive,gpio0"),
+        base = c.address,
+        beatBytes = busWidthBytes),
+      new GPIOPortIO(c))
+    with HasInterruptSources {
+
+  def nInterrupts = c.width
+  override def extraResources(resources: ResourceBindings) = Map(
+    "gpio-controller"      -> Nil,
+    "#gpio-cells"          -> Seq(ResourceInt(2)),
+    "interrupt-controller" -> Nil,
+    "#interrupt-cells"     -> Seq(ResourceInt(2)))
+
+  lazy val module = new LazyModuleImp(this) {
 
   //--------------------------------------------------
   // CSR Declarations
@@ -113,7 +64,7 @@ trait HasGPIOModuleContents extends MultiIOModule with HasRegMap {
 
   // Synchronize Input to get valueReg
   val inVal = Wire(UInt(0, width=c.width))
-  inVal := Vec(io.port.pins.map(_.i.ival)).asUInt
+  inVal := Vec(port.pins.map(_.i.ival)).asUInt
   val inSyncReg  = SynchronizerShiftReg(inVal, 3, Some("inSyncReg"))
   val valueReg   = Reg(init = UInt(0, c.width), next = inSyncReg)
 
@@ -211,13 +162,13 @@ trait HasGPIOModuleContents extends MultiIOModule with HasRegMap {
     if (c.includeIOF) {
       // Allow SW Override for invalid inputs.
       iof0Ctrl(pin)      <> swPinCtrl(pin)
-      when (io.port.iof_0.get(pin).o.valid) {
-        iof0Ctrl(pin)    <> io.port.iof_0.get(pin).o
+      when (port.iof_0.get(pin).o.valid) {
+        iof0Ctrl(pin)    <> port.iof_0.get(pin).o
       }
 
       iof1Ctrl(pin)      <> swPinCtrl(pin)
-      when (io.port.iof_1.get(pin).o.valid) {
-        iof1Ctrl(pin)    <> io.port.iof_1.get(pin).o
+      when (port.iof_1.get(pin).o.valid) {
+        iof1Ctrl(pin)    <> port.iof_1.get(pin).o
       }
 
       // Select IOF 0 vs. IOF 1.
@@ -233,8 +184,8 @@ trait HasGPIOModuleContents extends MultiIOModule with HasRegMap {
       pre_xor := swPinCtrl(pin)
     }
 
-    io.port.pins(pin).o      := pre_xor
-    io.port.pins(pin).o.oval := pre_xor.oval ^ xorReg(pin)
+    port.pins(pin).o      := pre_xor
+    port.pins(pin).o.oval := pre_xor.oval ^ xorReg(pin)
 
     // Generate Interrupts
     interrupts(pin) := (riseIpReg(pin) & riseIeReg(pin)) |
@@ -244,23 +195,45 @@ trait HasGPIOModuleContents extends MultiIOModule with HasRegMap {
 
     if (c.includeIOF) {
       // Send Value to all consumers
-      io.port.iof_0.get(pin).i.ival := inSyncReg(pin)
-      io.port.iof_1.get(pin).i.ival := inSyncReg(pin)
+      port.iof_0.get(pin).i.ival := inSyncReg(pin)
+      port.iof_1.get(pin).i.ival := inSyncReg(pin)
     }
-  }
+  }}
 }
 
-// Magic TL2 Incantation to create a TL2 Slave
-class TLGPIO(w: Int, c: GPIOParams)(implicit p: Parameters)
-  extends TLRegisterRouter(c.address, "gpio", Seq("sifive,gpio0"), interrupts = c.width, beatBytes = w)(
-  new TLRegBundle(c, _)    with HasGPIOBundleContents)(
-  new TLRegModule(c, _, _) with HasGPIOModuleContents)
-  with HasCrossing
-{
-  val crossing = c.crossingType
-  override def extraResources(resources: ResourceBindings) = Map(
-    "gpio-controller"      -> Nil,
-    "#gpio-cells"          -> Seq(ResourceInt(2)),
-    "interrupt-controller" -> Nil,
-    "#interrupt-cells"     -> Seq(ResourceInt(2)))
+class TLGPIO(busWidthBytes: Int, params: GPIOParams)(implicit p: Parameters)
+  extends GPIO(busWidthBytes, params) with HasTLControlRegMap
+
+case class AttachedGPIOParams(
+  gpio: GPIOParams,
+  controlXType: ClockCrossingType = NoCrossing,
+  intXType: ClockCrossingType = NoCrossing)
+
+object GPIO {
+  def attach(params: AttachedGPIOParams, controlBus: TLBusWrapper, intNode: IntInwardNode, mclock: Option[ModuleValue[Clock]])
+            (implicit p: Parameters, valName: ValName): TLGPIO = {
+
+    val gpio = LazyModule(new TLGPIO(controlBus.beatBytes, params.gpio))
+
+    controlBus.coupleTo(s"slave_named_${valName.name}") {
+      gpio.controlXing(params.controlXType) := TLFragmenter(controlBus.beatBytes, controlBus.blockBytes) := _
+    }
+    intNode := gpio.intXing(params.intXType)
+    InModuleBody { gpio.module.clock := mclock.map(_.getWrappedValue).getOrElse(controlBus.module.clock) }
+
+    gpio
+  }
+
+  def loopback(g: GPIOPortIO)(pinA: Int, pinB: Int) {
+    g.pins.foreach {p =>
+      p.i.ival := Mux(p.o.oe, p.o.oval, p.o.pue) & p.o.ie
+    }
+    val a = g.pins(pinA)
+    val b = g.pins(pinB)
+    // This logic is not QUITE right, it doesn't handle all the subtle cases.
+    // It is probably simpler to just hook a pad up here and use attach()
+    // to model this properly.
+    a.i.ival := Mux(b.o.oe, (b.o.oval | b.o.pue), (a.o.pue | (a.o.oe & a.o.oval))) & a.o.ie
+    b.i.ival := Mux(a.o.oe, (a.o.oval | b.o.pue), (b.o.pue | (b.o.oe & b.o.oval))) & b.o.ie
+  }
 }

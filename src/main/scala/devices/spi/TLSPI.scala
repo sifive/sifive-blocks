@@ -43,7 +43,7 @@ case class SPIParams(
     delayBits: Int = 8,
     divisorBits: Int = 12,
     sampleDelay: Int = 2,
-    crossingType: SubsystemClockCrossing = SynchronousCrossing()
+    crossingType: ClockCrossingType = SynchronousCrossing()
     )
   extends SPIParamsBase {
 
@@ -52,17 +52,13 @@ case class SPIParams(
 }
 
 class SPITopModule(c: SPIParamsBase, outer: TLSPIBase)
-  extends LazyModuleImp(outer) {
-
-  val io = IO(new Bundle {
-    val port = new SPIPortIO(c)
-  })
+    extends LazyModuleImp(outer) {
 
   val ctrl = Reg(init = SPIControl.init(c))
 
   val fifo = Module(new SPIFIFO(c))
   val mac = Module(new SPIMedia(c))
-  io.port <> mac.io.port
+  outer.port <> mac.io.port
 
   fifo.io.ctrl.fmt := ctrl.fmt
   fifo.io.ctrl.cs <> ctrl.cs
@@ -73,8 +69,7 @@ class SPITopModule(c: SPIParamsBase, outer: TLSPIBase)
 
   val ie = Reg(init = new SPIInterrupts().fromBits(Bits(0)))
   val ip = fifo.io.ip
-  val (io_int, _) = outer.intnode.out(0)
-  io_int(0) := (ip.txwm && ie.txwm) || (ip.rxwm && ie.rxwm)
+  outer.interrupts(0) := (ip.txwm && ie.txwm) || (ip.rxwm && ie.rxwm)
 
   protected val regmapBase = Seq(
     SPICRs.sckdiv -> Seq(RegField(c.divisorBits, ctrl.sck.div,
@@ -156,27 +151,26 @@ class FlashDevice(spi: Device, bits: Int = 4, maxMHz: Double = 50, compat: Seq[S
   }
 }
 
-abstract class TLSPIBase(w: Int, c: SPIParamsBase)(implicit p: Parameters) extends LazyModule {
+abstract class TLSPIBase(w: Int, c: SPIParamsBase)(implicit p: Parameters) extends IORegisterRouter(
+      RegisterRouterParams(
+        name = "spi",
+        compat = Seq("sifive,spi0"),
+        base = c.rAddress,
+        size = c.rSize,
+        beatBytes = w),
+      new SPIPortIO(c))
+    with HasInterruptSources {
   require(isPow2(c.rSize))
-  val device = new SimpleDevice("spi", Seq("sifive,spi0")) {
-    override def describe(resources: ResourceBindings): Description = {
-      val Description(name, mapping) = super.describe(resources)
-      val extra = Map(
+  override def extraResources(resources: ResourceBindings) = Map(
         "#address-cells" -> Seq(ResourceInt(1)),
         "#size-cells" -> Seq(ResourceInt(0)))
-      Description(name, mapping ++ extra)
-    }
-  }
-  val rnode = TLRegisterNode(address = Seq(AddressSet(c.rAddress, c.rSize-1)), device = device, beatBytes = w)
-  val intnode = IntSourceNode(IntSourcePortSimple(resources = device.int))
+  override def nInterrupts = 1
 }
 
 class TLSPI(w: Int, c: SPIParams)(implicit p: Parameters)
-  extends TLSPIBase(w,c)(p)
-  with HasCrossing{
-  val crossing = c.crossingType
+    extends TLSPIBase(w,c)(p) with HasTLControlRegMap {
   lazy val module = new SPITopModule(c, this) {
     mac.io.link <> fifo.io.link
-    rnode.regmap(regmapBase:_*)
+    regmap(regmapBase:_*)
   }
 }
