@@ -65,6 +65,7 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
   slaveNode := bypass.node
 
   val node = NodeHandle(bypass.node, masterNode)
+  val ioNode = BundleBridgeSource(() => new WideDataLayerPort(params).cloneType)
 
   // Exported memory map. Used when connecting VIP
   lazy val managers = masterNode.edges.out(0).manager.managers
@@ -76,15 +77,15 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
   }
 
   lazy val module = new LazyModuleImp(this) {
-    val io = IO(new Bundle {
-      val port = new WideDataLayerPort(params)
+    val io = new Bundle {
       val bypass = Bool(OUTPUT)
       // When not syncTX, these drive the TX domain
       val c2b_clk = Clock(INPUT)
       val c2b_rst = Bool(INPUT)
       // If fpgaReset, we need a pulse that arrives before b2c_clk locks
       val fpga_reset = if (params.fpgaReset) Some(Bool(INPUT)) else None
-    })
+    }
+    val port = ioNode.bundle
 
     // Ensure downstream devices support our requirements
     val (in,  edgeIn)  = slaveNode.in(0)
@@ -150,7 +151,7 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
     val sourceE = Module(new SourceE(info))
 
     val rx = Module(new RX(info))
-    rx.clock := io.port.b2c.clk
+    rx.clock := port.b2c.clk
 
     // The off-chip reset is registered internally to improve timing
     // The RX module buffers incoming data by one cycle to compensate the reset delay
@@ -158,15 +159,15 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
     io.fpga_reset match {
       case None =>
         // b2c.rst is actually synchronous to b2c.clk, so one flop is enough
-        rx.reset := AsyncResetReg(Bool(false), io.port.b2c.clk, io.port.b2c.rst, true, None)
+        rx.reset := AsyncResetReg(Bool(false), port.b2c.clk, port.b2c.rst, true, None)
       case Some(resetPulse) =>
         // For high performance, FPGA IO buffer registers must feed IO into D, not reset
         // However, FPGA registers also support an initial block to generate a reset pulse
-        rx.reset := AsyncResetReg(io.port.b2c.rst, io.port.b2c.clk, resetPulse, true, None)
+        rx.reset := AsyncResetReg(port.b2c.rst, port.b2c.clk, resetPulse, true, None)
     }
 
-    rx.io.b2c_data := io.port.b2c.data
-    rx.io.b2c_send := io.port.b2c.send
+    rx.io.b2c_data := port.b2c.data
+    rx.io.b2c_send := port.b2c.send
     out.a <> sourceA.io.a
     in .b <> sourceB.io.b
     out.c <> sourceC.io.c
@@ -179,10 +180,10 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
     sourceE.io.q <> FromAsyncBundle(rx.io.e)
 
     val tx = Module(new TX(info))
-    io.port.c2b.clk := tx.io.c2b_clk
-    io.port.c2b.rst := tx.io.c2b_rst
-    io.port.c2b.data := tx.io.c2b_data
-    io.port.c2b.send := tx.io.c2b_send
+    port.c2b.clk := tx.io.c2b_clk
+    port.c2b.rst := tx.io.c2b_rst
+    port.c2b.data := tx.io.c2b_data
+    port.c2b.send := tx.io.c2b_send
     sinkA.io.a <> in .a
     sinkB.io.b <> out.b
     sinkC.io.c <> in .c
