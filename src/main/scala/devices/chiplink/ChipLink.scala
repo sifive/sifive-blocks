@@ -77,14 +77,14 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
   }
 
   lazy val module = new LazyModuleImp(this) {
-    val io = new Bundle {
+    val io = IO(new Bundle {
       val bypass = Bool(OUTPUT)
       // When not syncTX, these drive the TX domain
       val c2b_clk = Clock(INPUT)
       val c2b_rst = Bool(INPUT)
       // If fpgaReset, we need a pulse that arrives before b2c_clk locks
       val fpga_reset = if (params.fpgaReset) Some(Bool(INPUT)) else None
-    }
+    })
     val port = ioNode.bundle
 
     // Ensure downstream devices support our requirements
