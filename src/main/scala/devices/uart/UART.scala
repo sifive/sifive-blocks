@@ -135,11 +135,14 @@ case class AttachedUARTParams(
   intXType: ClockCrossingType = NoCrossing)
 
 object UART {
+  val nextId = { var i = -1; () => { i += 1; i} }
   def attach(params: AttachedUARTParams, controlBus: TLBusWrapper, intNode: IntInwardNode, mclock: Option[ModuleValue[Clock]])
-            (implicit p: Parameters, valName: ValName): TLUART = {
+            (implicit p: Parameters): TLUART = {
+    val name = s"uart_${nextId()}"
     val uart = LazyModule(new TLUART(controlBus.beatBytes, params.uart, params.divinit))
+    uart.suggestName(name)
 
-    controlBus.coupleTo(s"slave_named_${valName.name}") {
+    controlBus.coupleTo(s"slave_named_name") {
       uart.controlXing(params.controlXType) := TLFragmenter(controlBus.beatBytes, controlBus.blockBytes) := _
     }
     intNode := uart.intXing(params.intXType)

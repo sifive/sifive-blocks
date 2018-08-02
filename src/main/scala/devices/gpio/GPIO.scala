@@ -210,12 +210,13 @@ case class AttachedGPIOParams(
   intXType: ClockCrossingType = NoCrossing)
 
 object GPIO {
+  val nextId = { var i = -1; () => { i += 1; i} }
   def attach(params: AttachedGPIOParams, controlBus: TLBusWrapper, intNode: IntInwardNode, mclock: Option[ModuleValue[Clock]])
-            (implicit p: Parameters, valName: ValName): TLGPIO = {
-
+            (implicit p: Parameters): TLGPIO = {
+    val name = s"gpio_${nextId()}"
     val gpio = LazyModule(new TLGPIO(controlBus.beatBytes, params.gpio))
-
-    controlBus.coupleTo(s"slave_named_${valName.name}") {
+    gpio.suggestName(name)
+    controlBus.coupleTo(s"device_named_$name") {
       gpio.controlXing(params.controlXType) := TLFragmenter(controlBus.beatBytes, controlBus.blockBytes) := _
     }
     intNode := gpio.intXing(params.intXType)

@@ -21,11 +21,14 @@ case class AttachedSPIFlashParams(
   memXType: ClockCrossingType = NoCrossing)
 
 object SPI {
+  val nextId = { var i = -1; () => { i += 1; i} }
   def attach(params: AttachedSPIParams, controlBus: TLBusWrapper, intNode: IntInwardNode, mclock: Option[ModuleValue[Clock]])
-            (implicit p: Parameters, valName: ValName): TLSPI = {
+            (implicit p: Parameters): TLSPI = {
+    val name = s"spi_${nextId()}"
     val spi = LazyModule(new TLSPI(controlBus.beatBytes, params.spi))
+    spi.suggestName(name)
 
-    controlBus.coupleTo(s"slave_named_${valName.name}") {
+    controlBus.coupleTo(s"device_named_$name") {
       spi.controlXing(params.controlXType) := TLFragmenter(controlBus.beatBytes, controlBus.blockBytes) := _
     }
 
@@ -36,16 +39,18 @@ object SPI {
     spi
   }
 
+  val nextFlashId = { var i = -1; () => { i += 1; i} }
   def attachFlash(params: AttachedSPIFlashParams, controlBus: TLBusWrapper, memBus: TLBusWrapper, intNode: IntInwardNode, mclock: Option[ModuleValue[Clock]])
-            (implicit p: Parameters, valName: ValName): TLSPIFlash = {
-
+                 (implicit p: Parameters): TLSPIFlash = {
+    val name = s"qspi_${nextFlashId()}" // TODO should these be shared with regular SPIs?
     val qspi = LazyModule(new TLSPIFlash(controlBus.beatBytes, params.qspi))
+    qspi.suggestName(name)
 
-    controlBus.coupleTo(s"slave_named_${valName.name}") {
+    controlBus.coupleTo(s"device_named_$name") {
       qspi.controlXing(params.controlXType) := TLFragmenter(controlBus.beatBytes, controlBus.blockBytes) := _
     }
 
-    memBus.coupleTo(s"mem_named_${valName.name}") {
+    memBus.coupleTo(s"mem_named_$name") {
       (qspi.memXing(params.memXType)
         := TLFragmenter(1, memBus.blockBytes)
         := TLBuffer(BufferParams(params.fBufferDepth), BufferParams.none)
