@@ -10,7 +10,7 @@ case object PeripheryUARTKey extends Field[Seq[UARTParams]]
 trait HasPeripheryUART { this: BaseSubsystem =>
   val uarts = p(PeripheryUARTKey).map { ps =>
     val divinit = (p(PeripheryBusKey).frequency / 115200).toInt
-    UART.attach(AttachedUARTParams(ps, divinit), pbus, ibus.fromSync, None)
+    UART.attach(AttachedUARTParams(ps, divinit), pbus, ibus.fromAsync, None)
   }
   val uartNodes = uarts.map(_.ioNode.makeSink())
 }

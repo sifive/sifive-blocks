@@ -11,7 +11,7 @@ case object PeripherySPIKey extends Field[Seq[SPIParams]]
 trait HasPeripherySPI { this: BaseSubsystem =>
   val spiParams = p(PeripherySPIKey)  
   val spis = p(PeripherySPIKey).map { ps =>
-    SPI.attach(AttachedSPIParams(ps), pbus, ibus.fromSync, None)
+    SPI.attach(AttachedSPIParams(ps), pbus, ibus.fromAsync, None)
   }
   val spiNodes = spis.map(_.ioNode.makeSink())
 }
@@ -29,7 +29,7 @@ case object PeripherySPIFlashKey extends Field[Seq[SPIFlashParams]]
 
 trait HasPeripherySPIFlash { this: BaseSubsystem =>
   val qspis = p(PeripherySPIFlashKey).map { ps =>
-    SPI.attachFlash(AttachedSPIFlashParams(ps, fBufferDepth = 8), pbus, pbus, ibus.fromSync, None)
+    SPI.attachFlash(AttachedSPIFlashParams(ps, fBufferDepth = 8), pbus, pbus, ibus.fromAsync, None)
   }
   val qspiNodes = qspis.map(_.ioNode.makeSink())
 }

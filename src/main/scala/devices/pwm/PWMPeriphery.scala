@@ -10,7 +10,7 @@ case object PeripheryPWMKey extends Field[Seq[PWMParams]]
 
 trait HasPeripheryPWM { this: BaseSubsystem =>
   val pwms = p(PeripheryPWMKey).map { ps =>
-    PWM.attach(AttachedPWMParams(ps), pbus, ibus.fromSync, None)
+    PWM.attach(AttachedPWMParams(ps), pbus, ibus.fromAsync, None)
   }
   val pwmNodes = pwms.map(_.ioNode.makeSink())
 }

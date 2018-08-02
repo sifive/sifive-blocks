@@ -10,7 +10,7 @@ case object PeripheryI2CKey extends Field[Seq[I2CParams]]
 
 trait HasPeripheryI2C { this: BaseSubsystem =>
   val i2cs =  p(PeripheryI2CKey).map { ps =>
-    I2C.attach(AttachedI2CParams(ps), pbus, ibus.fromSync, None)
+    I2C.attach(AttachedI2CParams(ps), pbus, ibus.fromAsync, None)
   }
   val i2cNodes = i2cs.map(_.ioNode.makeSink())
 }
