@@ -576,11 +576,14 @@ case class AttachedI2CParams(
   intXType: ClockCrossingType = NoCrossing)
 
 object I2C {
+  val nextId = { var i = -1; () => { i += 1; i} }
   def attach(params: AttachedI2CParams, controlBus: TLBusWrapper, intNode: IntInwardNode, mclock: Option[ModuleValue[Clock]])
-            (implicit p: Parameters, valName: ValName): TLI2C = {
+            (implicit p: Parameters): TLI2C = {
+    val name = s"i2c_${nextId()}"
     val i2c = LazyModule(new TLI2C(controlBus.beatBytes, params.i2c))
+    i2c.suggestName(name)
 
-    controlBus.coupleTo(s"slave_named_${valName.name}") {
+    controlBus.coupleTo(s"device_named_$name") {
       i2c.controlXing(params.controlXType) := TLFragmenter(controlBus.beatBytes, controlBus.blockBytes) := _
     }
     intNode := i2c.intXing(params.intXType)

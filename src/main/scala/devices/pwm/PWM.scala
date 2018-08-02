@@ -97,11 +97,13 @@ case class AttachedPWMParams(
   intXType: ClockCrossingType = NoCrossing)
 
 object PWM {
+  val nextId = { var i = -1; () => { i += 1; i} }
   def attach(params: AttachedPWMParams, controlBus: TLBusWrapper, intNode: IntInwardNode, mclock: Option[ModuleValue[Clock]])
-            (implicit p: Parameters, valName: ValName): TLPWM = {
+            (implicit p: Parameters): TLPWM = {
+    val name = s"pwm_${nextId()}"
     val pwm = LazyModule(new TLPWM(controlBus.beatBytes, params.pwm))
-
-    controlBus.coupleTo(s"slave_named_${valName.name}") {
+    pwm.suggestName(name)
+    controlBus.coupleTo(s"device_named_$name") {
       pwm.controlXing(params.controlXType) := TLFragmenter(controlBus.beatBytes, controlBus.blockBytes) := _
     }
     intNode := pwm.intXing(params.intXType)
