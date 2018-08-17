@@ -91,24 +91,38 @@ abstract class PWM(busWidthBytes: Int, val params: PWMParams)(implicit p: Parame
 class TLPWM(busWidthBytes: Int, params: PWMParams)(implicit p: Parameters)
   extends PWM(busWidthBytes, params) with HasTLControlRegMap
 
-case class AttachedPWMParams(
+case class PWMAttachParams(
   pwm: PWMParams,
+  controlBus: TLBusWrapper,
+  intNode: IntInwardNode,
+  mclock: Option[ModuleValue[Clock]] = None,
+  mreset: Option[ModuleValue[Bool]] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing)
+  (implicit val p: Parameters)
 
 object PWM {
   val nextId = { var i = -1; () => { i += 1; i} }
-  def attach(params: AttachedPWMParams, controlBus: TLBusWrapper, intNode: IntInwardNode, mclock: Option[ModuleValue[Clock]])
-            (implicit p: Parameters): TLPWM = {
+
+  def attach(params: PWMAttachParams): TLPWM = {
+    implicit val p = params.p
     val name = s"pwm_${nextId()}"
-    val pwm = LazyModule(new TLPWM(controlBus.beatBytes, params.pwm))
+    val cbus = params.controlBus
+    val pwm = LazyModule(new TLPWM(cbus.beatBytes, params.pwm))
     pwm.suggestName(name)
-    controlBus.coupleTo(s"device_named_$name") {
-      pwm.controlXing(params.controlXType) := TLFragmenter(controlBus.beatBytes, controlBus.blockBytes) := _
+    cbus.coupleTo(s"device_named_$name") {
+      pwm.controlXing(params.controlXType) := TLFragmenter(cbus.beatBytes, cbus.blockBytes) := _
     }
-    intNode := pwm.intXing(params.intXType)
-    InModuleBody { pwm.module.clock := mclock.map(_.getWrappedValue).getOrElse(controlBus.module.clock) }
+    params.intNode := pwm.intXing(params.intXType)
+    InModuleBody { pwm.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
+    InModuleBody { pwm.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset) }
 
     pwm
+  }
+
+  def attachAndMakePort(params: PWMAttachParams): ModuleValue[PWMPortIO] = {
+    val pwm = attach(params)
+    val pwmNode = pwm.ioNode.makeSink()(params.p)
+    InModuleBody { pwmNode.makeIO()(ValName(pwm.name)) }
   }
 }

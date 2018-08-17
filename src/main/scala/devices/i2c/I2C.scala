@@ -50,7 +50,9 @@ import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util.{AsyncResetRegVec, Majority}
 
 case class I2CParams(
-  address: BigInt)
+  address: BigInt,
+  controlXType: ClockCrossingType = NoCrossing,
+  intXType: ClockCrossingType = NoCrossing)
 
 class I2CPin extends Bundle {
   val in  = Bool(INPUT)
@@ -570,28 +572,42 @@ abstract class I2C(busWidthBytes: Int, params: I2CParams)(implicit p: Parameters
   interrupts(0) := status.irqFlag & control.intEn
 }}
 
-case class AttachedI2CParams(
+class TLI2C(busWidthBytes: Int, params: I2CParams)(implicit p: Parameters)
+  extends I2C(busWidthBytes, params) with HasTLControlRegMap
+
+case class I2CAttachParams(
   i2c: I2CParams,
+  controlBus: TLBusWrapper,
+  intNode: IntInwardNode,
   controlXType: ClockCrossingType = NoCrossing,
-  intXType: ClockCrossingType = NoCrossing)
+  intXType: ClockCrossingType = NoCrossing,
+  mclock: Option[ModuleValue[Clock]] = None,
+  mreset: Option[ModuleValue[Bool]] = None)
+  (implicit val p: Parameters)
 
 object I2C {
   val nextId = { var i = -1; () => { i += 1; i} }
-  def attach(params: AttachedI2CParams, controlBus: TLBusWrapper, intNode: IntInwardNode, mclock: Option[ModuleValue[Clock]])
-            (implicit p: Parameters): TLI2C = {
+
+  def attach(params: I2CAttachParams): TLI2C = {
+    implicit val p = params.p
     val name = s"i2c_${nextId()}"
-    val i2c = LazyModule(new TLI2C(controlBus.beatBytes, params.i2c))
+    val cbus = params.controlBus
+    val i2c = LazyModule(new TLI2C(cbus.beatBytes, params.i2c))
     i2c.suggestName(name)
 
-    controlBus.coupleTo(s"device_named_$name") {
-      i2c.controlXing(params.controlXType) := TLFragmenter(controlBus.beatBytes, controlBus.blockBytes) := _
+    cbus.coupleTo(s"device_named_$name") {
+      i2c.controlXing(params.controlXType) := TLFragmenter(cbus.beatBytes, cbus.blockBytes) := _
     }
-    intNode := i2c.intXing(params.intXType)
-    InModuleBody { i2c.module.clock := mclock.map(_.getWrappedValue).getOrElse(controlBus.module.clock) }
+    params.intNode := i2c.intXing(params.intXType)
+    InModuleBody { i2c.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
+    InModuleBody { i2c.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset) }
 
     i2c
   }
-}
 
-class TLI2C(busWidthBytes: Int, params: I2CParams)(implicit p: Parameters)
-  extends I2C(busWidthBytes, params) with HasTLControlRegMap
+  def attachAndMakePort(params: I2CAttachParams): ModuleValue[I2CPort] = {
+    val i2c = attach(params)
+    val i2cNode = i2c.ioNode.makeSink()(params.p)
+    InModuleBody { i2cNode.makeIO()(ValName(i2c.name)) }
+  }
+}

@@ -9,11 +9,7 @@ import freechips.rocketchip.diplomacy._
 case object PeripherySPIKey extends Field[Seq[SPIParams]]
 
 trait HasPeripherySPI { this: BaseSubsystem =>
-  val spiParams = p(PeripherySPIKey)  
-  val spis = p(PeripherySPIKey).map { ps =>
-    SPI.attach(AttachedSPIParams(ps), pbus, ibus.fromAsync, None)
-  }
-  val spiNodes = spis.map(_.ioNode.makeSink())
+  val spiNodes = p(PeripherySPIKey).map { ps => SPI.attach(SPIAttachParams(ps, pbus, ibus.fromAsync)).ioNode.makeSink() }
 }
 
 trait HasPeripherySPIBundle {
@@ -28,10 +24,9 @@ trait HasPeripherySPIModuleImp extends LazyModuleImp with HasPeripherySPIBundle 
 case object PeripherySPIFlashKey extends Field[Seq[SPIFlashParams]]
 
 trait HasPeripherySPIFlash { this: BaseSubsystem =>
-  val qspis = p(PeripherySPIFlashKey).map { ps =>
-    SPI.attachFlash(AttachedSPIFlashParams(ps, fBufferDepth = 8), pbus, pbus, ibus.fromAsync, None)
+  val qspiNodes = p(PeripherySPIFlashKey).map { ps =>
+    SPI.attachFlash(SPIFlashAttachParams(ps, pbus, pbus, ibus.fromAsync, fBufferDepth = 8)).ioNode.makeSink()
   }
-  val qspiNodes = qspis.map(_.ioNode.makeSink())
 }
 
 trait HasPeripherySPIFlashBundle {

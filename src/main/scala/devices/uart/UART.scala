@@ -18,7 +18,8 @@ case class UARTParams(
   oversample: Int = 4,
   nSamples: Int = 3,
   nTxEntries: Int = 8,
-  nRxEntries: Int = 8) {
+  nRxEntries: Int = 8)
+{
   def oversampleFactor = 1 << oversample
   require(divisorBits > oversample)
   require(oversampleFactor > nSamples)
@@ -128,27 +129,44 @@ abstract class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
   )
 }}
 
-case class AttachedUARTParams(
+class TLUART(busWidthBytes: Int, params: UARTParams, divinit: Int)(implicit p: Parameters)
+  extends UART(busWidthBytes, params, divinit) with HasTLControlRegMap
+
+case class UARTAttachParams(
   uart: UARTParams,
   divinit: Int,
+  controlBus: TLBusWrapper,
+  intNode: IntInwardNode,
   controlXType: ClockCrossingType = NoCrossing,
-  intXType: ClockCrossingType = NoCrossing)
+  intXType: ClockCrossingType = NoCrossing,
+  mclock: Option[ModuleValue[Clock]] = None,
+  mreset: Option[ModuleValue[Bool]] = None)
+  (implicit val p: Parameters)
 
 object UART {
   val nextId = { var i = -1; () => { i += 1; i} }
-  def attach(params: AttachedUARTParams, controlBus: TLBusWrapper, intNode: IntInwardNode, mclock: Option[ModuleValue[Clock]])
-            (implicit p: Parameters): TLUART = {
+
+  def attach(params: UARTAttachParams): TLUART = {
+    implicit val p = params.p
     val name = s"uart_${nextId()}"
-    val uart = LazyModule(new TLUART(controlBus.beatBytes, params.uart, params.divinit))
+    val cbus =  params.controlBus
+    val uart = LazyModule(new TLUART(cbus.beatBytes, params.uart, params.divinit))
     uart.suggestName(name)
 
-    controlBus.coupleTo(s"slave_named_name") {
-      uart.controlXing(params.controlXType) := TLFragmenter(controlBus.beatBytes, controlBus.blockBytes) := _
+    cbus.coupleTo(s"slave_named_name") {
+      uart.controlXing(params.controlXType) := TLFragmenter(cbus.beatBytes, cbus.blockBytes) := _
     }
-    intNode := uart.intXing(params.intXType)
-    InModuleBody { uart.module.clock := mclock.map(_.getWrappedValue).getOrElse(controlBus.module.clock) }
+    params.intNode := uart.intXing(params.intXType)
+    InModuleBody { uart.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
+    InModuleBody { uart.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset) }
 
     uart
+  }
+
+  def attachAndMakePort(params: UARTAttachParams): ModuleValue[UARTPortIO] = {
+    val uart = attach(params)
+    val uartNode = uart.ioNode.makeSink()(params.p)
+    InModuleBody { uartNode.makeIO()(ValName(uart.name)) }
   }
 
   def tieoff(port: UARTPortIO) {
@@ -159,6 +177,3 @@ object UART {
     port.rxd := port.txd
   }
 }
-
-class TLUART(busWidthBytes: Int, params: UARTParams, divinit: Int)(implicit p: Parameters)
-  extends UART(busWidthBytes, params, divinit) with HasTLControlRegMap

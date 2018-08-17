@@ -30,8 +30,7 @@ case class SPIFlashParams(
     csWidth: Int = 1,
     delayBits: Int = 8,
     divisorBits: Int = 12,
-    sampleDelay: Int = 2,
-    crossingType: ClockCrossingType = SynchronousCrossing())
+    sampleDelay: Int = 2)
   extends SPIFlashParamsBase {
   val frameBits = 8
   val insnAddrBytes = 4
