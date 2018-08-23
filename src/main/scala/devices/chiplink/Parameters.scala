@@ -5,6 +5,7 @@ import Chisel._
 import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
+import freechips.rocketchip.util.AsyncQueueParams
 
 case class ChipLinkParams(TLUH: Seq[AddressSet], TLC: Seq[AddressSet], sourceBits: Int = 6, sinkBits: Int = 5, syncTX: Boolean = false, fpgaReset: Boolean = false)
 {
@@ -19,7 +20,7 @@ case class ChipLinkParams(TLUH: Seq[AddressSet], TLC: Seq[AddressSet], sourceBit
   val dataBits = dataBytes*8
   val clSourceBits = 16
   val clSinkBits = 16
-  val crossingDepth = 8
+  val crossing = AsyncQueueParams()
   val Qdepth = 8192 / dataBytes
   val maxXfer = 4096
   val xferBits = log2Ceil(maxXfer)

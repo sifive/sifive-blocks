@@ -12,18 +12,18 @@ class TX(info: ChipLinkInfo) extends Module
     val c2b_rst  = Bool(OUTPUT)
     val c2b_send = Bool(OUTPUT)
     val c2b_data = UInt(OUTPUT, info.params.dataBits)
-    val a = new AsyncBundle(info.params.crossingDepth, new DataLayer(info.params)).flip
-    val b = new AsyncBundle(info.params.crossingDepth, new DataLayer(info.params)).flip
-    val c = new AsyncBundle(info.params.crossingDepth, new DataLayer(info.params)).flip
-    val d = new AsyncBundle(info.params.crossingDepth, new DataLayer(info.params)).flip
-    val e = new AsyncBundle(info.params.crossingDepth, new DataLayer(info.params)).flip
+    val a = new AsyncBundle(new DataLayer(info.params), info.params.crossing).flip
+    val b = new AsyncBundle(new DataLayer(info.params), info.params.crossing).flip
+    val c = new AsyncBundle(new DataLayer(info.params), info.params.crossing).flip
+    val d = new AsyncBundle(new DataLayer(info.params), info.params.crossing).flip
+    val e = new AsyncBundle(new DataLayer(info.params), info.params.crossing).flip
     val sa = DecoupledIO(new DataLayer(info.params)).flip
     val sb = DecoupledIO(new DataLayer(info.params)).flip
     val sc = DecoupledIO(new DataLayer(info.params)).flip
     val sd = DecoupledIO(new DataLayer(info.params)).flip
     val se = DecoupledIO(new DataLayer(info.params)).flip
-    val rxc = new AsyncBundle(1, new CreditBump(info.params)).flip
-    val txc = new AsyncBundle(1, new CreditBump(info.params)).flip
+    val rxc = new AsyncBundle(new CreditBump(info.params), AsyncQueueParams.singleton()).flip
+    val txc = new AsyncBundle(new CreditBump(info.params), AsyncQueueParams.singleton()).flip
   }
 
   // Currently available credits
