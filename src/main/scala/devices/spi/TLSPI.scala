@@ -42,9 +42,7 @@ case class SPIParams(
     frameBits: Int = 8,
     delayBits: Int = 8,
     divisorBits: Int = 12,
-    sampleDelay: Int = 2,
-    crossingType: ClockCrossingType = SynchronousCrossing()
-    )
+    sampleDelay: Int = 2)
   extends SPIParamsBase {
 
   require(frameBits >= 4)

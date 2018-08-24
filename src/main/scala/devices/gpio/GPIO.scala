@@ -204,25 +204,40 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
 class TLGPIO(busWidthBytes: Int, params: GPIOParams)(implicit p: Parameters)
   extends GPIO(busWidthBytes, params) with HasTLControlRegMap
 
-case class AttachedGPIOParams(
+case class GPIOAttachParams(
   gpio: GPIOParams,
+  controlBus: TLBusWrapper,
+  intNode: IntInwardNode,
   controlXType: ClockCrossingType = NoCrossing,
-  intXType: ClockCrossingType = NoCrossing)
+  intXType: ClockCrossingType = NoCrossing,
+  mclock: Option[ModuleValue[Clock]] = None,
+  mreset: Option[ModuleValue[Bool]] = None)
+  (implicit val p: Parameters)
 
 object GPIO {
   val nextId = { var i = -1; () => { i += 1; i} }
-  def attach(params: AttachedGPIOParams, controlBus: TLBusWrapper, intNode: IntInwardNode, mclock: Option[ModuleValue[Clock]])
-            (implicit p: Parameters): TLGPIO = {
+
+  def attach(params: GPIOAttachParams): TLGPIO = {
+    implicit val p = params.p
     val name = s"gpio_${nextId()}"
-    val gpio = LazyModule(new TLGPIO(controlBus.beatBytes, params.gpio))
+    val cbus = params.controlBus
+    val gpio = LazyModule(new TLGPIO(cbus.beatBytes, params.gpio))
     gpio.suggestName(name)
-    controlBus.coupleTo(s"device_named_$name") {
-      gpio.controlXing(params.controlXType) := TLFragmenter(controlBus.beatBytes, controlBus.blockBytes) := _
+
+    cbus.coupleTo(s"device_named_$name") {
+      gpio.controlXing(params.controlXType) := TLFragmenter(cbus.beatBytes, cbus.blockBytes) := _
     }
-    intNode := gpio.intXing(params.intXType)
-    InModuleBody { gpio.module.clock := mclock.map(_.getWrappedValue).getOrElse(controlBus.module.clock) }
+    params.intNode := gpio.intXing(params.intXType)
+    InModuleBody { gpio.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
+    InModuleBody { gpio.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset) }
 
     gpio
+  }
+
+  def attachAndMakePort(params: GPIOAttachParams): ModuleValue[GPIOPortIO] = {
+    val gpio = attach(params)
+    val gpioNode = gpio.ioNode.makeSink()(params.p)
+    InModuleBody { gpioNode.makeIO()(ValName(gpio.name)) }
   }
 
   def loopback(g: GPIOPortIO)(pinA: Int, pinB: Int) {
