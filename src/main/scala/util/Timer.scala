@@ -86,10 +86,10 @@ class GenericTimerCfgRegIFC (
     }
 
     // Defaults, because only ncmp of these are assigned by the regmap below.
-    val write_ip = Vec.fill(maxcmp){false.B}
-    val write_gang = Vec.fill(maxcmp){false.B}
-    val write_extra = Vec.fill(maxcmp){false.B}
-    val write_center = Vec.fill(maxcmp){false.B}
+    write_ip     := Vec.fill(maxcmp){false.B}
+    write_gang   := Vec.fill(maxcmp){false.B}
+    write_extra  := Vec.fill(maxcmp){false.B}
+    write_center := Vec.fill(maxcmp){false.B}
 
     RegFieldGroup(s"${prefix}cfg", Some(s"${prefix} Configuration"),
       Seq(
