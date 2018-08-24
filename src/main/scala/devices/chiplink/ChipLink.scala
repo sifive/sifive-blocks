@@ -199,11 +199,11 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
       // Create the TX clock domain from input
       tx.clock := io.c2b_clk
       tx.reset := io.c2b_rst
-      tx.io.a <> ToAsyncBundle(sinkA.io.q, params.crossingDepth)
-      tx.io.b <> ToAsyncBundle(sinkB.io.q, params.crossingDepth)
-      tx.io.c <> ToAsyncBundle(sinkC.io.q, params.crossingDepth)
-      tx.io.d <> ToAsyncBundle(sinkD.io.q, params.crossingDepth)
-      tx.io.e <> ToAsyncBundle(sinkE.io.q, params.crossingDepth)
+      tx.io.a <> ToAsyncBundle(sinkA.io.q, params.crossing)
+      tx.io.b <> ToAsyncBundle(sinkB.io.q, params.crossing)
+      tx.io.c <> ToAsyncBundle(sinkC.io.q, params.crossing)
+      tx.io.d <> ToAsyncBundle(sinkD.io.q, params.crossing)
+      tx.io.e <> ToAsyncBundle(sinkE.io.q, params.crossing)
     }
 
     // Pass credits from RX to TX

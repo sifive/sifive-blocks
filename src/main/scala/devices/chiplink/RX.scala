@@ -10,13 +10,13 @@ class RX(info: ChipLinkInfo) extends Module
   val io = new Bundle {
     val b2c_send = Bool(INPUT)
     val b2c_data = UInt(INPUT, info.params.dataBits)
-    val a = new AsyncBundle(info.params.crossingDepth, UInt(width = info.params.dataBits))
-    val b = new AsyncBundle(info.params.crossingDepth, UInt(width = info.params.dataBits))
-    val c = new AsyncBundle(info.params.crossingDepth, UInt(width = info.params.dataBits))
-    val d = new AsyncBundle(info.params.crossingDepth, UInt(width = info.params.dataBits))
-    val e = new AsyncBundle(info.params.crossingDepth, UInt(width = info.params.dataBits))
-    val rxc = new AsyncBundle(1, new CreditBump(info.params))
-    val txc = new AsyncBundle(1, new CreditBump(info.params))
+    val a = new AsyncBundle(UInt(width = info.params.dataBits), info.params.crossing)
+    val b = new AsyncBundle(UInt(width = info.params.dataBits), info.params.crossing)
+    val c = new AsyncBundle(UInt(width = info.params.dataBits), info.params.crossing)
+    val d = new AsyncBundle(UInt(width = info.params.dataBits), info.params.crossing)
+    val e = new AsyncBundle(UInt(width = info.params.dataBits), info.params.crossing)
+    val rxc = new AsyncBundle(new CreditBump(info.params), AsyncQueueParams.singleton())
+    val txc = new AsyncBundle(new CreditBump(info.params), AsyncQueueParams.singleton())
   }
 
   // Immediately register our input data
@@ -57,7 +57,7 @@ class RX(info: ChipLinkInfo) extends Module
 
   // Send HellaQueue output to their respective FSMs
   (hqX zip ioX) foreach { case (hq, io) =>
-    io <> ToAsyncBundle(hq.io.deq, info.params.crossingDepth)
+    io <> ToAsyncBundle(hq.io.deq, info.params.crossing)
   }
 
   // Credits we need to hand-off to the TX FSM
@@ -71,8 +71,8 @@ class RX(info: ChipLinkInfo) extends Module
   rxOut.valid := Bool(true)
   txOut.bits := tx
   rxOut.bits := rx
-  io.txc <> ToAsyncBundle(txOut, 1)
-  io.rxc <> ToAsyncBundle(rxOut, 1)
+  io.txc <> ToAsyncBundle(txOut, AsyncQueueParams.singleton())
+  io.rxc <> ToAsyncBundle(rxOut, AsyncQueueParams.singleton())
 
   // Generate new RX credits as the HellaQueues drain
   val rxInc = Wire(new CreditBump(info.params))

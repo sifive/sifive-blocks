@@ -42,7 +42,7 @@ class MockAONWrapper(w: Int, c: MockAONParams)(implicit p: Parameters) extends L
   def isoOut(iso: Bool, x: UInt): UInt = IsoZero(iso, x)
   def isoIn(iso: Bool, x: UInt): UInt = x
   val isolation = LazyModule(new TLIsolation(fOut = isoOut, fIn = isoIn))
-  val crossing = LazyModule(new TLAsyncCrossingSink(depth = 1))
+  val crossing = LazyModule(new TLAsyncCrossingSink(AsyncQueueParams.singleton()))
 
   val node = aon.node := crossing.node := isolation.node
 
