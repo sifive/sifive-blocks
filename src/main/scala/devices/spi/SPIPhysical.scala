@@ -3,6 +3,7 @@ package sifive.blocks.devices.spi
 
 import Chisel._
 import freechips.rocketchip.util.ShiftRegInit
+import chisel3.experimental._ 
 
 class SPIMicroOp(c: SPIParamsBase) extends SPIBundle(c) {
   val fn = Bits(width = 1)
@@ -16,9 +17,15 @@ object SPIMicroOp {
   def Delay    = UInt(1, 1)
 }
 
+class SPIExtraSampleDelay(c: SPIParamsBase) extends SPIBundle(c){
+  val coarse = UInt(width = c.divisorBits)
+  val fine = UInt(width = c.fineDelaySelectWidth)
+}
+
 class SPIPhyControl(c: SPIParamsBase) extends SPIBundle(c) {
   val sck = new SPIClocking(c)
   val fmt = new SPIFormat(c)
+  val extradel = new SPIExtraSampleDelay (c)
 }
 
 class SPIPhysical(c: SPIParamsBase) extends Module {
@@ -37,16 +44,50 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
   val sample = Wire(init = Bool(false))
   val setup = Wire(init = Bool(false))
   val last = Wire(init = Bool(false))
-  // Delayed versions
+
   val setup_d = Reg(next = setup)
-  val sample_d = ShiftRegInit(sample, c.sampleDelay, init = Bool(false))
-  val last_d = ShiftRegInit(last, c.sampleDelay, init = Bool(false))
 
   val scnt = Reg(init = UInt(0, c.countBits))
   val tcnt = Reg(io.ctrl.sck.div)
 
   val stop = (scnt === UInt(0))
   val beat = (tcnt === UInt(0))
+
+  //Making a delay counter for 'sample'
+  val del_cntr = RegInit(UInt(c.divisorBits.W), (io.ctrl.extradel.coarse + 1.U))
+  val sample_d = RegInit(Bool(false)) 
+  when (beat && sample){
+    del_cntr := io.ctrl.extradel.coarse
+    }
+
+  when (del_cntr =/= 0.U){
+    del_cntr := del_cntr - 1.U
+  }
+
+  when (del_cntr === 1.U){
+    sample_d := true.B
+  }.otherwise{
+    sample_d := false.B
+  }
+
+  //Making a delay counter for 'last'
+  val del_cntr_last = RegInit(UInt(c.divisorBits.W), (io.ctrl.extradel.coarse + 1.U))
+  val last_d = RegInit(Bool(false)) 
+
+  when (beat && last){
+    del_cntr_last := io.ctrl.extradel.coarse
+    }
+
+  when (del_cntr_last =/= 0.U){
+    del_cntr_last := del_cntr_last - 1.U
+  }
+  
+  when (del_cntr_last === 1.U){
+    last_d := true.B
+  }.otherwise{
+    last_d := false.B
+  }
+
   val decr = Mux(beat, scnt, tcnt) - UInt(1)
   val sched = Wire(init = beat)
   tcnt := Mux(sched, ctrl.sck.div, decr)
@@ -59,11 +100,27 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
     Mux(fmt.endian === SPIEndian.MSB, data, Cat(data.toBools))
 
   val rxd = Cat(io.port.dq.reverse.map(_.i))
-  val samples = Seq(rxd(1), rxd(1, 0), rxd)
+  val rxd_delayed = Vec(Seq.fill(io.port.dq.size)(false.B))
+
+  //Adding fine-granularity delay buffers on the received data
+  val fpga_syn = false   //Change this to true for FPGA simulation
+  if (fpga_syn != true){
+    val fine_grain_delay = Seq.fill(4){Module(new BlackBoxDelayBuffer_tsmc28_INVD4BWP12T35P140_MUX2D2BWP12T35P140())}
+    for (j <- 0 to 3 ){ 
+      fine_grain_delay(j).io.in := rxd(j)
+      fine_grain_delay(j).io.sel := io.ctrl.extradel.fine
+      rxd_delayed(j) := fine_grain_delay(j).io.mux_out
+    }
+  } else {
+    for (j <- 0 to 3 ){rxd_delayed(j) := rxd(j)}
+  }
+
+  val rxd_fin = rxd_delayed.asUInt
+  val samples = Seq(rxd_fin(1), rxd_fin(1, 0), rxd_fin)
 
   val buffer = Reg(op.data)
   val buffer_in = convert(io.op.bits.data, io.ctrl.fmt)
-  val shift = if (c.sampleDelay > 0) setup_d || (sample_d && stop) else sample_d
+  val shift = Mux ((io.ctrl.extradel.coarse > 0.U), setup_d || (sample_d && stop), sample_d)
   buffer := Mux1H(proto, samples.zipWithIndex.map { case (data, i) =>
     val n = 1 << i
     val m = c.frameBits -1
