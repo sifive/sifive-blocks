@@ -23,6 +23,7 @@ trait SPIParamsBase {
   val divisorBits: Int
 
   val sampleDelay: Int
+  val fineDelaySelectWidth: Int
 
   lazy val csIdBits = log2Up(csWidth)
   lazy val lengthBits = log2Floor(frameBits) + 1
@@ -42,7 +43,8 @@ case class SPIParams(
     frameBits: Int = 8,
     delayBits: Int = 8,
     divisorBits: Int = 12,
-    sampleDelay: Int = 2)
+    sampleDelay: Int = 2,
+    fineDelaySelectWidth: Int = 5)
   extends SPIParamsBase {
 
   require(frameBits >= 4)
@@ -123,11 +125,11 @@ class SPITopModule(c: SPIParamsBase, outer: TLSPIBase)
       RegField.r(1, ip.rxwm,
       RegFieldDesc("rxwm_ip","Receive watermark interupt pending", volatile=true)))),
 
-    SPICRs.extradel ->  RegFieldGroup("extradel",Some("delay from the sck edge"),Seq(
+    SPICRs.extradel -> RegFieldGroup("extradel",Some("delay from the sck edge"),Seq(
       RegField(c.divisorBits, ctrl.extradel.coarse,
-               RegFieldDesc("extradel_coarse","Coarse grain sample delay", reset=Some(0))),
+      RegFieldDesc("extradel_coarse","Coarse grain sample delay", reset=Some(0))),
       RegField(5, ctrl.extradel.fine,
-               RegFieldDesc("extradel_fine","Fine grain sample delay", reset=Some(0))))))
+      RegFieldDesc("extradel_fine","Fine grain sample delay", reset=Some(0))))))
 }
 
 class MMCDevice(spi: Device, maxMHz: Double = 20) extends SimpleDevice("mmc", Seq("mmc-spi-slot")) {

@@ -94,7 +94,7 @@ object SPIControl {
     ctrl.dla.interxfr := UInt(0)
     ctrl.wm.tx := UInt(0)
     ctrl.wm.rx := UInt(0)
-    ctrl.extradel.coarse := UInt(0)
+    ctrl.extradel.coarse := UInt(2)
     ctrl.extradel.fine := UInt(0)
     ctrl
   }
