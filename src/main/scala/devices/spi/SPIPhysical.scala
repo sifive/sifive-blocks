@@ -103,18 +103,12 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
   val rxd_delayed = Vec(Seq.fill(io.port.dq.size)(false.B))
 
   //Adding fine-granularity delay buffers on the received data
-  val fpga_syn = false   //Change this to true for FPGA simulation
-  if (fpga_syn != true){
-    val fine_grain_delay = Seq.fill(4){Module(new BlackBoxDelayBuffer_tsmc28_INVD4BWP12T35P140_MUX2D2BWP12T35P140())}
+    val fine_grain_delay = Seq.fill(4){Module(new BlackBoxDelayBuffer())}
     for (j <- 0 to 3 ){ 
       fine_grain_delay(j).io.in := rxd(j)
       fine_grain_delay(j).io.sel := io.ctrl.extradel.fine
       rxd_delayed(j) := fine_grain_delay(j).io.mux_out
     }
-  } else {
-    for (j <- 0 to 3 ){rxd_delayed(j) := rxd(j)}
-  }
-
   val rxd_fin = rxd_delayed.asUInt
   val samples = Seq(rxd_fin(1), rxd_fin(1, 0), rxd_fin)
 
