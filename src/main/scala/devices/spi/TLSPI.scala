@@ -171,7 +171,7 @@ abstract class TLSPIBase(w: Int, c: SPIParamsBase)(implicit p: Parameters) exten
   override def extraResources(resources: ResourceBindings) = Map(
         "#address-cells" -> Seq(ResourceInt(1)),
         "#size-cells" -> Seq(ResourceInt(0)))
-  override def nInterrupts = 1/scratch/mohit/M_spi_b2b_3/sifive-blocks/src/main/scala/devices/spi/
+  override def nInterrupts = 1
 }
 
 class TLSPI(w: Int, c: SPIParams)(implicit p: Parameters)
