@@ -1,4 +1,4 @@
-module BlackBoxDelayBuffer ( in, mux_out, out, sel
+module BlackBoxDelayBuffer_tsmc28_INVD4BWP12T35P140_MUX2D2BWP12T35P140 ( in, mux_out, out, sel
   );
 
   input in;
