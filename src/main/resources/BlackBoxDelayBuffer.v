@@ -9,4 +9,6 @@ module BlackBoxDelayBuffer ( in, mux_out, out, sel
   output out;
   input [4:0] sel;
 
+  assign mux_out = in;
+  assign out = in;
 endmodule

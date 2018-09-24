@@ -98,9 +98,9 @@ object SPI {
     x.sck := q.sck
     x.cs := q.cs
     q.dq.zip(x.dq).foreach { case(qq,xx) =>
-      qq.i := ShiftRegister(xx.i, q.c.sampleDelay)
       xx.o := qq.o
       xx.oe := qq.oe
+      qq.i := xx.i
     }
     x
   }

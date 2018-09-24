@@ -30,15 +30,14 @@ case class SPIFlashParams(
     csWidth: Int = 1,
     delayBits: Int = 8,
     divisorBits: Int = 12,
-    sampleDelay: Int = 2,
-    fineDelaySelectWidth: Int = 5)
+    fineDelaySelectWidth: Int = 5,
+    sampleDelayRegSize: Int = 5)
   extends SPIFlashParamsBase {
   val frameBits = 8
   val insnAddrBytes = 4
   val insnPadLenBits = 4
 
   require(insnPadLenBits <= delayBits)
-  require(sampleDelay >= 0)
 }
 
 class SPIFlashTopModule(c: SPIFlashParamsBase, outer: TLSPIFlashBase)

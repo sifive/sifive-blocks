@@ -17,15 +17,20 @@ object SPIMicroOp {
   def Delay    = UInt(1, 1)
 }
 
-class SPIExtraSampleDelay(c: SPIParamsBase) extends SPIBundle(c){
+class SPIExtraDelay(c: SPIParamsBase) extends SPIBundle(c){
   val coarse = UInt(width = c.divisorBits)
   val fine = UInt(width = c.fineDelaySelectWidth)
+}
+
+class SPISampleDelay(c: SPIParamsBase) extends SPIBundle(c){
+  val sd = UInt(width = c.sampleDelayRegSize)
 }
 
 class SPIPhyControl(c: SPIParamsBase) extends SPIBundle(c) {
   val sck = new SPIClocking(c)
   val fmt = new SPIFormat(c)
-  val extradel = new SPIExtraSampleDelay (c)
+  val extradel = new SPIExtraDelay (c)
+  val sampledel = new SPISampleDelay (c)
 }
 
 class SPIPhysical(c: SPIParamsBase) extends Module {
@@ -54,10 +59,11 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
   val beat = (tcnt === UInt(0))
 
   //Making a delay counter for 'sample'
-  val del_cntr = RegInit(UInt(c.divisorBits.W), (io.ctrl.extradel.coarse + 1.U))
+  val totalCoarseDel = io.ctrl.extradel.coarse + io.ctrl.sampledel.sd
+  val del_cntr = RegInit(UInt(c.divisorBits.W), (totalCoarseDel + 1.U))
   val sample_d = RegInit(Bool(false)) 
   when (beat && sample){
-    del_cntr := io.ctrl.extradel.coarse
+    del_cntr := totalCoarseDel
     }
 
   when (del_cntr =/= 0.U){
@@ -71,11 +77,11 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
   }
 
   //Making a delay counter for 'last'
-  val del_cntr_last = RegInit(UInt(c.divisorBits.W), (io.ctrl.extradel.coarse + 1.U))
+  val del_cntr_last = RegInit(UInt(c.divisorBits.W), (totalCoarseDel + 1.U))
   val last_d = RegInit(Bool(false)) 
 
   when (beat && last){
-    del_cntr_last := io.ctrl.extradel.coarse
+    del_cntr_last := totalCoarseDel 
     }
 
   when (del_cntr_last =/= 0.U){
@@ -109,12 +115,13 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
       fine_grain_delay(j).io.sel := io.ctrl.extradel.fine
       rxd_delayed(j) := fine_grain_delay(j).io.mux_out
     }
+
   val rxd_fin = rxd_delayed.asUInt
   val samples = Seq(rxd_fin(1), rxd_fin(1, 0), rxd_fin)
 
   val buffer = Reg(op.data)
   val buffer_in = convert(io.op.bits.data, io.ctrl.fmt)
-  val shift = Mux ((io.ctrl.extradel.coarse > 0.U), setup_d || (sample_d && stop), sample_d)
+  val shift = Mux ((totalCoarseDel > 0.U), setup_d || (sample_d && stop), sample_d)
   buffer := Mux1H(proto, samples.zipWithIndex.map { case (data, i) =>
     val n = 1 << i
     val m = c.frameBits -1
