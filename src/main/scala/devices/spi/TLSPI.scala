@@ -22,8 +22,9 @@ trait SPIParamsBase {
   val frameBits: Int
   val delayBits: Int
   val divisorBits: Int
-  val fineDelaySelectWidth: Int
-  val sampleDelayRegSize: Int
+  val fineDelayBits: Int
+  val sampleDelayBits: Int
+  val defaultSampleDel:Int
 
   lazy val csIdBits = log2Up(csWidth)
   lazy val lengthBits = log2Floor(frameBits) + 1
@@ -43,8 +44,9 @@ case class SPIParams(
     frameBits: Int = 8,
     delayBits: Int = 8,
     divisorBits: Int = 12,
-    fineDelaySelectWidth: Int = 5,
-    sampleDelayRegSize: Int = 5
+    fineDelayBits: Int = 5,
+    sampleDelayBits: Int = 5,
+    defaultSampleDel: Int = 3
     )
   extends SPIParamsBase {
 
@@ -58,25 +60,12 @@ class SPITopModule(c: SPIParamsBase, outer: TLSPIBase)
   val fifo = Module(new SPIFIFO(c))
   val mac = Module(new SPIMedia(c))
 
-  val maxdel = Math.pow (2, c.sampleDelayRegSize).toInt
-  withClockAndReset (mac.io.port.sck.asClock(), reset){
-    val q_reg = RegInit(Vec(Seq.fill(4)(Vec(Seq.fill(maxdel){false.B}))))
-    for (m <- 0 to 3) {
-      for (j <- 0 to  (maxdel - 1)){
-        if (j == 0){
-          q_reg(m)(j) := outer.port.dq(m).i
-        }
-        else{
-          q_reg(m)(j) := q_reg(m)(j-1) 
-        }
-      }
-    }
-    for (k <- 0 to 3){
-      mac.io.port.dq(k).i := q_reg(k)(ctrl.sampledel.sd - 1.U)
+    for (k <- 0 to 3) {
+      mac.io.port.dq(k).i := outer.port.dq(k).i
       outer.port.dq(k).o  := mac.io.port.dq(k).o
       outer.port.dq(k).oe  := mac.io.port.dq(k).oe
     }
-  }
+  
   outer.port.sck := mac.io.port.sck
   outer.port.cs := mac.io.port.cs
 
@@ -149,12 +138,12 @@ class SPITopModule(c: SPIParamsBase, outer: TLSPIBase)
     SPICRs.extradel -> RegFieldGroup("extradel",Some("delay from the sck edge"),Seq(
       RegField(c.divisorBits, ctrl.extradel.coarse,
       RegFieldDesc("extradel_coarse","Coarse grain sample delay", reset=Some(0))),
-      RegField(c.fineDelaySelectWidth, ctrl.extradel.fine,
+      RegField(c.fineDelayBits, ctrl.extradel.fine,
       RegFieldDesc("extradel_fine","Fine grain sample delay", reset=Some(0))))),
 
     SPICRs.sampledel -> RegFieldGroup("sampledel",Some("Number of delay stages from slave to SPI controller"),Seq(
-      RegField(c.sampleDelayRegSize, ctrl.sampledel.sd,
-      RegFieldDesc("sampledel_sd","Number of delay stages from slave to the SPI controller", reset=Some(0))))))
+      RegField(c.sampleDelayBits, ctrl.sampledel.sd,
+      RegFieldDesc("sampledel_sd","Number of delay stages from slave to the SPI controller", reset=Some(c.defaultSampleDel))))))
 }
 
 class MMCDevice(spi: Device, maxMHz: Double = 20) extends SimpleDevice("mmc", Seq("mmc-spi-slot")) {

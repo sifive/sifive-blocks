@@ -17,13 +17,19 @@ object SPIMicroOp {
   def Delay    = UInt(1, 1)
 }
 
-class SPIExtraDelay(c: SPIParamsBase) extends SPIBundle(c){
+//Coarse delay is the number of system-clock cycles that can be added
+//as a phase difference between sent and received SPI data
+//Fine delay is the fine-grain delay that can be added as a phase 
+//difference between send and received SPI data.
+//Fine delay is typically achieved through foundry specific delay buffers
+class SPIExtraDelay(c: SPIParamsBase) extends SPIBundle(c) {
   val coarse = UInt(width = c.divisorBits)
-  val fine = UInt(width = c.fineDelaySelectWidth)
+  val fine = UInt(width = c.fineDelayBits)
 }
-
-class SPISampleDelay(c: SPIParamsBase) extends SPIBundle(c){
-  val sd = UInt(width = c.sampleDelayRegSize)
+//Sample delay reflects minimum sequential delay that exists between 
+//a slave and the SPI controller
+class SPISampleDelay(c: SPIParamsBase) extends SPIBundle(c) {
+  val sd = UInt(width = c.sampleDelayBits)
 }
 
 class SPIPhyControl(c: SPIParamsBase) extends SPIBundle(c) {
@@ -60,37 +66,37 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
 
   //Making a delay counter for 'sample'
   val totalCoarseDel = io.ctrl.extradel.coarse + io.ctrl.sampledel.sd
-  val del_cntr = RegInit(UInt(c.divisorBits.W), (totalCoarseDel + 1.U))
+  val del_cntr = RegInit(UInt(c.divisorBits.W), (4.U))
   val sample_d = RegInit(Bool(false)) 
-  when (beat && sample){
+  when (beat && sample) {
     del_cntr := totalCoarseDel
-    }
+  }
 
-  when (del_cntr =/= 0.U){
+  when (del_cntr =/= 0.U) {
     del_cntr := del_cntr - 1.U
   }
 
-  when (del_cntr === 1.U){
+  when (del_cntr === 1.U) {
     sample_d := true.B
-  }.otherwise{
+  }.otherwise {
     sample_d := false.B
   }
 
   //Making a delay counter for 'last'
-  val del_cntr_last = RegInit(UInt(c.divisorBits.W), (totalCoarseDel + 1.U))
+  val del_cntr_last = RegInit(UInt(c.divisorBits.W), (4.U))
   val last_d = RegInit(Bool(false)) 
 
-  when (beat && last){
+  when (beat && last) {
     del_cntr_last := totalCoarseDel 
-    }
+  }
 
-  when (del_cntr_last =/= 0.U){
+  when (del_cntr_last =/= 0.U) {
     del_cntr_last := del_cntr_last - 1.U
   }
   
-  when (del_cntr_last === 1.U){
+  when (del_cntr_last === 1.U) {
     last_d := true.B
-  }.otherwise{
+  }.otherwise {
     last_d := false.B
   }
 
@@ -109,12 +115,12 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
   val rxd_delayed = Vec(Seq.fill(io.port.dq.size)(false.B))
 
   //Adding fine-granularity delay buffers on the received data
-    val fine_grain_delay = Seq.fill(4){Module(new BlackBoxDelayBuffer())}
-    for (j <- 0 to 3 ){ 
-      fine_grain_delay(j).io.in := rxd(j)
-      fine_grain_delay(j).io.sel := io.ctrl.extradel.fine
-      rxd_delayed(j) := fine_grain_delay(j).io.mux_out
-    }
+  val fine_grain_delay = Seq.fill(io.port.dq.size) {Module(new BlackBoxDelayBuffer())}
+  for (j <- 0 to 3 ) { 
+    fine_grain_delay(j).io.in := rxd(j)
+    fine_grain_delay(j).io.sel := io.ctrl.extradel.fine
+    rxd_delayed(j) := fine_grain_delay(j).io.mux_out
+  }
 
   val rxd_fin = rxd_delayed.asUInt
   val samples = Seq(rxd_fin(1), rxd_fin(1, 0), rxd_fin)

@@ -97,7 +97,7 @@ object SPIControl {
     ctrl.wm.rx := UInt(0)
     ctrl.extradel.coarse := UInt(0)
     ctrl.extradel.fine := UInt(0)
-    ctrl.sampledel.sd := UInt(3)
+    ctrl.sampledel.sd := UInt(c.defaultSampleDel)
     ctrl
   }
 }

@@ -30,8 +30,10 @@ case class SPIFlashParams(
     csWidth: Int = 1,
     delayBits: Int = 8,
     divisorBits: Int = 12,
-    fineDelaySelectWidth: Int = 5,
-    sampleDelayRegSize: Int = 5)
+    fineDelayBits: Int = 5,
+    sampleDelayBits: Int = 5,
+    defaultSampleDel: Int = 3
+    )
   extends SPIFlashParamsBase {
   val frameBits = 8
   val insnAddrBytes = 4
