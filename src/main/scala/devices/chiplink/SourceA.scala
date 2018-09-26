@@ -80,7 +80,7 @@ class SourceA(info: ChipLinkInfo) extends Module
   a.bits.param   := q_param
   a.bits.size    := q_size
   a.bits.source  := Cat(q_domain, source)
-  a.bits.address := info.makeError(q_legal, q_address)
+  a.bits.address := info.makeError(q_legal, q_address, q_opcode)
   a.bits.mask    := MaskGen(q_address0, q_size, info.params.dataBytes)
   a.bits.data    := io.q.bits
   a.bits.corrupt := Bool(false)
