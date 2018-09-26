@@ -60,15 +60,7 @@ class SPITopModule(c: SPIParamsBase, outer: TLSPIBase)
   val fifo = Module(new SPIFIFO(c))
   val mac = Module(new SPIMedia(c))
 
-    for (k <- 0 to 3) {
-      mac.io.port.dq(k).i := outer.port.dq(k).i
-      outer.port.dq(k).o  := mac.io.port.dq(k).o
-      outer.port.dq(k).oe  := mac.io.port.dq(k).oe
-    }
-  
-  outer.port.sck := mac.io.port.sck
-  outer.port.cs := mac.io.port.cs
-
+  outer.port <> mac.io.port
   fifo.io.ctrl.fmt := ctrl.fmt
   fifo.io.ctrl.cs <> ctrl.cs
   fifo.io.ctrl.wm := ctrl.wm

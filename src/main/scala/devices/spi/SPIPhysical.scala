@@ -66,7 +66,7 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
 
   //Making a delay counter for 'sample'
   val totalCoarseDel = io.ctrl.extradel.coarse + io.ctrl.sampledel.sd
-  val del_cntr = RegInit(UInt(c.divisorBits.W), (4.U))
+  val del_cntr = RegInit(UInt(c.divisorBits.W), (c.defaultSampleDel + 1.U))
   val sample_d = RegInit(Bool(false)) 
   when (beat && sample) {
     del_cntr := totalCoarseDel
@@ -83,7 +83,7 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
   }
 
   //Making a delay counter for 'last'
-  val del_cntr_last = RegInit(UInt(c.divisorBits.W), (4.U))
+  val del_cntr_last = RegInit(UInt(c.divisorBits.W), (c.defaultSampleDel + 1.U))
   val last_d = RegInit(Bool(false)) 
 
   when (beat && last) {
