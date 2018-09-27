@@ -95,13 +95,7 @@ object SPI {
 
   def connectPort(q: SPIPortIO): SPIPortIO = {
     val x = Wire(new SPIPortIO(q.c))
-    x.sck := q.sck
-    x.cs := q.cs
-    q.dq.zip(x.dq).foreach { case(qq,xx) =>
-      xx.o := qq.o
-      xx.oe := qq.oe
-      qq.i := xx.i
-    }
+    x <> q
     x
   }
 }

@@ -51,6 +51,9 @@ case class SPIParams(
   extends SPIParamsBase {
 
   require(frameBits >= 4)
+  require(fineDelayBits > 0)
+  require(sampleDelayBits > 0)
+  require(defaultSampleDel > 0)
 }
 
 class SPITopModule(c: SPIParamsBase, outer: TLSPIBase)
