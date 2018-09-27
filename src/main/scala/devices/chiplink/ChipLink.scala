@@ -61,10 +61,12 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
         supportsProbe = if (i == 0) params.fullXfer else params.noXfer) },
     minLatency = params.latency)))
 
-  private val bypass = LazyModule(new TLBusBypass(beatBytes = 4))
-  slaveNode := bypass.node
+  private val slave_bypass = LazyModule(new TLBusBypass(beatBytes = 4))
+  slaveNode := slave_bypass.node
+  private val master_bypass = LazyModule(new TLBusBypass(beatBytes = 4))
+  master_bypass.node := masterNode
 
-  val node = NodeHandle(bypass.node, masterNode)
+  val node = NodeHandle(slave_bypass.node, master_bypass.node)
   val ioNode = BundleBridgeSource(() => new WideDataLayerPort(params).cloneType)
 
   // Exported memory map. Used when connecting VIP
@@ -223,7 +225,8 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
 
     // Disable ChipLink while RX+TX are in reset
     val do_bypass = ResetCatchAndSync(clock, rx.reset) || ResetCatchAndSync(clock, tx.reset)
-    bypass.module.io.bypass := do_bypass
+    slave_bypass.module.io.bypass := do_bypass
+    master_bypass.module.io.bypass := do_bypass
     io.bypass := do_bypass
   }
 }
