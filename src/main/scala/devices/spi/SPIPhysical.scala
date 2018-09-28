@@ -66,7 +66,7 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
 
   //Making a delay counter for 'sample'
   val totalCoarseDel = io.ctrl.extradel.coarse + io.ctrl.sampledel.sd
-  val del_cntr = RegInit(UInt(c.divisorBits.W), (c.defaultSampleDel + 1.U))
+  val del_cntr = RegInit(UInt(c.divisorBits.W), (c.defaultSampleDel + 1).U)
   val sample_d = RegInit(Bool(false)) 
   when (beat && sample) {
     del_cntr := totalCoarseDel
@@ -83,7 +83,7 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
   }
 
   //Making a delay counter for 'last'
-  val del_cntr_last = RegInit(UInt(c.divisorBits.W), (c.defaultSampleDel + 1.U))
+  val del_cntr_last = RegInit(UInt(c.divisorBits.W), (c.defaultSampleDel + 1).U)
   val last_d = RegInit(Bool(false)) 
 
   when (beat && last) {
@@ -116,7 +116,7 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
 
   //Adding fine-granularity delay buffers on the received data
   val fine_grain_delay = Seq.fill(io.port.dq.size) {Module(new BlackBoxDelayBuffer())}
-  for (j <- 0 to 3 ) { 
+  for (j <- 0 to (io.port.dq.size - 1)) { 
     fine_grain_delay(j).io.in := rxd(j)
     fine_grain_delay(j).io.sel := io.ctrl.extradel.fine
     rxd_delayed(j) := fine_grain_delay(j).io.mux_out

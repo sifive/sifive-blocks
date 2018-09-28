@@ -40,9 +40,9 @@ case class SPIFlashParams(
   val insnPadLenBits = 4
 
   require(insnPadLenBits <= delayBits)
-  require(fineDelayBits > 0)
-  require(sampleDelayBits > 0)
-  require(defaultSampleDel > 0)
+  require(fineDelayBits >= 0)
+  require(sampleDelayBits >= 0)
+  require(defaultSampleDel >= 0)
 }
 
 class SPIFlashTopModule(c: SPIFlashParamsBase, outer: TLSPIFlashBase)
