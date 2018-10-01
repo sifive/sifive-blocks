@@ -117,27 +117,30 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
         s"ChipLink requires ${m.name} to support AcquireT if it supports Put and AcquireB")
     }
 
-    // Anything that is optional, must be supported by the error device (for redirect)
+    // Anything that is optional, must be supported by an error device (for redirect)
     val errorDevs = edgeOut.manager.managers.filter(_.nodePath.last.lazyModule.className == "TLError")
     require (!errorDevs.isEmpty, "There is no TLError reachable from ChipLink. One must be instantiated.")
-    val errorDev = errorDevs.head
-    require (errorDev.supportsPutFull.contains(params.fullXfer),
-      s"ChipLink requires ${errorDev.name} support ${params.fullXfer} PutFill, not ${errorDev.supportsPutFull}")
-    require (errorDev.supportsPutPartial.contains(params.fullXfer),
-      s"ChipLink requires ${errorDev.name} support ${params.fullXfer} PutPartial not ${errorDev.supportsPutPartial}")
-    require (errorDev.supportsArithmetic.contains(params.atomicXfer),
-      s"ChipLink requires ${errorDev.name} support ${params.atomicXfer} Arithmetic, not ${errorDev.supportsArithmetic}")
-    require (errorDev.supportsLogical.contains(params.atomicXfer),
-      s"ChipLink requires ${errorDev.name} support ${params.atomicXfer} Logical, not ${errorDev.supportsLogical}")
-    require (errorDev.supportsAcquireT.contains(params.acqXfer),
-      s"ChipLink requires ${errorDev.name} support ${params.acqXfer} AcquireT, not ${errorDev.supportsAcquireT}")
+    val errorAddresses = List(
+      (TLMessages.PutFullData, "PutFull", params.fullXfer, (m: TLManagerParameters) => m.supportsPutFull.contains(params.fullXfer)),
+      (TLMessages.PutPartialData, "PutPartial", params.fullXfer, (m: TLManagerParameters) => m.supportsPutPartial.contains(params.fullXfer)),
+      (TLMessages.ArithmeticData, "Arithmetic", params.atomicXfer, (m: TLManagerParameters) => m.supportsArithmetic.contains(params.atomicXfer)),
+      (TLMessages.LogicalData, "Logical", params.atomicXfer, (m: TLManagerParameters) => m.supportsLogical.contains(params.atomicXfer)),
+      (TLMessages.Get, "Get", params.fullXfer, (m: TLManagerParameters) => m.supportsGet.contains(params.fullXfer)),
+      (TLMessages.Hint, "Hint", params.fullXfer, (m: TLManagerParameters) => m.supportsHint.contains(params.fullXfer)),
+      (TLMessages.AcquireBlock, "AcquireBlock", params.acqXfer, (m: TLManagerParameters) => m.supportsAcquireT.contains(params.acqXfer)),
+      (TLMessages.AcquirePerm, "AcquirePerm", params.acqXfer, (m: TLManagerParameters) => m.supportsAcquireT.contains(params.acqXfer))
+    ).map { case (opcode, name, size, supports) =>
+      val dev = errorDevs.filter(supports).headOption
+      require (dev.isDefined, s"ChipLink requires an error device supporting $name($size)")
+      (opcode, dev.get.address.head.base.U)
+    }
 
     // At most one cache can master ChipLink
     require (edgeIn.client.clients.filter(_.supportsProbe).size <= 1,
       s"ChipLink supports at most one caching master, ${edgeIn.client.clients.filter(_.supportsProbe).map(_.name)}")
 
     // Construct the info needed by all submodules
-    val info = ChipLinkInfo(params, edgeIn, edgeOut, errorDevs.head.address.head.base)
+    val info = ChipLinkInfo(params, edgeIn, edgeOut, errorAddresses)
 
     val sinkA = Module(new SinkA(info))
     val sinkB = Module(new SinkB(info))
