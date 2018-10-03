@@ -153,7 +153,7 @@ object UART {
     val uart = LazyModule(new TLUART(cbus.beatBytes, params.uart, params.divinit))
     uart.suggestName(name)
 
-    cbus.coupleTo(s"slave_named_name") {
+    cbus.coupleTo(s"slave_named_$name") {
       uart.controlXing(params.controlXType) := TLFragmenter(cbus.beatBytes, cbus.blockBytes) := _
     }
     params.intNode := uart.intXing(params.intXType)
