@@ -30,7 +30,7 @@ case class SPIFlashParams(
     csWidth: Int = 1,
     delayBits: Int = 8,
     divisorBits: Int = 12,
-    fineDelayBits: Int = 5,
+    fineDelayBits: Int = 0,
     sampleDelayBits: Int = 5,
     defaultSampleDel: Int = 3
     )
@@ -40,7 +40,7 @@ case class SPIFlashParams(
   val insnPadLenBits = 4
 
   require(insnPadLenBits <= delayBits)
-  require(fineDelayBits >= 0)
+  require((fineDelayBits == 0) | (fineDelayBits == 5), s"Require fine delay bits to be 0 or 5 and not $fineDelayBits")
   require(sampleDelayBits >= 0)
   require(defaultSampleDel >= 0)
 }
