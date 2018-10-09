@@ -119,8 +119,8 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
 
     // Anything that is optional, must be supported by the error device (for redirect)
     val errorDevs = edgeOut.manager.managers.filter(_.nodePath.last.lazyModule.className == "TLError")
-    require (!errorDevs.isEmpty, "There is no TLError reachable from ChipLink. One must be instantiated.")
-    val errorDev = errorDevs.head
+    require (errorDevs.exists(_.supportsAcquireB), "There is no TLError with Acquire reachable from ChipLink. One must be instantiated.")
+    val errorDev = errorDevs.find(_.supportsAcquireB).get
     require (errorDev.supportsPutFull.contains(params.fullXfer),
       s"ChipLink requires ${errorDev.name} support ${params.fullXfer} PutFill, not ${errorDev.supportsPutFull}")
     require (errorDev.supportsPutPartial.contains(params.fullXfer),
@@ -137,7 +137,7 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
       s"ChipLink supports at most one caching master, ${edgeIn.client.clients.filter(_.supportsProbe).map(_.name)}")
 
     // Construct the info needed by all submodules
-    val info = ChipLinkInfo(params, edgeIn, edgeOut, errorDevs.head.address.head.base)
+    val info = ChipLinkInfo(params, edgeIn, edgeOut, errorDev.address.head)
 
     val sinkA = Module(new SinkA(info))
     val sinkB = Module(new SinkB(info))
