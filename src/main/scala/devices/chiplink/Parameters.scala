@@ -5,7 +5,7 @@ import Chisel._
 import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
-import freechips.rocketchip.util.{AsyncQueueParams, MuxLiteral}
+import freechips.rocketchip.util.AsyncQueueParams
 
 case class ChipLinkParams(TLUH: Seq[AddressSet], TLC: Seq[AddressSet], sourceBits: Int = 6, sinkBits: Int = 5, syncTX: Boolean = false, fpgaReset: Boolean = false)
 {
@@ -39,7 +39,7 @@ case class ChipLinkParams(TLUH: Seq[AddressSet], TLC: Seq[AddressSet], sourceBit
 case object ChipLinkKey extends Field[Seq[ChipLinkParams]]
 
 case class TXN(domain: Int, source: Int)
-case class ChipLinkInfo(params: ChipLinkParams, edgeIn: TLEdge, edgeOut: TLEdge, error: Seq[(UInt,UInt)])
+case class ChipLinkInfo(params: ChipLinkParams, edgeIn: TLEdge, edgeOut: TLEdge, errorDev: BigInt)
 {
   // TL source => CL TXN
   val sourceMap: Map[Int, TXN] = {
@@ -131,10 +131,8 @@ case class ChipLinkInfo(params: ChipLinkParams, edgeIn: TLEdge, edgeOut: TLEdge,
   }
 
   // You can't just unilaterally use error, because this would misalign the mask
-  def makeError(legal: Bool, in_addr: UInt, opcode: UInt): UInt = {
-    val out_addr = MuxLiteral(Cat(legal, opcode), in_addr, error)
+  def makeError(legal: Bool, address: UInt): UInt =
     Cat(
-      out_addr(params.addressBits-1, log2Ceil(params.maxXfer)),
-      in_addr(log2Ceil(params.maxXfer)-1, 0))
-  }
+      Mux(legal, address, UInt(errorDev))(params.addressBits-1, log2Ceil(params.maxXfer)),
+      address(log2Ceil(params.maxXfer)-1, 0))
 }

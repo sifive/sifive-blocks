@@ -70,7 +70,7 @@ class SourceC(info: ChipLinkInfo) extends Module
   io.c.bits.param   := q_param
   io.c.bits.size    := q_size
   io.c.bits.source  := Mux(q_release, source, UInt(0)) // always domain 0
-  io.c.bits.address := info.makeError(q_legal, q_address, q_opcode)
+  io.c.bits.address := info.makeError(q_legal, q_address)
   io.c.bits.data    := io.q.bits
   io.c.bits.corrupt := Bool(false)
 
