@@ -5,7 +5,7 @@ import Chisel._
 import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
-import freechips.rocketchip.devices.tilelink.TLBusBypass
+import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.util._
 
 class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyModule() {
@@ -61,10 +61,21 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
         supportsProbe = if (i == 0) params.fullXfer else params.noXfer) },
     minLatency = params.latency)))
 
-  private val bypass = LazyModule(new TLBusBypass(beatBytes = 4))
-  slaveNode := bypass.node
+  private val sbypass = LazyModule(new TLBusBypass(beatBytes = 4))
+  slaveNode := sbypass.node
 
-  val node = NodeHandle(bypass.node, masterNode)
+  private val mute = LazyModule(new MuteMaster)
+  private val mbypass = LazyModule(new MasterMux(_.last))
+  private val buffer = LazyModule(new TLBuffer(
+    a = BufferParams.none,
+    b = BufferParams.none,
+    c = BufferParams.default,
+    d = BufferParams.none,
+    e = BufferParams.none))
+  mbypass.node := buffer.node := mute.node
+  mbypass.node := masterNode
+
+  val node = NodeHandle(sbypass.node, mbypass.node)
   val ioNode = BundleBridgeSource(() => new WideDataLayerPort(params).cloneType)
 
   // Exported memory map. Used when connecting VIP
@@ -220,7 +231,8 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
 
     // Disable ChipLink while RX+TX are in reset
     val do_bypass = ResetCatchAndSync(clock, rx.reset) || ResetCatchAndSync(clock, tx.reset)
-    bypass.module.io.bypass := do_bypass
+    sbypass.module.io.bypass := do_bypass
+    mbypass.module.io.bypass := do_bypass
     io.bypass := do_bypass
   }
 }
