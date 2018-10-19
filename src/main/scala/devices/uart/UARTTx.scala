@@ -12,6 +12,7 @@ class UARTTx(c: UARTParams) extends Module {
     val out = Bits(OUTPUT, 1)
     val div = UInt(INPUT, c.divisorBits)
     val nstop = UInt(INPUT, log2Up(c.stopBits))
+    val done = Bool(OUTPUT)
   }
 
   val prescaler = Reg(init = UInt(0, c.divisorBits))
@@ -43,4 +44,6 @@ class UARTTx(c: UARTParams) extends Module {
     shifter := Cat(Bits(1, 1), shifter >> 1)
     out := shifter(0)
   }
+
+  io.done := (!io.en || !io.in.fire()) && !busy
 }

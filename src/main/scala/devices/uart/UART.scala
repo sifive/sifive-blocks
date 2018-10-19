@@ -40,7 +40,7 @@ abstract class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
     extends IORegisterRouter(
       RegisterRouterParams(
         name = "serial",
-        compat = Seq("sifive,uart0"), 
+        compat = Seq("sifive,uart1", "sifive,uart0"),
         base = c.address,
         beatBytes = busWidthBytes),
       new UARTPortIO)
@@ -126,6 +126,10 @@ abstract class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
     UARTCtrlRegs.div -> Seq(
       RegField(c.divisorBits, div,
                  RegFieldDesc("div","Baud rate divisor",reset=Some(divisorInit))))
+
+    UARTCtrlRegs.txstatus -> Seq(
+      RegField.r(1, txm.io.done,
+                 RegFieldDesc("txdone","Transmit finished",reset=Some(1),volatile=true)))
   )
 }}
 
