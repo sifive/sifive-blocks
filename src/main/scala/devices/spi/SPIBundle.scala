@@ -72,8 +72,6 @@ class SPIControl(c: SPIParamsBase) extends SPIBundle(c) {
   val cs = new SPIChipSelect(c) with HasSPICSMode
   val dla = new SPIDelay(c)
   val wm = new SPIWatermark(c)
-  val extradel = new SPIExtraDelay(c)
-  val sampledel = new SPISampleDelay(c)
 }
 
 object SPIControl {
@@ -95,9 +93,6 @@ object SPIControl {
     ctrl.dla.interxfr := UInt(0)
     ctrl.wm.tx := UInt(0)
     ctrl.wm.rx := UInt(0)
-    ctrl.extradel.coarse := UInt(0)
-    ctrl.extradel.fine := UInt(0)
-    ctrl.sampledel.sd := UInt(c.defaultSampleDel)
     ctrl
   }
 }

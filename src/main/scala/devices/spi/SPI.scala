@@ -93,9 +93,15 @@ object SPI {
     InModuleBody { qspiNode.makeIO()(ValName(qspi.name)) }
   }
 
-  def connectPort(q: SPIPortIO): SPIPortIO = {
-    val x = Wire(new SPIPortIO(q.c))
-    x <> q
+  def synchronize(q: SPIPortIO): SPIPortIO = {
+    val x = Wire(new SPIPortIO(q.c))//, DontCare)
+    x.sck := q.sck
+    x.cs := q.cs
+    q.dq.zip(x.dq).foreach { case(qq,xx) =>
+      qq.i := ShiftRegister(xx.i, q.c.sampleDelay)
+      xx.o := qq.o
+      xx.oe := qq.oe
+    }
     x
   }
 }
