@@ -13,7 +13,7 @@ import freechips.rocketchip.config._
 import freechips.rocketchip.jtag.{JTAGIO}
 import sifive.blocks.devices.pinctrl.{Pin, PinCtrl}
 
-class JTAGSignals[T <: Data](pingen: () => T, hasTRSTn: Boolean = true) extends Bundle {
+class JTAGSignals[T <: Data](val pingen: () => T, val hasTRSTn: Boolean = true) extends Bundle {
   val TCK         = pingen()
   val TMS         = pingen()
   val TDI         = pingen()
