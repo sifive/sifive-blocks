@@ -39,7 +39,7 @@ case class ChipLinkParams(TLUH: Seq[AddressSet], TLC: Seq[AddressSet], sourceBit
 case object ChipLinkKey extends Field[Seq[ChipLinkParams]]
 
 case class TXN(domain: Int, source: Int)
-case class ChipLinkInfo(params: ChipLinkParams, edgeIn: TLEdge, edgeOut: TLEdge, errorDev: BigInt)
+case class ChipLinkInfo(params: ChipLinkParams, edgeIn: TLEdge, edgeOut: TLEdge, errorDev: AddressSet)
 {
   // TL source => CL TXN
   val sourceMap: Map[Int, TXN] = {
@@ -131,8 +131,10 @@ case class ChipLinkInfo(params: ChipLinkParams, edgeIn: TLEdge, edgeOut: TLEdge,
   }
 
   // You can't just unilaterally use error, because this would misalign the mask
-  def makeError(legal: Bool, address: UInt): UInt =
+  def makeError(legal: Bool, address: UInt): UInt = {
+    val alignBits = log2Ceil(errorDev.alignment)
     Cat(
-      Mux(legal, address, UInt(errorDev))(params.addressBits-1, log2Ceil(params.maxXfer)),
-      address(log2Ceil(params.maxXfer)-1, 0))
+      Mux(legal, address, UInt(errorDev.base))(params.addressBits-1, alignBits),
+      address(alignBits-1, 0))
+  }
 }
