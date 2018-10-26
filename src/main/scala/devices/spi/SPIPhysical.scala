@@ -65,14 +65,20 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
   val beat = (tcnt === UInt(0))
 
   //Making a delay counter for 'sample'
-  val totalCoarseDel = io.ctrl.extradel.coarse + io.ctrl.sampledel.sd
-  val del_cntr = RegInit(UInt(c.divisorBits.W), (c.defaultSampleDel + 1).U)
+  val totalCoarseDel = (io.ctrl.extradel.coarse + io.ctrl.sampledel.sd)
   val sample_d = RegInit(Bool(false)) 
+  val del_cntr = RegInit(UInt(c.divisorBits.W), (c.defaultSampleDel).U)
+
   when (beat && sample) {
-    del_cntr := totalCoarseDel
+    when (totalCoarseDel > 1.U){
+      del_cntr := totalCoarseDel - 1.U
+    }
+    .otherwise{
+      del_cntr := 1.U  
+      }
   }
 
-  when (del_cntr =/= 0.U) {
+  when ((del_cntr =/= 0.U) && (!(beat && sample))){
     del_cntr := del_cntr - 1.U
   }
 
@@ -83,14 +89,18 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
   }
 
   //Making a delay counter for 'last'
-  val del_cntr_last = RegInit(UInt(c.divisorBits.W), (c.defaultSampleDel + 1).U)
   val last_d = RegInit(Bool(false)) 
-
+  val del_cntr_last = RegInit(UInt(c.divisorBits.W), (c.defaultSampleDel).U)
   when (beat && last) {
-    del_cntr_last := totalCoarseDel 
+    when (totalCoarseDel > 1.U){
+      del_cntr_last := totalCoarseDel - 1.U
+    }
+    .otherwise{
+      del_cntr_last := 1.U  
+      }
   }
 
-  when (del_cntr_last =/= 0.U) {
+  when ((del_cntr_last =/= 0.U) && (!(beat && last))) {
     del_cntr_last := del_cntr_last - 1.U
   }
   
@@ -115,11 +125,15 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
   val rxd_delayed = Vec(Seq.fill(io.port.dq.size)(false.B))
 
   //Adding fine-granularity delay buffers on the received data
-  val fine_grain_delay = Seq.fill(io.port.dq.size) {Module(new BlackBoxDelayBuffer())}
-  for (j <- 0 to (io.port.dq.size - 1)) { 
-    fine_grain_delay(j).io.in := rxd(j)
-    fine_grain_delay(j).io.sel := io.ctrl.extradel.fine
-    rxd_delayed(j) := fine_grain_delay(j).io.mux_out
+  if (c.fineDelayBits > 0){
+    val fine_grain_delay = Seq.fill(io.port.dq.size) {Module(new BlackBoxDelayBuffer())}
+    for (j <- 0 to (io.port.dq.size - 1)) { 
+      fine_grain_delay(j).io.in := rxd(j)
+      fine_grain_delay(j).io.sel := io.ctrl.extradel.fine
+      rxd_delayed(j) := fine_grain_delay(j).io.mux_out
+    }}
+  else {
+    rxd_delayed := rxd.toBools
   }
 
   val rxd_fin = rxd_delayed.asUInt
