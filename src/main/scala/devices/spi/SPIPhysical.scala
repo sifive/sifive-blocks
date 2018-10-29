@@ -76,18 +76,17 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
     .otherwise{
       del_cntr := 1.U  
       }
-  }
-
-  when ((del_cntr =/= 0.U) && (!(beat && sample))){
-    del_cntr := del_cntr - 1.U
-  }
+  }.otherwise {
+   when (del_cntr =/= 0.U){
+      del_cntr := del_cntr - 1.U
+    }
+   }
 
   when (del_cntr === 1.U) {
     sample_d := true.B
   }.otherwise {
     sample_d := false.B
   }
-
   //Making a delay counter for 'last'
   val last_d = RegInit(Bool(false)) 
   val del_cntr_last = RegInit(UInt(c.divisorBits.W), (c.defaultSampleDel).U)
@@ -98,18 +97,17 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
     .otherwise{
       del_cntr_last := 1.U  
       }
+  }.otherwise {
+    when (del_cntr_last =/= 0.U){
+      del_cntr_last := del_cntr_last - 1.U
+    }
   }
 
-  when ((del_cntr_last =/= 0.U) && (!(beat && last))) {
-    del_cntr_last := del_cntr_last - 1.U
-  }
-  
   when (del_cntr_last === 1.U) {
     last_d := true.B
   }.otherwise {
     last_d := false.B
   }
-
   val decr = Mux(beat, scnt, tcnt) - UInt(1)
   val sched = Wire(init = beat)
   tcnt := Mux(sched, ctrl.sck.div, decr)
