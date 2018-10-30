@@ -8,7 +8,7 @@ import freechips.rocketchip.devices.tilelink.CanHavePeripheryCLINT
 import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.subsystem.BaseSubsystem
-import freechips.rocketchip.tilelink.{TLAsyncCrossingSource}
+import freechips.rocketchip.tilelink.{TLAsyncCrossingSource, TLFragmenter}
 import freechips.rocketchip.util.{ResetCatchAndSync, SynchronizerShiftReg}
 
 case object PeripheryMockAONKey extends Field[MockAONParams]
@@ -17,8 +17,8 @@ trait HasPeripheryMockAON extends CanHavePeripheryCLINT with HasPeripheryDebug {
   // We override the clock & Reset here so that all synchronizers, etc
   // are in the proper clock domain.
   val mockAONParams= p(PeripheryMockAONKey)
-  val aon = LazyModule(new MockAONWrapper(sbus.control_bus.beatBytes, mockAONParams))
-  sbus.control_bus.toVariableWidthSlave(Some("aon")) { aon.node := TLAsyncCrossingSource() }
+  val aon = LazyModule(new MockAONWrapper(cbus.beatBytes, mockAONParams))
+  aon.node := cbus.coupleTo("aon") { TLAsyncCrossingSource() := TLFragmenter(cbus) := _ }
   ibus.fromSync := IntSyncCrossingSink() := aon.intnode
 }
 
