@@ -11,6 +11,8 @@ object SPICRs {
   val dsckcs    = 0x2a
   val dintercs  = 0x2c
   val dinterxfr = 0x2e
+  val extradel  = 0x38
+  val sampledel = 0x3c
 
   val fmt       = 0x40
   val len       = 0x42
