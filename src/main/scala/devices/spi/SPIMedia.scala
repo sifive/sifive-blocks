@@ -24,6 +24,8 @@ class SPIMedia(c: SPIParamsBase) extends Module {
       val sck = new SPIClocking(c).asInput
       val dla = new SPIDelay(c).asInput
       val cs = new SPIChipSelect(c).asInput
+      val extradel = new SPIExtraDelay(c).asInput
+      val sampledel = new SPISampleDelay(c).asInput
     }
     val link = new SPILinkIO(c).flip
   }
@@ -31,6 +33,8 @@ class SPIMedia(c: SPIParamsBase) extends Module {
   val phy = Module(new SPIPhysical(c))
   phy.io.ctrl.sck := io.ctrl.sck
   phy.io.ctrl.fmt := io.link.fmt
+  phy.io.ctrl.extradel := io.ctrl.extradel
+  phy.io.ctrl.sampledel := io.ctrl.sampledel
 
   private val op = phy.io.op
   op.valid := Bool(true)
