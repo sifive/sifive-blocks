@@ -7,7 +7,7 @@ object UARTCtrlRegs {
   val txctrl = 0x08
   val txmark = 0x0a
   val rxctrl = 0x0c
-  val rxmark = 0x0e
+  val rxmark = 0x1c
 
   val ie     = 0x10
   val ip     = 0x14
