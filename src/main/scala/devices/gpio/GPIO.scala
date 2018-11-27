@@ -35,7 +35,7 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
     extends IORegisterRouter(
       RegisterRouterParams(
         name = "gpio",
-        compat = Seq("sifive,gpio0"),
+        compat = Seq("sifive,gpio0", "sifive,gpio1"),
         base = c.address,
         beatBytes = busWidthBytes),
       new GPIOPortIO(c))
@@ -77,6 +77,8 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
   val lowIpReg  = Reg(init = UInt(0, c.width))
   val riseIpReg = Reg(init = UInt(0, c.width))
   val fallIpReg = Reg(init = UInt(0, c.width))
+  val passthruHighIeReg = Reg(init = UInt(0, c.width))
+  val passthruLowIeReg  = Reg(init = UInt(0, c.width))
 
   // HW IO Function
   val iofEnReg  = Module(new AsyncResetRegVec(c.width, 0))
@@ -132,7 +134,11 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
     GPIOCtrlRegs.input_en  -> Seq(RegField.rwReg(c.width, ieReg.io,
                                   Some(RegFieldDesc("input_en","Pin input enable", reset=Some(0))))),
     GPIOCtrlRegs.out_xor   -> Seq(RegField(c.width, xorReg,
-                                  RegFieldDesc("out_xor","Output XOR (invert) enable", reset=Some(0))))
+                                  RegFieldDesc("out_xor","Output XOR (invert) enable", reset=Some(0)))),
+    GPIOCtrlRegs.passthru_high_ie -> Seq(RegField(c.width, passthruHighIeReg,
+                                         RegFieldDesc("passthru_high_ie", "Pass-through active-high interrupt enable", reset=Some(0)))),
+    GPIOCtrlRegs.passthru_low_ie  -> Seq(RegField(c.width, passthruLowIeReg,
+                                         RegFieldDesc("passthru_low_ie", "Pass-through active-low interrupt enable", reset=Some(0))))
   )
 
   //--------------------------------------------------
@@ -191,7 +197,9 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
     interrupts(pin) := (riseIpReg(pin) & riseIeReg(pin)) |
                          (fallIpReg(pin) & fallIeReg(pin)) |
                          (highIpReg(pin) & highIeReg(pin)) |
-                         (lowIpReg(pin) & lowIeReg(pin))
+                         (lowIpReg(pin) & lowIeReg(pin)) |
+                         (valueReg(pin) & passthruHighIeReg(pin)) |
+                         (~valueReg(pin) & passthruLowIeReg(pin))
 
     if (c.includeIOF) {
       // Send Value to all consumers
