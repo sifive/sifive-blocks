@@ -36,7 +36,7 @@ case class ChipLinkParams(TLUH: Seq[AddressSet], TLC: Seq[AddressSet], sourceBit
 
 }
 
-case object ChipLinkKey extends Field[Seq[ChipLinkParams]]
+case object ChipLinkKey extends Field[Seq[ChipLinkParams]](Nil)
 
 case class TXN(domain: Int, source: Int)
 case class ChipLinkInfo(params: ChipLinkParams, edgeIn: TLEdge, edgeOut: TLEdge, errorDev: AddressSet)
