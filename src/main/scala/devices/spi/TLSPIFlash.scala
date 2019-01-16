@@ -50,7 +50,6 @@ class SPIFlashTopModule(c: SPIFlashParamsBase, outer: TLSPIFlashBase)
 
   val flash = Module(new SPIFlashMap(c))
   val arb = Module(new SPIArbiter(c, 2))
-  val reserved = Reg(init = UInt(0,width = 2))
 
   private val (f, _) = outer.fnode.in(0)
   // Tie unused channels
@@ -98,8 +97,7 @@ class SPIFlashTopModule(c: SPIFlashParamsBase, outer: TLSPIFlashBase)
                RegFieldDesc("addr_proto","Protocol for transmitting address and padding", reset=Some(0))),
       RegField(SPIProtocol.width, insn.data.proto,
                RegFieldDesc("data_proto","Protocol for transmitting receiving data", reset=Some(0))),
-      RegField.r(2,reserved,
-               RegFieldDesc("reserved","reserved", reset=Some(0))),
+      RegField(2),
       RegField(c.insnCmdBits, insn.cmd.code,
                RegFieldDesc("cmd_code","Value of command byte", reset=Some(3))),
       RegField(c.frameBits, insn.pad.code,
