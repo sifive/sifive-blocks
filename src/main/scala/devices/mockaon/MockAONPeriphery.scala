@@ -41,7 +41,7 @@ trait HasPeripheryMockAONModuleImp extends LazyModuleImp with HasPeripheryMockAO
   outer.aon.module.reset := Bool(true)
 
   // Synchronize the external toggle into the clint
-  val rtc_sync = SynchronizerShiftReg(outer.aon.module.io.rtc.asUInt.toBool, 3, Some("rtc"))
+  val rtc_sync = SynchronizerShiftReg(outer.aon.module.io.rtc.asUInt.asBool, 3, Some("rtc"))
   val rtc_last = Reg(init = Bool(false), next=rtc_sync)
   val rtc_tick = Reg(init = Bool(false), next=(rtc_sync & (~rtc_last)))
 
