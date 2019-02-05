@@ -2,6 +2,7 @@
 package sifive.blocks.devices.chiplink
 
 import Chisel._
+import Chisel.ImplicitConversions._
 import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
@@ -85,6 +86,16 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
     params.copy(
       TLUH = AddressSet.unify(tluh.flatMap(_.address)),
       TLC  = AddressSet.unify(tlc.flatMap(_.address)))
+  }
+
+  // PSD Node for bypassing Reset
+  require (!p(IncludePSDTest) || p(PSDTestModeBroadcastKey).isDefined,
+    "Must instantiate a PSDTestModeBroadcastKey if p(IncludePSDTest)")
+
+  val psdNodeOpt = p(PSDTestModeBroadcastKey).map{bb =>
+    val psdTestSinkNode = BundleBridgeSink[PSDTestMode]()
+    psdTestSinkNode := bb
+    psdTestSinkNode
   }
 
   lazy val module = new LazyModuleImp(this) {
@@ -230,7 +241,13 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
     sinkE.io.d_clSink := sourceD.io.e_clSink
 
     // Disable ChipLink while RX+TX are in reset
-    val do_bypass = ResetCatchAndSync(clock, rx.reset) || ResetCatchAndSync(clock, tx.reset)
+    val psd = psdNodeOpt.map{_.bundle}.getOrElse(Wire(new PSDTestMode()).fromBits(0.U))
+    val psd_rx = psd
+    val psd_tx = psd
+    psd_rx.test_mode_reset := rx.reset
+    psd_tx.test_mode_reset := tx.reset
+    val do_bypass = ResetCatchAndSync(clock, rx.reset, "chiplink_rx_reset_sync", psd_rx) ||
+    ResetCatchAndSync(clock, tx.reset, "chiplink_tx_reset_sync", psd_tx)
     sbypass.module.io.bypass := do_bypass
     mbypass.module.io.bypass := do_bypass
     io.bypass := do_bypass
