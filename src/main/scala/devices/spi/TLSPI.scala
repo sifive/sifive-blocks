@@ -79,26 +79,26 @@ class SPITopModule(c: SPIParamsBase, outer: TLSPIBase)
 
   protected val regmapBase = Seq(
     SPICRs.sckdiv -> Seq(RegField(c.divisorBits, ctrl.sck.div,
-                         RegFieldDesc("sckdiv","Serial clock divisor", reset=Some(3)))),
-    SPICRs.sckmode ->  RegFieldGroup("sckmode",Some("Serial clock mode"),Seq(
+                         RegFieldDesc("sckdiv", "Serial clock divisor", reset=Some(3)))),
+    SPICRs.sckmode ->  RegFieldGroup("sckmode", Some("Serial clock mode"), Seq(
       RegField(1, ctrl.sck.pha,
-               RegFieldDesc("sckmode_pha","Serial clock phase", reset=Some(0))),
+               RegFieldDesc("sckmode_pha", "Serial clock phase", reset=Some(0))),
       RegField(1, ctrl.sck.pol,
-               RegFieldDesc("sckmode_pol","Serial clock polarity", reset=Some(0))))),
+               RegFieldDesc("sckmode_pol", "Serial clock polarity", reset=Some(0))))),
     SPICRs.csid -> Seq(RegField(c.csIdBits, ctrl.cs.id,
-                       RegFieldDesc("csid","Chip select id", reset=Some(0)))),
+                       RegFieldDesc("csid", "Chip select id", reset=Some(0)))),
     SPICRs.csdef -> ctrl.cs.dflt.map(x => RegField(1, x,
-                    RegFieldDesc("csdef","Chip select default", reset=Some(1)))),
+                    RegFieldDesc("csdef", "Chip select default", reset=Some(1)))),
     SPICRs.csmode -> Seq(RegField(SPICSMode.width, ctrl.cs.mode,
-                         RegFieldDesc("csmode","Chip select mode", reset=Some(SPICSMode.Auto.litValue())))),
+                         RegFieldDesc("csmode", "Chip select mode", reset=Some(SPICSMode.Auto.litValue())))),
     SPICRs.dcssck -> Seq(RegField(c.delayBits, ctrl.dla.cssck,
-                         RegFieldDesc("cssck","CS to SCK delay", reset=Some(1)))),
+                         RegFieldDesc("cssck", "CS to SCK delay", reset=Some(1)))),
     SPICRs.dsckcs -> Seq(RegField(c.delayBits, ctrl.dla.sckcs,
-                         RegFieldDesc("sckcs","SCK to CS delay", reset=Some(1)))),
+                         RegFieldDesc("sckcs", "SCK to CS delay", reset=Some(1)))),
     SPICRs.dintercs -> Seq(RegField(c.delayBits, ctrl.dla.intercs,
-                           RegFieldDesc("intercs","Minimum CS inactive time", reset=Some(1)))),
+                           RegFieldDesc("intercs", "Minimum CS inactive time", reset=Some(1)))),
     SPICRs.dinterxfr -> Seq(RegField(c.delayBits, ctrl.dla.interxfr,
-                            RegFieldDesc("interxfr","Minimum interframe delay", reset=Some(0)))),
+                            RegFieldDesc("interxfr", "Minimum interframe delay", reset=Some(0)))),
 
     SPICRs.fmt -> RegFieldGroup("fmt",Some("Serial frame format"),Seq(
       RegField(SPIProtocol.width, ctrl.fmt.proto,
