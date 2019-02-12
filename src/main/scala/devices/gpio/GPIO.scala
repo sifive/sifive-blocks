@@ -2,13 +2,16 @@
 package sifive.blocks.devices.gpio
 
 import Chisel._
-import sifive.blocks.devices.pinctrl.{PinCtrl, Pin, BasePin, EnhancedPin, EnhancedPinCtrl}
+import sifive.blocks.devices.pinctrl.{BasePin, EnhancedPin, EnhancedPinCtrl, Pin, PinCtrl}
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
+import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMMemoryRegion, OMRegisterMap}
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util.{AsyncResetRegVec, SynchronizerShiftReg}
+import sifive.blocks.diplomaticobjectmodel.models.OMGPIO
 
 // This is sort of weird because
 // the IOF end up at the RocketChipTop
@@ -102,7 +105,7 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
                      else (Seq(RegField(c.width)))
 
   // Note that these are out of order.
-  regmap(
+  val regMap: OMRegisterMap = regmap(
     GPIOCtrlRegs.value     -> Seq(RegField.r(c.width, valueReg,
                                   RegFieldDesc("input_value","Pin value", volatile=true))),
     GPIOCtrlRegs.output_en -> Seq(RegField.rwReg(c.width, oeReg.io,
@@ -139,6 +142,8 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
                                          RegFieldDesc("passthru_high_ie", "Pass-through active-high interrupt enable", reset=Some(0)))),
     GPIOCtrlRegs.passthru_low_ie  -> Seq(RegField(c.width, passthruLowIeReg,
                                          RegFieldDesc("passthru_low_ie", "Pass-through active-low interrupt enable", reset=Some(0))))
+
+
   )
 
   //--------------------------------------------------
@@ -207,6 +212,20 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
       port.iof_1.get(pin).i.ival := inSyncReg(pin)
     }
   }}
+
+  def setOMGPIO(resourceBindings: ResourceBindings): Unit = {
+    val memRegions : Seq[OMMemoryRegion]= DiplomaticObjectModelAddressing.getOMMemoryRegions("GPIO", resourceBindings, Some(module.regMap))
+    val ints = DiplomaticObjectModelAddressing.describeInterrupts(device.describe(resourceBindings).name, resourceBindings)
+    val Description(name, mapping) = device.describe(resourceBindings)
+
+    device.setOMComponent(
+      OMGPIO(
+        memoryRegions = memRegions,
+        interrupts = ints,
+        specifications = Nil
+      )
+    )
+  }
 }
 
 class TLGPIO(busWidthBytes: Int, params: GPIOParams)(implicit p: Parameters)
