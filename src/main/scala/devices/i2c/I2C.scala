@@ -48,6 +48,7 @@ import freechips.rocketchip.interrupts._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util.{AsyncResetRegVec, Majority}
+import sifive.blocks.util.BasicBusBlocker
 
 case class I2CParams(
   address: BigInt,
@@ -579,6 +580,7 @@ case class I2CAttachParams(
   i2c: I2CParams,
   controlBus: TLBusWrapper,
   intNode: IntInwardNode,
+  blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing,
   mclock: Option[ModuleValue[Clock]] = None,
@@ -595,8 +597,11 @@ object I2C {
     val i2c = LazyModule(new TLI2C(cbus.beatBytes, params.i2c))
     i2c.suggestName(name)
 
-    cbus.coupleTo(s"device_named_$name") {
-      i2c.controlXing(params.controlXType) := TLFragmenter(cbus.beatBytes, cbus.blockBytes) := _
+    cbus.coupleTo(s"device_named_$name") { bus =>
+      val blockerNode = params.blockerAddr.map(BasicBusBlocker(_, cbus, cbus.beatBytes, name))
+      (i2c.controlXing(params.controlXType)
+        := TLFragmenter(cbus)
+        := blockerNode.map { _ := bus } .getOrElse { bus })
     }
     params.intNode := i2c.intXing(params.intXType)
     InModuleBody { i2c.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
