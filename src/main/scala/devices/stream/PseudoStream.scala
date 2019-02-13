@@ -6,7 +6,7 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
-import sifive.blocks.util.{NonBlockingEnqueue, NonBlockingDequeue}
+import sifive.blocks.util.{BasicBusBlocker, NonBlockingEnqueue, NonBlockingDequeue}
 
 case class PseudoStreamParams(
     address: BigInt,
@@ -68,6 +68,7 @@ class TLPseudoStream(busWidthBytes: Int, params: PseudoStreamParams)(implicit p:
 case class PseudoStreamAttachParams(
   stream: PseudoStreamParams,
   controlBus: TLBusWrapper,
+  blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   mclock: Option[ModuleValue[Clock]] = None,
   mreset: Option[ModuleValue[Bool]] = None)
@@ -83,10 +84,11 @@ object PseudoStream {
     val stream = LazyModule(new TLPseudoStream(cbus.beatBytes, params.stream))
     stream.suggestName(name)
 
-    cbus.coupleTo(s"slave_named_$name") {
+    cbus.coupleTo(s"device_named_$name") { bus =>
+      val blockerNode = params.blockerAddr.map(BasicBusBlocker(_, cbus, cbus.beatBytes, name))
       (stream.controlXing(params.controlXType)
         := TLFragmenter(cbus.beatBytes, cbus.blockBytes)
-        := TLBuffer(BufferParams.flow) := _)
+        := blockerNode.map { _ := bus } .getOrElse { bus })
     }
     InModuleBody { stream.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
     InModuleBody { stream.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset) }

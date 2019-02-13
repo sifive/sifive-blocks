@@ -10,7 +10,7 @@ import freechips.rocketchip.interrupts._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
-import sifive.blocks.util.{GenericTimer, GenericTimerIO, DefaultGenericTimerCfgDescs}
+import sifive.blocks.util.{BasicBusBlocker, GenericTimer, GenericTimerIO, DefaultGenericTimerCfgDescs}
 
 // Core PWM Functionality  & Register Interface
 class PWMTimer(val ncmp: Int = 4, val cmpWidth: Int = 16) extends MultiIOModule with GenericTimer {
@@ -95,6 +95,7 @@ case class PWMAttachParams(
   pwm: PWMParams,
   controlBus: TLBusWrapper,
   intNode: IntInwardNode,
+  blockerAddr: Option[BigInt] = None,
   mclock: Option[ModuleValue[Clock]] = None,
   mreset: Option[ModuleValue[Bool]] = None,
   controlXType: ClockCrossingType = NoCrossing,
@@ -110,8 +111,11 @@ object PWM {
     val cbus = params.controlBus
     val pwm = LazyModule(new TLPWM(cbus.beatBytes, params.pwm))
     pwm.suggestName(name)
-    cbus.coupleTo(s"device_named_$name") {
-      pwm.controlXing(params.controlXType) := TLFragmenter(cbus.beatBytes, cbus.blockBytes) := _
+    cbus.coupleTo(s"device_named_$name") { bus =>
+      val blockerNode = params.blockerAddr.map(BasicBusBlocker(_, cbus, cbus.beatBytes, name))
+      (pwm.controlXing(params.controlXType)
+        := TLFragmenter(cbus)
+        := blockerNode.map { _ := bus } .getOrElse { bus })
     }
     params.intNode := pwm.intXing(params.intXType)
     InModuleBody { pwm.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }

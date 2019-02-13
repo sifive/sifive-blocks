@@ -3,15 +3,18 @@ package sifive.blocks.devices.spi
 
 import Chisel._
 import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
+import sifive.blocks.util.BasicBusBlocker
 
 case class SPIAttachParams(
   spi: SPIParams,
   controlBus: TLBusWrapper,
   intNode: IntInwardNode,
+  blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing,
   mclock: Option[ModuleValue[Clock]] = None,
@@ -24,6 +27,7 @@ case class SPIFlashAttachParams(
   memBus: TLBusWrapper,
   intNode: IntInwardNode,
   fBufferDepth: Int = 0,
+  blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing,
   memXType: ClockCrossingType = NoCrossing,
@@ -40,8 +44,11 @@ object SPI {
     val spi = LazyModule(new TLSPI(cbus.beatBytes, params.spi))
     spi.suggestName(name)
 
-    cbus.coupleTo(s"device_named_$name") {
-      spi.controlXing(params.controlXType) := TLFragmenter(cbus.beatBytes, cbus.blockBytes) := _
+    cbus.coupleTo(s"device_named_$name") { bus =>
+      val blockerNode = params.blockerAddr.map(BasicBusBlocker(_, cbus, cbus.beatBytes, name))
+      (spi.controlXing(params.controlXType)
+        := TLFragmenter(cbus)
+        := blockerNode.map { _ := bus } .getOrElse { bus })
     }
 
     params.intNode := spi.intXing(params.intXType)
@@ -67,16 +74,20 @@ object SPI {
     val qspi = LazyModule(new TLSPIFlash(cbus.beatBytes, params.spi))
     qspi.suggestName(name)
 
-    cbus.coupleTo(s"device_named_$name") {
-      qspi.controlXing(params.controlXType) := TLFragmenter(cbus.beatBytes, cbus.blockBytes) := _
+    cbus.coupleTo(s"device_named_$name") { bus =>
+      val blockerNode = params.blockerAddr.map(BasicBusBlocker(_, cbus, cbus.beatBytes, name))
+      (qspi.controlXing(params.controlXType)
+        := TLFragmenter(cbus.beatBytes, cbus.blockBytes)
+        := blockerNode.map { _ := bus } .getOrElse { bus })
     }
 
-    mbus.coupleTo(s"mem_named_$name") {
+    mbus.coupleTo(s"mem_named_$name") { bus =>
+      val blockerNode = params.blockerAddr.map(a => BasicBusBlocker(a+0x1000, cbus, mbus.beatBytes, name))
       (qspi.memXing(params.memXType)
         := TLFragmenter(1, mbus.blockBytes)
         := TLBuffer(BufferParams(params.fBufferDepth), BufferParams.none)
         := TLWidthWidget(mbus.beatBytes)
-        := _)
+        := blockerNode.map { _ := bus } .getOrElse { bus })
     }
 
     params.intNode := qspi.intXing(params.intXType)
