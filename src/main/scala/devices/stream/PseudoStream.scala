@@ -35,21 +35,43 @@ abstract class PseudoStream(busWidthBytes: Int, val params: PseudoStreamParams)(
       new PseudoStreamPortIO(params)) {
   lazy val module = new LazyModuleImp(this) {
 
-  val nbports = Wire(Vec(params.nChannels, new PseudoStreamChannelIO(params)))
-  val bports = Wire(Vec(params.nChannels, new PseudoStreamChannelIO(params)))
+    val nbports = Wire(Vec(params.nChannels, new PseudoStreamChannelIO(params)))
+    val bports = Wire(Vec(params.nChannels, new PseudoStreamChannelIO(params)))
 
-  regmap(
-    List.tabulate(params.nChannels)(idx => List(
-      PseudoStreamCtrlRegs.txfifo + 4096 * idx -> NonBlockingEnqueue(nbports(idx).txq, 64),
-      PseudoStreamCtrlRegs.rxfifo + 4096 * idx -> NonBlockingDequeue(nbports(idx).rxq, 64),
-      PseudoStreamCtrlRegs.txfifob + 4096 * idx -> Seq(
-        RegField.w(params.dataBits, bports(idx).txq, RegFieldDesc("txfifob", "blocking txfifo interface"))),
-      PseudoStreamCtrlRegs.rxfifob + 4096 * idx -> Seq(
-        RegField.r(params.dataBits, bports(idx).rxq, RegFieldDesc("rxfifob", "blocking rxfifo interface")))
-    )).flatten:_*)
+    regmap(
+      List.tabulate(params.nChannels)(idx => List(
+        PseudoStreamCtrlRegs.txfifo + 4096 * idx -> RegFieldGroup(
+          s"txfifo${idx}",
+          Some(s"Non-Blocking Transmit FIFO for Channel ${idx}"),
+          NonBlockingEnqueue(nbports(idx).txq, 64),
+        ),
+        PseudoStreamCtrlRegs.rxfifo + 4096 * idx -> RegFieldGroup(
+          s"rxfifo${idx}",
+          Some(s"Non-Blocking Receive FIFO for Channel ${idx}"),
+          NonBlockingDequeue(nbports(idx).rxq, 64),
+        ),
+        PseudoStreamCtrlRegs.txfifob + 4096 * idx -> RegFieldGroup(
+          s"txfifob${idx}",
+          Some(s"Blocking Transmit FIFO for Channel ${idx}"),
+          Seq(RegField.w(
+            params.dataBits,
+            bports(idx).txq,
+            RegFieldDesc("data", s"Blocking Transmit data"),
+          ))
+        ),
+        PseudoStreamCtrlRegs.rxfifob + 4096 * idx -> RegFieldGroup(
+          s"rxfifob${idx}",
+          Some(s"Blocking Receive FIFO for Channel ${idx}"),
+          Seq(RegField.r(
+            params.dataBits, bports(idx).rxq,
+            RegFieldDesc("data", s"Blocking Receive data", volatile=true),
+          )),
+        )
+      )).flatten: _*
+    )
 
-  (nbports zip bports).zipWithIndex.map { case ((nb, b), idx) =>
-    val txq_arb = Module(new Arbiter(UInt(width = params.dataBits), 2))
+    (nbports zip bports).zipWithIndex.map { case ((nb, b), idx) =>
+      val txq_arb = Module(new Arbiter(UInt(width = params.dataBits), 2))
     txq_arb.io.in(0) <> nb.txq
     txq_arb.io.in(1) <> b.txq
     port.channel(idx).txq <> txq_arb.io.out
