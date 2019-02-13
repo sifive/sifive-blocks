@@ -88,7 +88,6 @@ object PseudoStream {
       val blockerNode = params.blockerAddr.map(BasicBusBlocker(_, cbus, cbus.beatBytes, name))
       (stream.controlXing(params.controlXType)
         := TLFragmenter(cbus.beatBytes, cbus.blockBytes)
-        := TLBuffer(BufferParams.flow)
         := blockerNode.map { _ := bus } .getOrElse { bus })
     }
     InModuleBody { stream.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
