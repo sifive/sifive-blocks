@@ -3,6 +3,7 @@ package sifive.blocks.devices.gpio
 
 import Chisel._
 import sifive.blocks.devices.pinctrl.{PinCtrl, Pin, BasePin, EnhancedPin, EnhancedPinCtrl}
+import sifive.blocks.util.BasicBusBlocker
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
@@ -216,6 +217,7 @@ case class GPIOAttachParams(
   gpio: GPIOParams,
   controlBus: TLBusWrapper,
   intNode: IntInwardNode,
+  blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing,
   mclock: Option[ModuleValue[Clock]] = None,
@@ -232,8 +234,11 @@ object GPIO {
     val gpio = LazyModule(new TLGPIO(cbus.beatBytes, params.gpio))
     gpio.suggestName(name)
 
-    cbus.coupleTo(s"device_named_$name") {
-      gpio.controlXing(params.controlXType) := TLFragmenter(cbus.beatBytes, cbus.blockBytes) := _
+    cbus.coupleTo(s"device_named_$name") { bus =>
+      val blockerNode = params.blockerAddr.map(BasicBusBlocker(_, cbus, cbus.beatBytes, name))
+      (gpio.controlXing(params.controlXType)
+        := TLFragmenter(cbus)
+        := blockerNode.map { _ := bus } .getOrElse { bus })
     }
     params.intNode := gpio.intXing(params.intXType)
     InModuleBody { gpio.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
