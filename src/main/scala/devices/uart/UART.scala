@@ -8,7 +8,7 @@ import freechips.rocketchip.interrupts._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
 
-import sifive.blocks.util.{NonBlockingEnqueue, NonBlockingDequeue}
+import sifive.blocks.util.{BasicBusBlocker, NonBlockingEnqueue, NonBlockingDequeue}
 
 case class UARTParams(
   address: BigInt,
@@ -137,6 +137,7 @@ case class UARTAttachParams(
   divinit: Int,
   controlBus: TLBusWrapper,
   intNode: IntInwardNode,
+  blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing,
   mclock: Option[ModuleValue[Clock]] = None,
@@ -153,8 +154,11 @@ object UART {
     val uart = LazyModule(new TLUART(cbus.beatBytes, params.uart, params.divinit))
     uart.suggestName(name)
 
-    cbus.coupleTo(s"slave_named_$name") {
-      uart.controlXing(params.controlXType) := TLFragmenter(cbus.beatBytes, cbus.blockBytes) := _
+    cbus.coupleTo(s"device_named_$name") { bus =>
+      val blockerNode = params.blockerAddr.map(BasicBusBlocker(_, cbus, cbus.beatBytes, name))
+      (uart.controlXing(params.controlXType)
+        := TLFragmenter(cbus)
+        := blockerNode.map { _ := bus } .getOrElse { bus })
     }
     params.intNode := uart.intXing(params.intXType)
     InModuleBody { uart.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
