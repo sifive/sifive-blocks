@@ -65,14 +65,8 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
   slaveNode := sbypass.node
 
   private val mute = LazyModule(new MuteMaster(maxProbe = params.acqXfer.max))
-  private val mbypass = LazyModule(new MasterMux(_.last))
-  private val buffer = LazyModule(new TLBuffer(
-    a = BufferParams.none,
-    b = BufferParams.none,
-    c = BufferParams.default,
-    d = BufferParams.none,
-    e = BufferParams.none))
-  mbypass.node := buffer.node := mute.node
+  private val mbypass = LazyModule(new StuckSnooper(_.last))
+  mbypass.node := mute.node
   mbypass.node := masterNode
 
   val node = NodeHandle(sbypass.node, mbypass.node)
