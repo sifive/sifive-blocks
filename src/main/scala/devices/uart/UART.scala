@@ -25,16 +25,19 @@ case class UARTParams(
   oversample: Int = 4,
   nSamples: Int = 3,
   nTxEntries: Int = 8,
-  nRxEntries: Int = 8) extends DeviceParams
+  nRxEntries: Int = 8,
+  wire4: Boolean = false) extends DeviceParams
 {
   def oversampleFactor = 1 << oversample
   require(divisorBits > oversample)
   require(oversampleFactor > nSamples)
 }
 
-class UARTPortIO extends Bundle {
+class UARTPortIO(val c: UARTParams) extends Bundle {
   val txd = Bool(OUTPUT)
   val rxd = Bool(INPUT)
+  val cts = if (c.wire4) Some(Bool(INPUT)) else None
+  val rts = if (c.wire4) Some(Bool(OUTPUT)) else None
 }
 
 class UARTInterrupts extends Bundle {
@@ -84,7 +87,7 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
   val rxwm = Reg(init = UInt(0, rxCountBits))
   val nstop = Reg(init = UInt(0, stopCountBits))
 
-  txm.io.en := txen
+  txm.io.en := txen && !port.cts.getOrElse(false.B)
   txm.io.in <> txq.io.deq
   txm.io.div := div
   txm.io.nstop := nstop
@@ -94,6 +97,7 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
   rxm.io.in := port.rxd
   rxq.io.enq <> rxm.io.out
   rxm.io.div := div
+  port.rts.foreach { r => r := !(rxq.io.count < c.nRxEntries.U) }
 
   val ie = Reg(init = new UARTInterrupts().fromBits(Bits(0)))
   val ip = Wire(new UARTInterrupts)
@@ -224,6 +228,7 @@ object UART {
 
   def tieoff(port: UARTPortIO) {
     port.rxd := UInt(1)
+    port.cts.foreach { ct => ct := false.B } // active-low
   }
 
   def loopback(port: UARTPortIO) {
