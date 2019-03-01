@@ -58,7 +58,7 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
         compat = Seq("sifive,uart0"),
         base = c.address,
         beatBytes = busWidthBytes),
-      new UARTPortIO)
+      new UARTPortIO(c))
     //with HasInterruptSources {
     with HasInterruptSources with HasTLControlRegMap {
 
