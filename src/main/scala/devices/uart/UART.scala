@@ -7,6 +7,9 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
+import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelUtils
+import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
+import freechips.rocketchip.diplomaticobjectmodel.model._
 
 import sifive.blocks.util.{BasicBusBlocker, NonBlockingEnqueue, NonBlockingDequeue}
 
@@ -127,10 +130,19 @@ abstract class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
       RegField(c.divisorBits, div,
                  RegFieldDesc("div","Baud rate divisor",reset=Some(divisorInit))))
   )
+    
 }}
 
 class TLUART(busWidthBytes: Int, params: UARTParams, divinit: Int)(implicit p: Parameters)
-  extends UART(busWidthBytes, params, divinit) with HasTLControlRegMap
+  extends UART(busWidthBytes, params, divinit) with HasTLControlRegMap {
+  
+    
+  def getOMComponentsTemp (resourceBindingsMap: ResourceBindingsMap) = {
+    require(resourceBindingsMap.map.contains(device))
+    val resourceBindings = resourceBindingsMap.map.get(device)
+    resourceBindings.map { case rb => rb("int").map(_.value) }.getOrElse(Nil)
+  }
+  }
 
 case class UARTAttachParams(
   uart: UARTParams,
@@ -167,10 +179,10 @@ object UART {
     uart
   }
 
-  def attachAndMakePort(params: UARTAttachParams): ModuleValue[UARTPortIO] = {
+  def attachAndMakePort(params: UARTAttachParams) = {
     val uart = attach(params)
     val uartNode = uart.ioNode.makeSink()(params.p)
-    InModuleBody { uartNode.makeIO()(ValName(uart.name)) }
+    (InModuleBody { uartNode.makeIO()(ValName(uart.name)) }, uart)
   }
 
   def tieoff(port: UARTPortIO) {
