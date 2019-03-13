@@ -3,7 +3,7 @@ package sifive.blocks.devices.uart
 
 import Chisel._
 
-import freechips.rocketchip.util.PlusArg
+import freechips.rocketchip.util._
 
 class UARTTx(c: UARTParams) extends Module {
   val io = new Bundle {
@@ -12,12 +12,14 @@ class UARTTx(c: UARTParams) extends Module {
     val out = Bits(OUTPUT, 1)
     val div = UInt(INPUT, c.divisorBits)
     val nstop = UInt(INPUT, log2Up(c.stopBits))
+    val enparity = if (c.parity) Some(Bool(INPUT)) else None
+    val parity = if (c.parity) Some(Bool(INPUT)) else None
   }
 
   val prescaler = Reg(init = UInt(0, c.divisorBits))
   val pulse = (prescaler === UInt(0))
 
-  private val n = c.dataBits + 1
+  private val n = c.dataBits + 1 + c.parity.toInt
   val counter = Reg(init = UInt(0, log2Floor(n + c.stopBits) + 1))
   val shifter = Reg(Bits(width = n))
   val out = Reg(init = Bits(1, 1))
@@ -31,7 +33,12 @@ class UARTTx(c: UARTParams) extends Module {
     printf("UART TX (%x): %c\n", io.in.bits, io.in.bits)
   }
   when (io.in.fire() && plusarg_tx) {
-    shifter := Cat(io.in.bits, Bits(0, 1))
+    if (c.parity) {
+      val parity = Mux(io.enparity.get, io.in.bits.toBools.reduce(_ ^ _) ^ io.parity.get, Bool(true))
+      shifter := Cat(parity, io.in.bits, Bits(0, 1))
+    }
+    else   
+      shifter := Cat(io.in.bits, Bits(0, 1))
     counter := Mux1H((0 until c.stopBits).map(i =>
       (io.nstop === UInt(i)) -> UInt(n + i + 1)))
   }
