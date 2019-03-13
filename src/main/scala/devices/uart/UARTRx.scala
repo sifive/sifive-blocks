@@ -11,7 +11,13 @@ class UARTRx(c: UARTParams) extends Module {
     val in = Bits(INPUT, 1)
     val out = Valid(Bits(width = c.dataBits))
     val div = UInt(INPUT, c.divisorBits)
+    val enparity = if (c.parity) Some(Bool(INPUT)) else None
+    val parity = if (c.parity) Some(Bool(INPUT)) else None
+    val errorparity = if (c.parity) Some(Bool(OUTPUT)) else None
   }
+
+  if (c.parity)
+    io.errorparity.get := false.B
 
   val debounce = Reg(init = UInt(0, 2))
   val debounce_max = (debounce === UInt(3))
@@ -62,7 +68,7 @@ class UARTRx(c: UARTParams) extends Module {
           state := s_data
           start := Bool(true)
           prescaler := prescaler_next
-          data_count := UInt(c.dataBits+1)
+          data_count := UInt(c.dataBits+1) 
           sample_count := UInt(c.oversampleFactor - 1)
         }
       }
@@ -79,6 +85,9 @@ class UARTRx(c: UARTParams) extends Module {
           when (data_last) {
             state := s_idle
             valid := Bool(true)
+            if (c.parity) {
+              io.errorparity.get := (shifter.toBools.reduce(_ ^ _) ^ voter ^ io.parity.get) && io.enparity.get
+            }
           } .otherwise {
             shifter := Cat(voter, shifter >> 1)
           }

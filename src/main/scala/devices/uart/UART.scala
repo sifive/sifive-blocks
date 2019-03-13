@@ -26,7 +26,8 @@ case class UARTParams(
   nSamples: Int = 3,
   nTxEntries: Int = 8,
   nRxEntries: Int = 8,
-  wire4: Boolean = false) extends DeviceParams
+  wire4: Boolean = false,
+  parity: Boolean = false) extends DeviceParams
 {
   def oversampleFactor = 1 << oversample
   require(divisorBits > oversample)
@@ -83,6 +84,9 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
 
   val txen = Reg(init = Bool(false))
   val rxen = Reg(init = Bool(false))
+  val enparity = Reg(init = Bool(false))
+  val parity = Reg(init = Bool(false))
+  val errorparity = Reg(init = Bool(false))
   val txwm = Reg(init = UInt(0, txCountBits))
   val rxwm = Reg(init = UInt(0, rxCountBits))
   val nstop = Reg(init = UInt(0, stopCountBits))
@@ -98,6 +102,13 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
   rxq.io.enq <> rxm.io.out
   rxm.io.div := div
   port.rts.foreach { r => r := !(rxq.io.count < c.nRxEntries.U) }
+  if (c.parity) {
+    txm.io.enparity.get := enparity
+    txm.io.parity.get := parity
+    rxm.io.parity.get := parity
+    rxm.io.enparity.get := enparity
+    errorparity := rxm.io.errorparity.get || errorparity
+  }
 
   val ie = Reg(init = new UARTInterrupts().fromBits(Bits(0)))
   val ip = Wire(new UARTInterrupts)
@@ -140,8 +151,18 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
       RegField(c.divisorBits, div,
                  RegFieldDesc("div","Baud rate divisor",reset=Some(divisorInit))))
   )
-  regmap(mapping:_*)
-  val omRegMap = OMRegister.convert(mapping:_*)
+
+  val optionalparity = if (c.parity) Seq(
+    UARTCtrlRegs.parity -> RegFieldGroup("parity",Some("Odd/Even Parity Generation/Checking"),Seq(
+      RegField(1, enparity,
+               RegFieldDesc("enparity","Enable Parity Generation/Checking", reset=Some(0))),
+      RegField(1, parity,
+               RegFieldDesc("parity","Odd/Even Parity", reset=Some(0))),
+      RegField(1, errorparity,
+               RegFieldDesc("errorparity","Parity Status Sticky Bit", reset=Some(0)))))) else Nil
+
+  regmap(mapping ++ optionalparity:_*)
+  val omRegMap = OMRegister.convert(mapping ++ optionalparity:_*)
 }
 
   val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
@@ -233,6 +254,9 @@ object UART {
 
   def loopback(port: UARTPortIO) {
     port.rxd := port.txd
+    if (port.c.wire4) {
+      port.cts.get := port.rts.get
+    }
   }
 }
 
