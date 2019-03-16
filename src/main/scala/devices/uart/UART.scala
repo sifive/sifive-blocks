@@ -3,12 +3,11 @@ package sifive.blocks.devices.uart
 
 import Chisel._
 import freechips.rocketchip.config.Parameters
-import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.diplomacy.{ModuleValue, _}
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
-
-import sifive.blocks.util.{BasicBusBlocker, NonBlockingEnqueue, NonBlockingDequeue}
+import sifive.blocks.util.{BasicBusBlocker, NonBlockingDequeue, NonBlockingEnqueue}
 
 case class UARTParams(
   address: BigInt,
@@ -144,6 +143,8 @@ case class UARTAttachParams(
   mreset: Option[ModuleValue[Bool]] = None)
   (implicit val p: Parameters)
 
+case class ModuleUART(module: ModuleValue[UARTPortIO], uart: TLUART)
+
 object UART {
   val nextId = { var i = -1; () => { i += 1; i} }
 
@@ -167,10 +168,10 @@ object UART {
     uart
   }
 
-  def attachAndMakePort(params: UARTAttachParams): ModuleValue[UARTPortIO] = {
+  def attachAndMakePort(params: UARTAttachParams): ModuleUART = {
     val uart = attach(params)
     val uartNode = uart.ioNode.makeSink()(params.p)
-    InModuleBody { uartNode.makeIO()(ValName(uart.name)) }
+    ModuleUART(InModuleBody { uartNode.makeIO()(ValName(uart.name)) }, uart)
   }
 
   def tieoff(port: UARTPortIO) {
