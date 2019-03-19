@@ -59,10 +59,13 @@ object SPI {
     spi
   }
 
-  def attachAndMakePort(params: SPIAttachParams): ModuleValue[SPIPortIO] = {
+  case class ModuleSPI(module: ModuleValue[SPIPortIO], spi: TLSPI)
+
+  def attachAndMakePort(params: SPIAttachParams): ModuleSPI = {
     val spi = attach(params)
     val spiNode = spi.ioNode.makeSink()(params.p)
     InModuleBody { spiNode.makeIO()(ValName(spi.name)) }
+    ModuleSPI(InModuleBody { spiNode.makeIO()(ValName(spi.name)) }, spi)
   }
 
   val nextFlashId = { var i = -1; () => { i += 1; i} }
@@ -98,10 +101,12 @@ object SPI {
     qspi
   }
 
-  def attachAndMakePort(params: SPIFlashAttachParams): ModuleValue[SPIPortIO] = {
+  case class ModuleQSPI(module: ModuleValue[SPIPortIO], spi: TLSPIFlash)
+
+  def attachAndMakePort(params: SPIFlashAttachParams): ModuleQSPI = {
     val qspi = attachFlash(params)
     val qspiNode = qspi.ioNode.makeSink()(params.p)
-    InModuleBody { qspiNode.makeIO()(ValName(qspi.name)) }
+    ModuleQSPI(InModuleBody { qspiNode.makeIO()(ValName(qspi.name)) }, qspi)
   }
 
   def connectPort(q: SPIPortIO): SPIPortIO = {

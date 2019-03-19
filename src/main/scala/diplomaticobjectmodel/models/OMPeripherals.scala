@@ -2,7 +2,17 @@
 
 package sifive.blocks.diplomaticobjectmodel.logicaltree
 
-import freechips.rocketchip.diplomaticobjectmodel.model.{OMDevice, OMInterrupt, OMMemoryRegion, OMSpecification}
+import freechips.rocketchip.diplomaticobjectmodel.model._
+
+case class OMGPIO(
+  memoryRegions: Seq[OMMemoryRegion],
+  interrupts: Seq[OMInterrupt],
+  hasIof: Boolean,
+  controlsDriveStrength: Boolean,
+  hasPinCtrl: Boolean,
+  nGPIO: Int,
+  _types: Seq[String] = Seq("OMGPIO", "OMDevice", "OMComponent", "OMCompoundType")
+) extends OMDevice
 
 case class OMUART(
   memoryRegions: Seq[OMMemoryRegion],
@@ -14,3 +24,28 @@ case class OMUART(
   nTxEntries: Int,
   _types: Seq[String] = Seq("OMUART", "OMDevice", "OMComponent", "OMCompoundType")
 ) extends OMDevice
+
+case class OMSPI(
+  memoryRegions: Seq[OMMemoryRegion],
+  interrupts: Seq[OMInterrupt],
+  divisorWidth: Int,
+  chipSelectWidth: Int,
+  hasCoarseDelay: Boolean,
+  hasFineDelay: Boolean,
+  _types: Seq[String] = Seq("OMSPI", "OMDevice", "OMComponent", "OMCompoundType")
+) extends OMDevice
+
+case class OMDMA(
+  memoryRegions: Seq[OMMemoryRegion],
+  interrupts: Seq[OMInterrupt],
+  blockSize: Int,
+  nChannels: Int,
+  _types: Seq[String] = Seq("OMDMA", "OMDevice", "OMComponent", "OMCompoundType")
+) extends OMDevice
+
+case class OMErrorDevice(
+  memoryRegions: Seq[OMMemoryRegion],
+  interrupts: Seq[OMInterrupt],
+  _types: Seq[String] = Seq("OMErrorDevice", "OMDevice", "OMComponent", "OMCompoundType")
+) extends OMDevice
+
