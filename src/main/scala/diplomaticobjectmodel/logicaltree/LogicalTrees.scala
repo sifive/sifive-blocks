@@ -3,6 +3,7 @@
 package sifive.blocks.diplomaticobjectmodel.logicaltree
 
 
+import freechips.rocketchip.devices.tilelink.TLPLIC
 import freechips.rocketchip.diplomacy.{ResourceBindings, ResourceBindingsMap, SimpleDevice}
 import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.LogicalTreeNode
@@ -69,7 +70,7 @@ class SPIFlashLogicalTreeNode(device: SimpleDevice, f: () => OMRegisterMap, para
         divisorWidth = params.spi.divisorBits,
         chipSelectWidth = params.spi.csWidth,
         hasCoarseDelay = params.spi.delayBits  > 0, // TODO Check?
-        hasFineDelay = params.spi.delayBits > 0, // TODO Check?
+        hasFineDelay = params.spi.delayBits > 0 // TODO Check?
       )
     )
   }
@@ -91,7 +92,7 @@ class SPILogicalTreeNode(device: SimpleDevice, f: () => OMRegisterMap, params: S
         divisorWidth = params.spi.divisorBits,
         chipSelectWidth = params.spi.csWidth,
         hasCoarseDelay = params.spi.delayBits  > 0, // TODO Check?
-        hasFineDelay = params.spi.delayBits > 0, // TODO Check?
+        hasFineDelay = params.spi.delayBits > 0 // TODO Check?
       )
     )
   }
@@ -100,4 +101,26 @@ class SPILogicalTreeNode(device: SimpleDevice, f: () => OMRegisterMap, params: S
     DiplomaticObjectModelAddressing.getOMComponentHelper(device, resourceBindingsMap, getOMSPI)
   }
 }
+
+//class DMALogicalTreeNode(device: SimpleDevice, f: () => OMRegisterMap, params: DMAAttachParams) extends LogicalTreeNode {
+//  def getOMDMA(resourceBindings: ResourceBindings): Seq[OMComponent] = {
+//    val memRegions : Seq[OMMemoryRegion]= DiplomaticObjectModelAddressing.getOMMemoryRegions("DMA", resourceBindings, Some(f()))
+//    val ints = DiplomaticObjectModelAddressing.describeInterrupts(device.describe(resourceBindings).name, resourceBindings)
+//
+//    Seq[OMComponent](
+//      OMDMA(
+//        memoryRegions = memRegions,
+//        interrupts = ints,
+//        blockSize = ,
+//        nChannels =
+//      )
+//    )
+//  }
+//
+//  override def getOMComponents(resourceBindingsMap: ResourceBindingsMap, components: Seq[OMComponent]): Seq[OMComponent] = {
+//    DiplomaticObjectModelAddressing.getOMComponentHelper(device, resourceBindingsMap, getOMDMA)
+//  }
+//}
+
+
 
