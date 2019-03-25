@@ -84,14 +84,18 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
 
   val txen = Reg(init = Bool(false))
   val rxen = Reg(init = Bool(false))
+  val enwire4 = Reg(init = Bool(false))
   val enparity = Reg(init = Bool(false))
-  val parity = Reg(init = Bool(false))
+  val parity = Reg(init = Bool(false)) // Odd parity - 1 , Even parity - 0 
   val errorparity = Reg(init = Bool(false))
   val txwm = Reg(init = UInt(0, txCountBits))
   val rxwm = Reg(init = UInt(0, rxCountBits))
   val nstop = Reg(init = UInt(0, stopCountBits))
 
-  txm.io.en := txen && !port.cts.getOrElse(false.B)
+  if (c.wire4) 
+    txm.io.en := txen && (!port.cts.get || !enwire4)
+  else 
+    txm.io.en := txen
   txm.io.in <> txq.io.deq
   txm.io.div := div
   txm.io.nstop := nstop
@@ -161,8 +165,13 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
       RegField(1, errorparity,
                RegFieldDesc("errorparity","Parity Status Sticky Bit", reset=Some(0)))))) else Nil
 
-  regmap(mapping ++ optionalparity:_*)
-  val omRegMap = OMRegister.convert(mapping ++ optionalparity:_*)
+  val optionalwire4 = if (c.wire4) Seq(
+    UARTCtrlRegs.wire4 -> RegFieldGroup("wire4",Some("Configure Clear-to-send / Request-to-send ports"),Seq(
+      RegField(1, enwire4,
+               RegFieldDesc("enwire4","Enable CTS/RTS", reset=Some(0)))))) else Nil
+
+  regmap(mapping ++ optionalparity ++ optionalwire4:_*)
+  val omRegMap = OMRegister.convert(mapping ++ optionalparity ++ optionalwire4:_*)
 }
 
   val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
