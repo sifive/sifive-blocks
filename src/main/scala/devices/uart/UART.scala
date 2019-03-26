@@ -161,7 +161,7 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
       RegField(1, enparity,
                RegFieldDesc("enparity","Enable Parity Generation/Checking", reset=Some(0))),
       RegField(1, parity,
-               RegFieldDesc("parity","Odd/Even Parity", reset=Some(0))),
+               RegFieldDesc("parity","Odd(1)/Even(0) Parity", reset=Some(0))),
       RegField(1, errorparity,
                RegFieldDesc("errorparity","Parity Status Sticky Bit", reset=Some(0)))))) else Nil
 
