@@ -3,7 +3,7 @@ package sifive.blocks.devices.uart
 
 import Chisel._
 
-import freechips.rocketchip.util.Majority
+import freechips.rocketchip.util._
 
 class UARTRx(c: UARTParams) extends Module {
   val io = new Bundle {
@@ -27,10 +27,11 @@ class UARTRx(c: UARTParams) extends Module {
   val start = Wire(init = Bool(false))
   val pulse = (prescaler === UInt(0))
 
-  private val dataCountBits = log2Floor(c.dataBits) + 1
+  private val dataCountBits = log2Floor(c.dataBits+c.parity.toInt) + 1
 
   val data_count = Reg(UInt(width = dataCountBits))
   val data_last = (data_count === UInt(0))
+  val parity_bit = (data_count === UInt(1))
   val sample_count = Reg(UInt(width = c.oversample))
   val sample_mid = (sample_count === UInt((c.oversampleFactor - c.nSamples + 1) >> 1))
   val sample_last = (sample_count === UInt(0))
@@ -68,7 +69,7 @@ class UARTRx(c: UARTParams) extends Module {
           state := s_data
           start := Bool(true)
           prescaler := prescaler_next
-          data_count := UInt(c.dataBits+1) 
+          data_count := UInt(c.dataBits+1) + (if (c.parity) io.enparity.get else 0.U) 
           sample_count := UInt(c.oversampleFactor - 1)
         }
       }
@@ -82,14 +83,23 @@ class UARTRx(c: UARTParams) extends Module {
         sample_count := countdown(c.oversample-1, 0)
 
         when (sample_mid) {
-          when (data_last) {
-            state := s_idle
-            valid := Bool(true)
-            if (c.parity) {
+          if (c.parity) {
+            when (parity_bit) {
               io.errorparity.get := (shifter.toBools.reduce(_ ^ _) ^ voter ^ io.parity.get) && io.enparity.get
             }
-          } .otherwise {
-            shifter := Cat(voter, shifter >> 1)
+            when (data_last) {
+              state := s_idle
+              valid := Bool(true)
+            } .elsewhen (!parity_bit) {
+              shifter := Cat(voter, shifter >> 1)
+            }
+          } else {
+            when (data_last) {
+              state := s_idle
+              valid := Bool(true)
+            } .otherwise {
+              shifter := Cat(voter, shifter >> 1)
+            }
           }
         }
       }
