@@ -11,6 +11,7 @@ import freechips.rocketchip.regmapper._
 import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, PBUS}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
+import freechips.rocketchip.util._
 import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
 import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
@@ -59,7 +60,7 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
     //with HasInterruptSources {
     with HasInterruptSources with HasTLControlRegMap {
 
-  def nInterrupts = 1
+  def nInterrupts = 1 + c.parity.toInt
 
   ResourceBinding {
     Resource(ResourceAnchors.aliases, "uart").bind(ResourceAlias(device.label))
@@ -88,6 +89,7 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
   val enparity = Reg(init = Bool(false))
   val parity = Reg(init = Bool(false)) // Odd parity - 1 , Even parity - 0 
   val errorparity = Reg(init = Bool(false))
+  val errie = Reg(init = Bool(false))
   val txwm = Reg(init = UInt(0, txCountBits))
   val rxwm = Reg(init = UInt(0, rxCountBits))
   val nstop = Reg(init = UInt(0, stopCountBits))
@@ -112,6 +114,7 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
     rxm.io.parity.get := parity
     rxm.io.enparity.get := enparity
     errorparity := rxm.io.errorparity.get || errorparity
+    interrupts(1) := errorparity && errie
   }
 
   val ie = Reg(init = new UARTInterrupts().fromBits(Bits(0)))
@@ -163,7 +166,9 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
       RegField(1, parity,
                RegFieldDesc("parity","Odd(1)/Even(0) Parity", reset=Some(0))),
       RegField(1, errorparity,
-               RegFieldDesc("errorparity","Parity Status Sticky Bit", reset=Some(0)))))) else Nil
+               RegFieldDesc("errorparity","Parity Status Sticky Bit", reset=Some(0))),
+      RegField(1, errie,
+               RegFieldDesc("errie","Interrupt on error in parity enable", reset=Some(0)))))) else Nil
 
   val optionalwire4 = if (c.wire4) Seq(
     UARTCtrlRegs.wire4 -> RegFieldGroup("wire4",Some("Configure Clear-to-send / Request-to-send ports"),Seq(
