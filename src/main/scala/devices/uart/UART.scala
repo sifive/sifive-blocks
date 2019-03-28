@@ -21,7 +21,8 @@ case class UARTParams(
   nTxEntries: Int = 8,
   nRxEntries: Int = 8,
   wire4: Boolean = false,
-  parity: Boolean = false)
+  parity: Boolean = false,
+  indparity: Boolean = false)
 {
   def oversampleFactor = 1 << oversample
   require(divisorBits > oversample)
@@ -102,7 +103,7 @@ abstract class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
   if (c.parity) {
     txm.io.enparity.get := enparity
     txm.io.parity.get := parity
-    rxm.io.parity.get := parity
+    rxm.io.parity.get := parity ^ c.indparity.B // independent parity on tx and rx
     rxm.io.enparity.get := enparity
     errorparity := rxm.io.errorparity.get || errorparity
     interrupts(1) := errorparity && errie
