@@ -93,7 +93,7 @@ abstract class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
   ip.rxwm := (rxq.io.count > rxwm)
   interrupts(0) := (ip.txwm && ie.txwm) || (ip.rxwm && ie.rxwm)
 
-  regmap(
+  val mapping = Seq(
     UARTCtrlRegs.txfifo -> RegFieldGroup("txdata",Some("Transmit data"),
                            NonBlockingEnqueue(txq.io.enq)),
     UARTCtrlRegs.rxfifo -> RegFieldGroup("rxdata",Some("Receive data"),
@@ -127,6 +127,7 @@ abstract class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
       RegField(c.divisorBits, div,
                  RegFieldDesc("div","Baud rate divisor",reset=Some(divisorInit))))
   )
+  regmap(mapping: _*)
 }}
 
 class TLUART(busWidthBytes: Int, params: UARTParams, divinit: Int)(implicit p: Parameters)
