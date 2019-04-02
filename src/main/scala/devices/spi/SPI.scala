@@ -64,7 +64,6 @@ object SPI {
   def attachAndMakePort(params: SPIAttachParams): ModuleSPI = {
     val spi = attach(params)
     val spiNode = spi.ioNode.makeSink()(params.p)
-    InModuleBody { spiNode.makeIO()(ValName(spi.name)) }
     ModuleSPI(InModuleBody { spiNode.makeIO()(ValName(spi.name)) }, spi)
   }
 

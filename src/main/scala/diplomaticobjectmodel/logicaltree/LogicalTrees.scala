@@ -102,25 +102,6 @@ class SPILogicalTreeNode(device: SimpleDevice, f: () => OMRegisterMap, params: S
   }
 }
 
-//class DMALogicalTreeNode(device: SimpleDevice, f: () => OMRegisterMap, params: DMAAttachParams) extends LogicalTreeNode {
-//  def getOMDMA(resourceBindings: ResourceBindings): Seq[OMComponent] = {
-//    val memRegions : Seq[OMMemoryRegion]= DiplomaticObjectModelAddressing.getOMMemoryRegions("DMA", resourceBindings, Some(f()))
-//    val ints = DiplomaticObjectModelAddressing.describeInterrupts(device.describe(resourceBindings).name, resourceBindings)
-//
-//    Seq[OMComponent](
-//      OMDMA(
-//        memoryRegions = memRegions,
-//        interrupts = ints,
-//        blockSize = ,
-//        nChannels =
-//      )
-//    )
-//  }
-//
-//  override def getOMComponents(resourceBindingsMap: ResourceBindingsMap, components: Seq[OMComponent]): Seq[OMComponent] = {
-//    DiplomaticObjectModelAddressing.getOMComponentHelper(device, resourceBindingsMap, getOMDMA)
-//  }
-//}
 
 
 

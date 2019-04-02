@@ -34,18 +34,3 @@ case class OMSPI(
   hasFineDelay: Boolean,
   _types: Seq[String] = Seq("OMSPI", "OMDevice", "OMComponent", "OMCompoundType")
 ) extends OMDevice
-
-case class OMDMA(
-  memoryRegions: Seq[OMMemoryRegion],
-  interrupts: Seq[OMInterrupt],
-  blockSize: Int,
-  nChannels: Int,
-  _types: Seq[String] = Seq("OMDMA", "OMDevice", "OMComponent", "OMCompoundType")
-) extends OMDevice
-
-case class OMErrorDevice(
-  memoryRegions: Seq[OMMemoryRegion],
-  interrupts: Seq[OMInterrupt],
-  _types: Seq[String] = Seq("OMErrorDevice", "OMDevice", "OMComponent", "OMCompoundType")
-) extends OMDevice
-

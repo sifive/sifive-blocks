@@ -2,15 +2,16 @@
 package sifive.blocks.devices.spi
 
 import Chisel._
-import chisel3.experimental._ 
+import chisel3.experimental._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.diplomaticobjectmodel.model.OMRegister
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util.HeterogeneousBag
-import sifive.blocks.util.{NonBlockingEnqueue, NonBlockingDequeue}
+import sifive.blocks.util.{NonBlockingDequeue, NonBlockingEnqueue}
 
 trait SPIParamsBase {
   val rAddress: BigInt
@@ -186,6 +187,8 @@ abstract class TLSPIBase(w: Int, c: SPIParamsBase)(implicit p: Parameters) exten
 class TLSPI(w: Int, c: SPIParams)(implicit p: Parameters)
     extends TLSPIBase(w,c)(p) with HasTLControlRegMap {
   lazy val module = new SPITopModule(c, this) {
+    def omRegMap = OMRegister.convert(regmapBase:_*)
+
     mac.io.link <> fifo.io.link
     regmap(regmapBase:_*)
   }
