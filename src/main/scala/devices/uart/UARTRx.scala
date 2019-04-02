@@ -31,7 +31,7 @@ class UARTRx(c: UARTParams) extends Module {
 
   val data_count = Reg(UInt(width = dataCountBits))
   val data_last = (data_count === UInt(0))
-  val parity_bit = (data_count === UInt(1))
+  val parity_bit = (data_count === UInt(1)) && io.enparity.getOrElse(false.B)
   val sample_count = Reg(UInt(width = c.oversample))
   val sample_mid = (sample_count === UInt((c.oversampleFactor - c.nSamples + 1) >> 1))
   val sample_last = (sample_count === UInt(0))
@@ -85,7 +85,7 @@ class UARTRx(c: UARTParams) extends Module {
         when (sample_mid) {
           if (c.parity) {
             when (parity_bit) {
-              io.errorparity.get := (shifter.toBools.reduce(_ ^ _) ^ voter ^ io.parity.get) && io.enparity.get
+              io.errorparity.get := (shifter.toBools.reduce(_ ^ _) ^ voter ^ io.parity.get)
             }
             when (data_last) {
               state := s_idle
