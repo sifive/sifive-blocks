@@ -4,6 +4,7 @@ package sifive.blocks.devices.spi
 import Chisel._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.diplomaticobjectmodel.model.OMRegister
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.subsystem._
@@ -128,6 +129,7 @@ class TLSPIFlash(w: Int, c: SPIFlashParams)(implicit p: Parameters)
     extends TLSPIFlashBase(w,c)(p)
     with HasTLControlRegMap {
   lazy val module = new SPIFlashTopModule(c, this) {
+    def omRegMap = OMRegister.convert(regmapBase:_*)
 
     arb.io.inner(0) <> flash.io.link
     arb.io.inner(1) <> fifo.io.link

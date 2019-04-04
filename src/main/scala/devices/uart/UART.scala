@@ -4,11 +4,11 @@ package sifive.blocks.devices.uart
 import Chisel._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.diplomaticobjectmodel.model.OMRegister
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
-
-import sifive.blocks.util.{BasicBusBlocker, NonBlockingEnqueue, NonBlockingDequeue}
+import sifive.blocks.util.{BasicBusBlocker, NonBlockingDequeue, NonBlockingEnqueue}
 
 case class UARTParams(
   address: BigInt,
@@ -40,7 +40,7 @@ abstract class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
     extends IORegisterRouter(
       RegisterRouterParams(
         name = "serial",
-        compat = Seq("sifive,uart0"), 
+        compat = Seq("sifive,uart0"),
         base = c.address,
         beatBytes = busWidthBytes),
       new UARTPortIO)
@@ -93,40 +93,43 @@ abstract class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
   ip.rxwm := (rxq.io.count > rxwm)
   interrupts(0) := (ip.txwm && ie.txwm) || (ip.rxwm && ie.rxwm)
 
-  regmap(
-    UARTCtrlRegs.txfifo -> RegFieldGroup("txdata",Some("Transmit data"),
-                           NonBlockingEnqueue(txq.io.enq)),
-    UARTCtrlRegs.rxfifo -> RegFieldGroup("rxdata",Some("Receive data"),
-                           NonBlockingDequeue(rxq.io.deq)),
+  val mapping = Seq(
+      UARTCtrlRegs.txfifo -> RegFieldGroup("txdata",Some("Transmit data"),
+                             NonBlockingEnqueue(txq.io.enq)),
+      UARTCtrlRegs.rxfifo -> RegFieldGroup("rxdata",Some("Receive data"),
+                             NonBlockingDequeue(rxq.io.deq)),
 
-    UARTCtrlRegs.txctrl -> RegFieldGroup("txctrl",Some("Serial transmit control"),Seq(
-      RegField(1, txen,
-               RegFieldDesc("txen","Transmit enable", reset=Some(0))),
-      RegField(stopCountBits, nstop,
-               RegFieldDesc("nstop","Number of stop bits", reset=Some(0))))),
-    UARTCtrlRegs.rxctrl -> Seq(RegField(1, rxen,
-               RegFieldDesc("rxen","Receive enable", reset=Some(0)))),
-    UARTCtrlRegs.txmark -> Seq(RegField(txCountBits, txwm,
-               RegFieldDesc("txcnt","Transmit watermark level", reset=Some(0)))),
-    UARTCtrlRegs.rxmark -> Seq(RegField(rxCountBits, rxwm,
-               RegFieldDesc("rxcnt","Receive watermark level", reset=Some(0)))),
+      UARTCtrlRegs.txctrl -> RegFieldGroup("txctrl",Some("Serial transmit control"),Seq(
+        RegField(1, txen,
+                 RegFieldDesc("txen","Transmit enable", reset=Some(0))),
+        RegField(stopCountBits, nstop,
+                 RegFieldDesc("nstop","Number of stop bits", reset=Some(0))))),
+      UARTCtrlRegs.rxctrl -> Seq(RegField(1, rxen,
+                 RegFieldDesc("rxen","Receive enable", reset=Some(0)))),
+      UARTCtrlRegs.txmark -> Seq(RegField(txCountBits, txwm,
+                 RegFieldDesc("txcnt","Transmit watermark level", reset=Some(0)))),
+      UARTCtrlRegs.rxmark -> Seq(RegField(rxCountBits, rxwm,
+                 RegFieldDesc("rxcnt","Receive watermark level", reset=Some(0)))),
 
-    UARTCtrlRegs.ie -> RegFieldGroup("ie",Some("Serial interrupt enable"),Seq(
-      RegField(1, ie.txwm,
-               RegFieldDesc("txwm_ie","Transmit watermark interrupt enable", reset=Some(0))),
-      RegField(1, ie.rxwm,
-               RegFieldDesc("rxwm_ie","Receive watermark interrupt enable", reset=Some(0))))),
+      UARTCtrlRegs.ie -> RegFieldGroup("ie",Some("Serial interrupt enable"),Seq(
+        RegField(1, ie.txwm,
+                 RegFieldDesc("txwm_ie","Transmit watermark interrupt enable", reset=Some(0))),
+        RegField(1, ie.rxwm,
+                 RegFieldDesc("rxwm_ie","Receive watermark interrupt enable", reset=Some(0))))),
 
-    UARTCtrlRegs.ip -> RegFieldGroup("ip",Some("Serial interrupt pending"),Seq(
-      RegField.r(1, ip.txwm,
-                 RegFieldDesc("txwm_ip","Transmit watermark interrupt pending", volatile=true)),
-      RegField.r(1, ip.rxwm,
-                 RegFieldDesc("rxwm_ip","Receive watermark interrupt pending", volatile=true)))),
+      UARTCtrlRegs.ip -> RegFieldGroup("ip",Some("Serial interrupt pending"),Seq(
+        RegField.r(1, ip.txwm,
+                   RegFieldDesc("txwm_ip","Transmit watermark interrupt pending", volatile=true)),
+        RegField.r(1, ip.rxwm,
+                   RegFieldDesc("rxwm_ip","Receive watermark interrupt pending", volatile=true)))),
 
-    UARTCtrlRegs.div -> Seq(
-      RegField(c.divisorBits, div,
-                 RegFieldDesc("div","Baud rate divisor",reset=Some(divisorInit))))
+      UARTCtrlRegs.div -> Seq(
+        RegField(c.divisorBits, div,
+                   RegFieldDesc("div","Baud rate divisor",reset=Some(divisorInit))))
   )
+
+  regmap(mapping:_*)
+  val omRegMap = OMRegister.convert(mapping:_*)
 }}
 
 class TLUART(busWidthBytes: Int, params: UARTParams, divinit: Int)(implicit p: Parameters)
@@ -144,6 +147,8 @@ case class UARTAttachParams(
   mreset: Option[ModuleValue[Bool]] = None)
   (implicit val p: Parameters)
 
+case class ModuleUART(module: ModuleValue[UARTPortIO], uart: TLUART)
+
 object UART {
   val nextId = { var i = -1; () => { i += 1; i} }
 
@@ -154,7 +159,7 @@ object UART {
     val uart = LazyModule(new TLUART(cbus.beatBytes, params.uart, params.divinit))
     uart.suggestName(name)
 
-    cbus.coupleTo(s"device_named_$name") { bus =>
+    val blockerNode = cbus.coupleTo(s"device_named_$name") { bus =>
       val blockerNode = params.blockerAddr.map(BasicBusBlocker(_, cbus, cbus.beatBytes, name))
       (uart.controlXing(params.controlXType)
         := TLFragmenter(cbus)
@@ -167,10 +172,10 @@ object UART {
     uart
   }
 
-  def attachAndMakePort(params: UARTAttachParams): ModuleValue[UARTPortIO] = {
+  def attachAndMakePort(params: UARTAttachParams): ModuleUART = {
     val uart = attach(params)
     val uartNode = uart.ioNode.makeSink()(params.p)
-    InModuleBody { uartNode.makeIO()(ValName(uart.name)) }
+    ModuleUART(InModuleBody { uartNode.makeIO()(ValName(uart.name)) }, uart)
   }
 
   def tieoff(port: UARTPortIO) {

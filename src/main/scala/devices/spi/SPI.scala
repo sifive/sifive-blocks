@@ -98,10 +98,12 @@ object SPI {
     qspi
   }
 
-  def attachAndMakePort(params: SPIFlashAttachParams): ModuleValue[SPIPortIO] = {
+  case class ModuleQSPI(module: ModuleValue[SPIPortIO], spi: TLSPIFlash)
+
+  def attachAndMakePort(params: SPIFlashAttachParams): ModuleQSPI = {
     val qspi = attachFlash(params)
     val qspiNode = qspi.ioNode.makeSink()(params.p)
-    InModuleBody { qspiNode.makeIO()(ValName(qspi.name)) }
+    ModuleQSPI(InModuleBody { qspiNode.makeIO()(ValName(qspi.name)) }, qspi)
   }
 
   def connectPort(q: SPIPortIO): SPIPortIO = {
