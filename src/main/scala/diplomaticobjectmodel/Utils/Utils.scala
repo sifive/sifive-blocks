@@ -4,7 +4,7 @@ import freechips.rocketchip.diplomacy.{Binding, Device, DiplomacyUtils, Resource
 import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
 import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing.omMemoryRegion
 import freechips.rocketchip.diplomaticobjectmodel.model.{OMMemoryRegion, OMRegisterMap}
-
+/*
 object Utils {
   def getOMMemoryRegions(name: String, resourceBindings: ResourceBindings, omRegMap: Option[OMRegisterMap] = None): Seq[OMMemoryRegion]= {
     resourceBindings.map.collect {
@@ -17,3 +17,4 @@ object Utils {
   }
 
 }
+*/

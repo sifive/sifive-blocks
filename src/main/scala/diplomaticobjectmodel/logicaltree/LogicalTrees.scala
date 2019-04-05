@@ -38,12 +38,12 @@ class GPIOLogicalTreeNode(device: SimpleDevice, f: () => OMRegisterMap, params: 
 class UARTLogicalTreeNode(device: SimpleDevice, f: () => OMRegisterMap, params: UARTAttachParams) extends LogicalTreeNode {
   def getOMUART(resourceBindings: ResourceBindings): Seq[OMComponent] = {
     val memRegions : Seq[OMMemoryRegion]= DiplomaticObjectModelAddressing.getOMMemoryRegions("UART", resourceBindings, Some(f()))
-    val ints = DiplomaticObjectModelAddressing.describeInterrupts(device.describe(resourceBindings).name, resourceBindings)
+    //val ints = DiplomaticObjectModelAddressing.describeInterrupts(device.describe(resourceBindings).name, resourceBindings)
 
     Seq[OMComponent](
       OMUART(
         memoryRegions = memRegions,
-        interrupts = ints,
+        interrupts = Nil,
         nPriorities = 0, //TODO
         divisorWidth = params.uart.divisorBits,
         divisorInit = params.divinit,
