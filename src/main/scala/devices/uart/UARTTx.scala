@@ -36,11 +36,14 @@ class UARTTx(c: UARTParams) extends Module {
     if (c.parity) {
       val parity = Mux(io.enparity.get, io.in.bits.toBools.reduce(_ ^ _) ^ io.parity.get, Bool(true))
       shifter := Cat(parity, io.in.bits, Bits(0, 1))
+      counter := Mux1H((0 until c.stopBits).map(i =>
+        (io.nstop === UInt(i)) -> UInt(n + i + 1))) - (!io.enparity.get).asUInt
     }
-    else   
+    else {
       shifter := Cat(io.in.bits, Bits(0, 1))
-    counter := Mux1H((0 until c.stopBits).map(i =>
-      (io.nstop === UInt(i)) -> UInt(n + i + 1)))
+      counter := Mux1H((0 until c.stopBits).map(i =>
+        (io.nstop === UInt(i)) -> UInt(n + i + 1)))
+    }
   }
   when (busy) {
     prescaler := Mux(pulse, io.div, prescaler - UInt(1))
