@@ -121,14 +121,14 @@ class SPITopModule(c: SPIParamsBase, outer: TLSPIBase)
                          RegFieldDesc("rxmark","Receive watermark", reset=Some(0)))),
     SPICRs.ie -> RegFieldGroup("ie",Some("SPI interrupt enable"),Seq(
       RegField(1, ie.txwm,
-      RegFieldDesc("txwm_ie","Transmit watermark interupt enable", reset=Some(0))),
+      RegFieldDesc("txwm_ie","Transmit watermark interrupt enable", reset=Some(0))),
       RegField(1, ie.rxwm,
-      RegFieldDesc("rxwm_ie","Receive watermark interupt enable", reset=Some(0))))),
+      RegFieldDesc("rxwm_ie","Receive watermark interrupt enable", reset=Some(0))))),
     SPICRs.ip -> RegFieldGroup("ip",Some("SPI interrupt pending"),Seq(
       RegField.r(1, ip.txwm,
-      RegFieldDesc("txwm_ip","Transmit watermark interupt pending", volatile=true)),
+      RegFieldDesc("txwm_ip","Transmit watermark interrupt pending", volatile=true)),
       RegField.r(1, ip.rxwm,
-      RegFieldDesc("rxwm_ip","Receive watermark interupt pending", volatile=true)))),
+      RegFieldDesc("rxwm_ip","Receive watermark interrupt pending", volatile=true)))),
 
     SPICRs.extradel -> RegFieldGroup("extradel",Some("delay from the sck edge"),Seq(
       RegField(c.divisorBits, ctrl.extradel.coarse,
