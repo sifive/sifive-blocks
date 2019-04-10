@@ -1,3 +1,7 @@
-global def sifiveBlocksProject = millScalaProject "SifiveBlocks" here (rocketchipProject, Nil) "sifiveblocks" "SifiveBlocksBase"
 
-publish scalaProjects = sifiveBlocksProject, Nil
+global def sifiveBlocksScalaModule _ =
+  makeScalaModuleFromJSON here "sifiveBlocks"
+  | scalaModuleAddSBTDefaults
+  | setScalaModuleDeps (rocketchipScalaModule Unit, Nil)
+  | setScalaModuleScalacOptions ("-Xsource:2.11", Nil)
+
