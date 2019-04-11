@@ -17,10 +17,9 @@ case class OMGPIO(
 case class OMUART(
   memoryRegions: Seq[OMMemoryRegion],
   interrupts: Seq[OMInterrupt],
-  nPriorities: Int,
   divisorWidth: Int,
   divisorInit: Int,
-  nRxExtries: Int,
+  nRxEntries: Int,
   nTxEntries: Int,
   _types: Seq[String] = Seq("OMUART", "OMDevice", "OMComponent", "OMCompoundType")
 ) extends OMDevice

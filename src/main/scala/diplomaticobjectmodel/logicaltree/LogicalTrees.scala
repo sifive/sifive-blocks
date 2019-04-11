@@ -44,10 +44,9 @@ class UARTLogicalTreeNode(device: SimpleDevice, f: () => OMRegisterMap, params: 
       OMUART(
         memoryRegions = memRegions,
         interrupts = Nil,
-        nPriorities = 0, //TODO
         divisorWidth = params.uart.divisorBits,
         divisorInit = params.divinit,
-        nRxExtries = params.uart.nRxEntries,
+        nRxEntries = params.uart.nRxEntries,
         nTxEntries = params.uart.nTxEntries
       )
     )
