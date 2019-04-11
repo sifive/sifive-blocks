@@ -95,38 +95,42 @@ abstract class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
   interrupts(0) := (ip.txwm && ie.txwm) || (ip.rxwm && ie.rxwm)
 
   val mapping = Seq(
-    UARTCtrlRegs.txfifo -> RegFieldGroup("txdata",Some("Transmit data"),
+    UARTCtrlRegs.txfifo -> RegFieldGroup("txdata",Some("Transmit Data Register"),
                            NonBlockingEnqueue(txq.io.enq)),
-    UARTCtrlRegs.rxfifo -> RegFieldGroup("rxdata",Some("Receive data"),
+    UARTCtrlRegs.rxfifo -> RegFieldGroup("rxdata",Some("Receive Data Register"),
                            NonBlockingDequeue(rxq.io.deq)),
 
-    UARTCtrlRegs.txctrl -> RegFieldGroup("txctrl",Some("Serial transmit control"),Seq(
+    UARTCtrlRegs.txctrl -> RegFieldGroup("txctrl",Some("Transmit Control Register"),Seq(
       RegField(1, txen,
                RegFieldDesc("txen","Transmit enable", reset=Some(0))),
       RegField(stopCountBits, nstop,
-               RegFieldDesc("nstop","Number of stop bits", reset=Some(0))))),
-    UARTCtrlRegs.rxctrl -> Seq(RegField(1, rxen,
-               RegFieldDesc("rxen","Receive enable", reset=Some(0)))),
-    UARTCtrlRegs.txmark -> Seq(RegField(txCountBits, txwm,
-               RegFieldDesc("txcnt","Transmit watermark level", reset=Some(0)))),
-    UARTCtrlRegs.rxmark -> Seq(RegField(rxCountBits, rxwm,
-               RegFieldDesc("rxcnt","Receive watermark level", reset=Some(0)))),
+               RegFieldDesc("nstop","Number of stop bits", reset=Some(0))),
+      RegField(16 - (1 + stopCountBits)), // Padding such that txcnt starts at 16
+      RegField(txCountBits, txwm,
+               RegFieldDesc("txcnt","Transmit watermark level", reset=Some(0))))),
 
-    UARTCtrlRegs.ie -> RegFieldGroup("ie",Some("Serial interrupt enable"),Seq(
+    UARTCtrlRegs.rxctrl -> RegFieldGroup("rxctrl",Some("Receive Control Register"),Seq(
+      RegField(1, rxen,
+               RegFieldDesc("rxen","Receive enable", reset=Some(0))),
+      RegField(16 - 1), // Padding such that rxcnt starts at 16
+      RegField(rxCountBits, rxwm,
+               RegFieldDesc("rxcnt","Receive watermark level", reset=Some(0))))),
+
+    UARTCtrlRegs.ie -> RegFieldGroup("ie",Some("Interrupt Enable Register"),Seq(
       RegField(1, ie.txwm,
                RegFieldDesc("txwm_ie","Transmit watermark interrupt enable", reset=Some(0))),
       RegField(1, ie.rxwm,
                RegFieldDesc("rxwm_ie","Receive watermark interrupt enable", reset=Some(0))))),
 
-    UARTCtrlRegs.ip -> RegFieldGroup("ip",Some("Serial interrupt pending"),Seq(
+    UARTCtrlRegs.ip -> RegFieldGroup("ip",Some("Interrupt Pending Register"),Seq(
       RegField.r(1, ip.txwm,
                  RegFieldDesc("txwm_ip","Transmit watermark interrupt pending", volatile=true)),
       RegField.r(1, ip.rxwm,
                  RegFieldDesc("rxwm_ip","Receive watermark interrupt pending", volatile=true)))),
 
-    UARTCtrlRegs.div -> Seq(
+    UARTCtrlRegs.div -> RegFieldGroup("div",Some("Baud Rate Divisor Register"),Seq(
       RegField(c.divisorBits, div,
-                 RegFieldDesc("div","Baud rate divisor",reset=Some(divisorInit))))
+                 RegFieldDesc("div","Baud rate divisor",reset=Some(divisorInit)))))
   )
 
   regmap(mapping:_*)
