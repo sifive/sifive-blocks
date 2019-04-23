@@ -27,9 +27,9 @@ case class UARTParams(
   nSamples: Int = 3,
   nTxEntries: Int = 8,
   nRxEntries: Int = 8,
-  wire4: Boolean = false,
-  parity: Boolean = false,
-  indparity: Boolean = false) extends DeviceParams
+  includeFourWire: Boolean = false,
+  includeParity: Boolean = false,
+  includeIndependentParity: Boolean = false) extends DeviceParams // Tx and Rx have opposite parity modes
 {
   def oversampleFactor = 1 << oversample
   require(divisorBits > oversample)
@@ -39,8 +39,8 @@ case class UARTParams(
 class UARTPortIO(val c: UARTParams) extends Bundle {
   val txd = Bool(OUTPUT)
   val rxd = Bool(INPUT)
-  val cts = if (c.wire4) Some(Bool(INPUT)) else None
-  val rts = if (c.wire4) Some(Bool(OUTPUT)) else None
+  val cts_n = c.includeFourWire.option(Bool(INPUT))
+  val rts_n = c.includeFourWire.option(Bool(OUTPUT))
 }
 
 class UARTInterrupts extends Bundle {
@@ -61,7 +61,7 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
     //with HasInterruptSources {
     with HasInterruptSources with HasTLControlRegMap {
 
-  def nInterrupts = 1 + c.parity.toInt
+  def nInterrupts = 1 + c.includeParity.toInt
 
   ResourceBinding {
     Resource(ResourceAnchors.aliases, "uart").bind(ResourceAlias(device.label))
@@ -95,8 +95,8 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
   val rxwm = Reg(init = UInt(0, rxCountBits))
   val nstop = Reg(init = UInt(0, stopCountBits))
 
-  if (c.wire4) 
-    txm.io.en := txen && (!port.cts.get || !enwire4)
+  if (c.includeFourWire)
+    txm.io.en := txen && (!port.cts_n.get || !enwire4)
   else 
     txm.io.en := txen
   txm.io.in <> txq.io.deq
@@ -108,11 +108,11 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
   rxm.io.in := port.rxd
   rxq.io.enq <> rxm.io.out
   rxm.io.div := div
-  port.rts.foreach { r => r := !(rxq.io.count < c.nRxEntries.U) }
-  if (c.parity) {
+  port.rts_n.foreach { r => r := !(rxq.io.count < c.nRxEntries.U) }
+  if (c.includeParity) {
     txm.io.enparity.get := enparity
     txm.io.parity.get := parity
-    rxm.io.parity.get := parity ^ c.indparity.B // independent parity on tx and rx
+    rxm.io.parity.get := parity ^ c.includeIndependentParity.B // independent parity on tx and rx
     rxm.io.enparity.get := enparity
     errorparity := rxm.io.errorparity.get || errorparity
     interrupts(1) := errorparity && errie
@@ -160,8 +160,8 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
                  RegFieldDesc("div","Baud rate divisor",reset=Some(divisorInit))))
   )
 
-  val optionalparity = if (c.parity) Seq(
-    UARTCtrlRegs.parity -> RegFieldGroup("parity",Some("Odd/Even Parity Generation/Checking"),Seq(
+  val optionalparity = if (c.includeParity) Seq(
+    UARTCtrlRegs.parity -> RegFieldGroup("paritygenandcheck",Some("Odd/Even Parity Generation/Checking"),Seq(
       RegField(1, enparity,
                RegFieldDesc("enparity","Enable Parity Generation/Checking", reset=Some(0))),
       RegField(1, parity,
@@ -171,7 +171,7 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
       RegField(1, errie,
                RegFieldDesc("errie","Interrupt on error in parity enable", reset=Some(0)))))) else Nil
 
-  val optionalwire4 = if (c.wire4) Seq(
+  val optionalwire4 = if (c.includeFourWire) Seq(
     UARTCtrlRegs.wire4 -> RegFieldGroup("wire4",Some("Configure Clear-to-send / Request-to-send ports"),Seq(
       RegField(1, enwire4,
                RegFieldDesc("enwire4","Enable CTS/RTS", reset=Some(0)))))) else Nil
@@ -264,13 +264,15 @@ object UART {
 
   def tieoff(port: UARTPortIO) {
     port.rxd := UInt(1)
-    port.cts.foreach { ct => ct := false.B } // active-low
+    if (port.c.includeFourWire) {
+      port.cts_n.foreach { ct => ct := false.B } // active-low
+    }
   }
 
   def loopback(port: UARTPortIO) {
     port.rxd := port.txd
-    if (port.c.wire4) {
-      port.cts.get := port.rts.get
+    if (port.c.includeFourWire) {
+      port.cts_n.get := port.rts_n.get
     }
   }
 }

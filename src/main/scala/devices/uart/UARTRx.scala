@@ -11,12 +11,12 @@ class UARTRx(c: UARTParams) extends Module {
     val in = Bits(INPUT, 1)
     val out = Valid(Bits(width = c.dataBits))
     val div = UInt(INPUT, c.divisorBits)
-    val enparity = if (c.parity) Some(Bool(INPUT)) else None
-    val parity = if (c.parity) Some(Bool(INPUT)) else None
-    val errorparity = if (c.parity) Some(Bool(OUTPUT)) else None
+    val enparity = c.includeParity.option(Bool(INPUT))
+    val parity = c.includeParity.option(Bool(INPUT))
+    val errorparity = c.includeParity.option(Bool(OUTPUT))
   }
 
-  if (c.parity)
+  if (c.includeParity)
     io.errorparity.get := false.B
 
   val debounce = Reg(init = UInt(0, 2))
@@ -27,7 +27,7 @@ class UARTRx(c: UARTParams) extends Module {
   val start = Wire(init = Bool(false))
   val pulse = (prescaler === UInt(0))
 
-  private val dataCountBits = log2Floor(c.dataBits+c.parity.toInt) + 1
+  private val dataCountBits = log2Floor(c.dataBits+c.includeParity.toInt) + 1
 
   val data_count = Reg(UInt(width = dataCountBits))
   val data_last = (data_count === UInt(0))
@@ -69,7 +69,7 @@ class UARTRx(c: UARTParams) extends Module {
           state := s_data
           start := Bool(true)
           prescaler := prescaler_next
-          data_count := UInt(c.dataBits+1) + (if (c.parity) io.enparity.get else 0.U) 
+          data_count := UInt(c.dataBits+1) + (if (c.includeParity) io.enparity.get else 0.U)
           sample_count := UInt(c.oversampleFactor - 1)
         }
       }
@@ -83,7 +83,7 @@ class UARTRx(c: UARTParams) extends Module {
         sample_count := countdown(c.oversample-1, 0)
 
         when (sample_mid) {
-          if (c.parity) {
+          if (c.includeParity) {
             when (parity_bit) {
               io.errorparity.get := (shifter.toBools.reduce(_ ^ _) ^ voter ^ io.parity.get)
             }

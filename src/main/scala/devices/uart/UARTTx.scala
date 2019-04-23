@@ -12,14 +12,14 @@ class UARTTx(c: UARTParams) extends Module {
     val out = Bits(OUTPUT, 1)
     val div = UInt(INPUT, c.divisorBits)
     val nstop = UInt(INPUT, log2Up(c.stopBits))
-    val enparity = if (c.parity) Some(Bool(INPUT)) else None
-    val parity = if (c.parity) Some(Bool(INPUT)) else None
+    val enparity = c.includeParity.option(Bool(INPUT))
+    val parity = c.includeParity.option(Bool(INPUT))
   }
 
   val prescaler = Reg(init = UInt(0, c.divisorBits))
   val pulse = (prescaler === UInt(0))
 
-  private val n = c.dataBits + 1 + c.parity.toInt
+  private val n = c.dataBits + 1 + c.includeParity.toInt
   val counter = Reg(init = UInt(0, log2Floor(n + c.stopBits) + 1))
   val shifter = Reg(Bits(width = n))
   val out = Reg(init = Bits(1, 1))
@@ -33,7 +33,7 @@ class UARTTx(c: UARTParams) extends Module {
     printf("UART TX (%x): %c\n", io.in.bits, io.in.bits)
   }
   when (io.in.fire() && plusarg_tx) {
-    if (c.parity) {
+    if (c.includeParity) {
       val parity = Mux(io.enparity.get, io.in.bits.toBools.reduce(_ ^ _) ^ io.parity.get, Bool(true))
       shifter := Cat(parity, io.in.bits, Bits(0, 1))
       counter := Mux1H((0 until c.stopBits).map(i =>
