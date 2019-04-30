@@ -14,6 +14,7 @@ class UARTRx(c: UARTParams) extends Module {
     val enparity = c.includeParity.option(Bool(INPUT))
     val parity = c.includeParity.option(Bool(INPUT))
     val errorparity = c.includeParity.option(Bool(OUTPUT))
+    val data8or9 = (c.dataBits == 9).option(Bool(INPUT))
   }
 
   if (c.includeParity)
@@ -53,7 +54,7 @@ class UARTRx(c: UARTParams) extends Module {
   val valid = Reg(init = Bool(false))
   valid := Bool(false)
   io.out.valid := valid
-  io.out.bits := shifter
+  io.out.bits := (if (c.dataBits == 8) shifter else Mux(io.data8or9.get, Cat(0.U, shifter(8,1)), shifter))
 
   val (s_idle :: s_data :: Nil) = Enum(UInt(), 2)
   val state = Reg(init = s_idle)
@@ -69,7 +70,7 @@ class UARTRx(c: UARTParams) extends Module {
           state := s_data
           start := Bool(true)
           prescaler := prescaler_next
-          data_count := UInt(c.dataBits+1) + (if (c.includeParity) io.enparity.get else 0.U)
+          data_count := UInt(c.dataBits+1) + (if (c.includeParity) io.enparity.get else 0.U) - io.data8or9.getOrElse(false.B).asUInt
           sample_count := UInt(c.oversampleFactor - 1)
         }
       }

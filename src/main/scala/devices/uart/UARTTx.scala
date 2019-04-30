@@ -14,6 +14,7 @@ class UARTTx(c: UARTParams) extends Module {
     val nstop = UInt(INPUT, log2Up(c.stopBits))
     val enparity = c.includeParity.option(Bool(INPUT))
     val parity = c.includeParity.option(Bool(INPUT))
+    val data8or9 = (c.dataBits == 9).option(Bool(INPUT))
   }
 
   val prescaler = Reg(init = UInt(0, c.divisorBits))
@@ -35,14 +36,17 @@ class UARTTx(c: UARTParams) extends Module {
   when (io.in.fire() && plusarg_tx) {
     if (c.includeParity) {
       val parity = Mux(io.enparity.get, io.in.bits.toBools.reduce(_ ^ _) ^ io.parity.get, Bool(true))
-      shifter := Cat(parity, io.in.bits, Bits(0, 1))
+      val paritywithbit9 = if (c.dataBits == 9) Mux(io.data8or9.get, Cat(1.U(1.W), parity), Cat(parity, io.in.bits(8))) 
+                           else Cat(1.U(1.W), parity)
+      shifter := Cat(paritywithbit9, io.in.bits(7,0), Bits(0, 1))
       counter := Mux1H((0 until c.stopBits).map(i =>
-        (io.nstop === UInt(i)) -> UInt(n + i + 1))) - (!io.enparity.get).asUInt
+        (io.nstop === UInt(i)) -> UInt(n + i + 1))) - (!io.enparity.get).asUInt - io.data8or9.getOrElse(0.U)
     }
     else {
-      shifter := Cat(io.in.bits, Bits(0, 1))
+      val bit9 = if (c.dataBits == 9) Mux(io.data8or9.get, 1.U(1.W), io.in.bits(8)) else 1.U(1.W)
+      shifter := Cat(bit9, io.in.bits(7,0), Bits(0, 1))
       counter := Mux1H((0 until c.stopBits).map(i =>
-        (io.nstop === UInt(i)) -> UInt(n + i + 1)))
+        (io.nstop === UInt(i)) -> UInt(n + i + 1))) - io.data8or9.getOrElse(0.U)
     }
   }
   when (busy) {

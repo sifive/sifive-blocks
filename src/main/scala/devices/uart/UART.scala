@@ -27,6 +27,7 @@ case class UARTParams(
   def oversampleFactor = 1 << oversample
   require(divisorBits > oversample)
   require(oversampleFactor > nSamples)
+  require((dataBits == 8) || (dataBits == 9))
 }
 
 class UARTPortIO(val c: UARTParams) extends Bundle {
@@ -85,6 +86,7 @@ abstract class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
   val txwm = Reg(init = UInt(0, txCountBits))
   val rxwm = Reg(init = UInt(0, rxCountBits))
   val nstop = Reg(init = UInt(0, stopCountBits))
+  val data8or9 = Reg(init = Bool(true))
 
   if (c.includeFourWire)
     txm.io.en := txen && (!port.cts_n.get || !enwire4)
@@ -94,6 +96,11 @@ abstract class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
   txm.io.div := div
   txm.io.nstop := nstop
   port.txd := txm.io.out
+
+  if (c.dataBits == 9) {
+    txm.io.data8or9.get := data8or9
+    rxm.io.data8or9.get := data8or9
+  }
 
   rxm.io.en := rxen
   rxm.io.in := port.rxd
@@ -167,7 +174,12 @@ abstract class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
       RegField(1, enwire4,
                RegFieldDesc("enwire4","Enable CTS/RTS", reset=Some(0)))))) else Nil
 
-  regmap(uartregs ++ optionalparity ++ optionalwire4:_*)
+  val optional8or9 = if (c.dataBits == 9) Seq(
+    UARTCtrlRegs.either8or9 -> RegFieldGroup("ConfigurableDataBits",Some("Configure number of data bits to be transmitted"),Seq(
+      RegField(1, data8or9,
+               RegFieldDesc("databits8or9","Data Bits to be 8(1) or 9(0)", reset=Some(1)))))) else Nil
+
+  regmap(uartregs ++ optionalparity ++ optionalwire4 ++ optional8or9:_*)
 }}
 
 class TLUART(busWidthBytes: Int, params: UARTParams, divinit: Int)(implicit p: Parameters)
