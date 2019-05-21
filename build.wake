@@ -1,5 +1,4 @@
 def scalacOpts =
-  macrosParadisePlugin,
   "-deprecation",
   "-feature",
   "-unchecked",
@@ -9,6 +8,6 @@ def scalacOpts =
 
 global def sifiveBlocksScalaModule =
   makeScalaModuleFromJSON here "sifiveBlocks"
-  | scalaModuleAddSBTDefaults
   | setScalaModuleDeps (rocketchipScalaModule, Nil)
   | setScalaModuleScalacOptions scalacOpts
+  | setScalaModuleCompilerPlugins (macrosParadiseIvyDep, Nil)

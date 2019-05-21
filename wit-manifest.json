@@ -1,6 +1,6 @@
 [
     {
-        "commit": "6bccae4fd8ec5cc12aedfec9a63006608a0b1efa",
+        "commit": "8ca163b0edc7602dced67cc581e43649429b0776",
         "name": "rocket-chip-wake",
         "source": "git@github.com:sifive/rocket-chip-wake.git"
     }
