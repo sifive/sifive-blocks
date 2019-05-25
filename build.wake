@@ -10,4 +10,4 @@ global def sifiveBlocksScalaModule =
   makeScalaModuleFromJSON here "sifiveBlocks"
   | setScalaModuleDeps (rocketchipScalaModule, Nil)
   | setScalaModuleScalacOptions scalacOpts
-  | setScalaModuleCompilerPlugins (macrosParadiseIvyDep, Nil)
+  | addMacrosParadiseCompilerPlugin
