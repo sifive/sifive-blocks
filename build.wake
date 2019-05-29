@@ -1,7 +1,4 @@
-
 global def sifiveBlocksScalaModule =
   makeScalaModuleFromJSON here "sifiveBlocks"
-  | scalaModuleAddSBTDefaults
   | setScalaModuleDeps (rocketchipScalaModule, Nil)
   | setScalaModuleScalacOptions ("-Xsource:2.11", Nil)
-
