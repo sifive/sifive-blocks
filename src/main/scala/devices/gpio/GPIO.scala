@@ -6,6 +6,7 @@ import sifive.blocks.devices.pinctrl.{PinCtrl, Pin, BasePin, EnhancedPin, Enhanc
 import sifive.blocks.util.BasicBusBlocker
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.diplomaticobjectmodel.model.OMRegister
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
@@ -103,7 +104,7 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
                      else (Seq(RegField(c.width)))
 
   // Note that these are out of order.
-  regmap(
+  val mapping = Seq(
     GPIOCtrlRegs.value     -> Seq(RegField.r(c.width, valueReg,
                                   RegFieldDesc("input_value","Pin value", volatile=true))),
     GPIOCtrlRegs.output_en -> Seq(RegField.rwReg(c.width, oeReg.io,
@@ -141,6 +142,8 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
     GPIOCtrlRegs.passthru_low_ie  -> Seq(RegField(c.width, passthruLowIeReg,
                                          RegFieldDesc("passthru_low_ie", "Pass-through active-low interrupt enable", reset=Some(0))))
   )
+  regmap(mapping:_*)
+  val omRegMap = OMRegister.convert(mapping:_*)
 
   //--------------------------------------------------
   // Actual Pinmux
