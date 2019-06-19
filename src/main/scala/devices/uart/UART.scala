@@ -4,11 +4,11 @@ package sifive.blocks.devices.uart
 import Chisel._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.diplomaticobjectmodel.model.OMRegister
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
-
-import sifive.blocks.util.{BasicBusBlocker, NonBlockingEnqueue, NonBlockingDequeue}
+import sifive.blocks.util.{BasicBusBlocker, NonBlockingDequeue, NonBlockingEnqueue}
 
 case class UARTParams(
   address: BigInt,
@@ -93,7 +93,7 @@ abstract class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
   ip.rxwm := (rxq.io.count > rxwm)
   interrupts(0) := (ip.txwm && ie.txwm) || (ip.rxwm && ie.rxwm)
 
-  regmap(
+  val mapping = Seq(
     UARTCtrlRegs.txfifo -> RegFieldGroup("txdata",Some("Transmit data"),
                            NonBlockingEnqueue(txq.io.enq)),
     UARTCtrlRegs.rxfifo -> RegFieldGroup("rxdata",Some("Receive data"),
@@ -127,6 +127,8 @@ abstract class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
       RegField(c.divisorBits, div,
                  RegFieldDesc("div","Baud rate divisor",reset=Some(divisorInit))))
   )
+  regmap(mapping:_*)
+  val omRegMap = OMRegister.convert(mapping:_*)
 }}
 
 class TLUART(busWidthBytes: Int, params: UARTParams, divinit: Int)(implicit p: Parameters)
@@ -143,6 +145,8 @@ case class UARTAttachParams(
   mclock: Option[ModuleValue[Clock]] = None,
   mreset: Option[ModuleValue[Bool]] = None)
   (implicit val p: Parameters)
+
+case class ModuleUART(module: ModuleValue[UARTPortIO], uart: TLUART)
 
 object UART {
   val nextId = { var i = -1; () => { i += 1; i} }
@@ -167,10 +171,10 @@ object UART {
     uart
   }
 
-  def attachAndMakePort(params: UARTAttachParams): ModuleValue[UARTPortIO] = {
+  def attachAndMakePort(params: UARTAttachParams): ModuleUART = {
     val uart = attach(params)
     val uartNode = uart.ioNode.makeSink()(params.p)
-    InModuleBody { uartNode.makeIO()(ValName(uart.name)) }
+    ModuleUART(InModuleBody { uartNode.makeIO()(ValName(uart.name)) }, uart)
   }
 
   def tieoff(port: UARTPortIO) {
