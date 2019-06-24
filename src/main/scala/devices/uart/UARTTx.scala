@@ -12,6 +12,7 @@ class UARTTx(c: UARTParams) extends Module {
     val out = Bits(OUTPUT, 1)
     val div = UInt(INPUT, c.divisorBits)
     val nstop = UInt(INPUT, log2Up(c.stopBits))
+    val tx_busy = Bool(OUTPUT)
     val enparity = c.includeParity.option(Bool(INPUT))
     val parity = c.includeParity.option(Bool(INPUT))
     val data8or9 = (c.dataBits == 9).option(Bool(INPUT))
@@ -30,6 +31,7 @@ class UARTTx(c: UARTParams) extends Module {
 
   val busy = (counter =/= UInt(0))
   io.in.ready := io.en && !busy
+  io.tx_busy := busy
   when (io.in.fire()) {
     printf("UART TX (%x): %c\n", io.in.bits, io.in.bits)
   }
