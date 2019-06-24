@@ -88,6 +88,7 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
   val txen = Reg(init = Bool(false))
   val rxen = Reg(init = Bool(false))
   val enwire4 = Reg(init = Bool(false))
+  val invpol = Reg(init = Bool(false))
   val enparity = Reg(init = Bool(false))
   val parity = Reg(init = Bool(false)) // Odd parity - 1 , Even parity - 0 
   val errorparity = Reg(init = Bool(false))
@@ -115,7 +116,8 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
   rxm.io.in := port.rxd
   rxq.io.enq <> rxm.io.out
   rxm.io.div := div
-  port.rts_n.foreach { r => r := !(rxq.io.count < c.nRxEntries.U) }
+  val tx_busy = (txm.io.tx_busy || txq.io.count.orR) && txen
+  port.rts_n.foreach { r => r := Mux(enwire4, !(rxq.io.count < c.nRxEntries.U), tx_busy ^ invpol) }
   if (c.includeParity) {
     txm.io.enparity.get := enparity
     txm.io.parity.get := parity
@@ -179,9 +181,12 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
                RegFieldDesc("errie","Interrupt on error in parity enable", reset=Some(0)))))) else Nil
 
   val optionalwire4 = if (c.includeFourWire) Seq(
-    UARTCtrlRegs.wire4 -> RegFieldGroup("wire4",Some("Configure Clear-to-send / Request-to-send ports"),Seq(
+    UARTCtrlRegs.wire4 -> RegFieldGroup("wire4",Some("Configure Clear-to-send / Request-to-send ports / RS-485"),Seq(
       RegField(1, enwire4,
-               RegFieldDesc("enwire4","Enable CTS/RTS", reset=Some(0)))))) else Nil
+               RegFieldDesc("enwire4","Enable CTS/RTS(1) or RS-485(0)", reset=Some(0))),
+      RegField(1, invpol,
+               RegFieldDesc("invpol","Invert polarity of RTS in RS-485 mode", reset=Some(0)))
+    ))) else Nil
 
   val optional8or9 = if (c.dataBits == 9) Seq(
     UARTCtrlRegs.either8or9 -> RegFieldGroup("ConfigurableDataBits",Some("Configure number of data bits to be transmitted"),Seq(
