@@ -29,4 +29,6 @@ object SPICRs {
 
   val ie        = 0x70
   val ip        = 0x74
+
+  val mands     = 0x78
 }

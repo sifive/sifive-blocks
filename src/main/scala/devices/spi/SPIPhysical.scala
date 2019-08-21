@@ -161,8 +161,9 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
   val txen_in = (proto.head +: proto.tail.map(_ && tx)).scanRight(Bool(false))(_ || _).init
   val txen = txen_in :+ txen_in.last
 
-  io.port.sck := sck
-  io.port.cs := Vec.fill(io.port.cs.size)(Bool(true)) // dummy
+  io.port.sck.o := sck
+  io.port.sck.oe := true.B
+  io.port.cs.map(_.o := true.B)
   (io.port.dq zip (txd.toBools zip txen)).foreach {
     case (dq, (o, oe)) =>
       dq.o := o

@@ -16,6 +16,7 @@ class SPIFIFO(c: SPIParamsBase) extends Module {
     val tx = Decoupled(Bits(width = c.frameBits)).flip
     val rx = Decoupled(Bits(width = c.frameBits))
     val ip = new SPIInterrupts().asOutput
+    val mands = Input(Bool())
   }
 
   val txq = Module(new Queue(io.tx.bits, c.txDepth))
@@ -35,7 +36,7 @@ class SPIFIFO(c: SPIParamsBase) extends Module {
   when (fire_rx) {
     rxen := Bool(false)
   }
-  when (fire_tx) {
+  when (fire_tx || (c.mands.B && io.mands)) {
     rxen := (io.link.fmt.iodir === SPIDirection.Rx)
   }
 

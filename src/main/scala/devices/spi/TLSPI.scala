@@ -26,6 +26,8 @@ trait SPIParamsBase {
   val sampleDelayBits: Int
   val defaultSampleDel:Int
 
+  val mands: Boolean // Master & Slave
+
   lazy val csIdBits = log2Up(csWidth)
   lazy val lengthBits = log2Floor(frameBits) + 1
   lazy val countBits = math.max(lengthBits, delayBits)
@@ -46,7 +48,8 @@ case class SPIParams(
     divisorBits: Int = 12,
     fineDelayBits: Int = 0,
     sampleDelayBits: Int = 5,
-    defaultSampleDel: Int = 3
+    defaultSampleDel: Int = 3,
+    mands: Boolean = false
     )
   extends SPIParamsBase {
 
@@ -60,6 +63,7 @@ class SPITopModule(c: SPIParamsBase, outer: TLSPIBase)
     extends LazyModuleImp(outer) {
 
   val ctrl = Reg(init = SPIControl.init(c))
+  val mands = RegInit(false.B)
   val fifo = Module(new SPIFIFO(c))
   val mac = Module(new SPIMedia(c))
 
@@ -67,6 +71,8 @@ class SPITopModule(c: SPIParamsBase, outer: TLSPIBase)
   fifo.io.ctrl.fmt := ctrl.fmt
   fifo.io.ctrl.cs <> ctrl.cs
   fifo.io.ctrl.wm := ctrl.wm
+  fifo.io.mands := mands
+  mac.io.mands := mands
   mac.io.ctrl.sck := ctrl.sck
   mac.io.ctrl.extradel := ctrl.extradel
   mac.io.ctrl.sampledel := ctrl.sampledel
@@ -121,14 +127,14 @@ class SPITopModule(c: SPIParamsBase, outer: TLSPIBase)
                          RegFieldDesc("rxmark","Receive watermark", reset=Some(0)))),
     SPICRs.ie -> RegFieldGroup("ie",Some("SPI interrupt enable"),Seq(
       RegField(1, ie.txwm,
-      RegFieldDesc("txwm_ie","Transmit watermark interrupt enable", reset=Some(0))),
+      RegFieldDesc("txwm_ie","Transmit watermark interupt enable", reset=Some(0))),
       RegField(1, ie.rxwm,
-      RegFieldDesc("rxwm_ie","Receive watermark interrupt enable", reset=Some(0))))),
+      RegFieldDesc("rxwm_ie","Receive watermark interupt enable", reset=Some(0))))),
     SPICRs.ip -> RegFieldGroup("ip",Some("SPI interrupt pending"),Seq(
       RegField.r(1, ip.txwm,
-      RegFieldDesc("txwm_ip","Transmit watermark interrupt pending", volatile=true)),
+      RegFieldDesc("txwm_ip","Transmit watermark interupt pending", volatile=true)),
       RegField.r(1, ip.rxwm,
-      RegFieldDesc("rxwm_ip","Receive watermark interrupt pending", volatile=true)))),
+      RegFieldDesc("rxwm_ip","Receive watermark interupt pending", volatile=true)))),
 
     SPICRs.extradel -> RegFieldGroup("extradel",Some("delay from the sck edge"),Seq(
       RegField(c.divisorBits, ctrl.extradel.coarse,
@@ -139,6 +145,10 @@ class SPITopModule(c: SPIParamsBase, outer: TLSPIBase)
     SPICRs.sampledel -> RegFieldGroup("sampledel",Some("Number of delay stages from slave to SPI controller"),Seq(
       RegField(c.sampleDelayBits, ctrl.sampledel.sd,
       RegFieldDesc("sampledel_sd","Number of delay stages from slave to the SPI controller", reset=Some(c.defaultSampleDel))))))
+
+  protected val regmapSlave = if (c.mands) Seq(
+    SPICRs.mands -> Seq(RegField(1, mands,
+                         RegFieldDesc("mands", "Switch to slave mode when set", reset=Some(0))))) else Nil
 }
 
 class MMCDevice(spi: Device, maxMHz: Double = 20) extends SimpleDevice("mmc", Seq("mmc-spi-slot")) {
@@ -187,6 +197,6 @@ class TLSPI(w: Int, c: SPIParams)(implicit p: Parameters)
     extends TLSPIBase(w,c)(p) with HasTLControlRegMap {
   lazy val module = new SPITopModule(c, this) {
     mac.io.link <> fifo.io.link
-    regmap(regmapBase:_*)
+    regmap(regmapBase ++ regmapSlave:_*)
   }
 }

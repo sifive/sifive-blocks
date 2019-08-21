@@ -21,7 +21,7 @@ object SPIPinsFromPort {
     syncStages: Int = 0, driveStrength: Bool = Bool(false)) {
 
     withClockAndReset(clock, reset) {
-      pins.sck.outputPin(spi.sck, ds = driveStrength)
+      pins.sck.outputPin(spi.sck.o, ds = driveStrength)
 
       (pins.dq zip spi.dq).zipWithIndex.foreach {case ((p, s), i) =>
         p.outputPin(s.o, pue = Bool(true), ds = driveStrength)
@@ -31,7 +31,7 @@ object SPIPinsFromPort {
       }
 
       (pins.cs zip spi.cs) foreach { case (c, s) =>
-        c.outputPin(s, ds = driveStrength)
+        c.outputPin(s.o, ds = driveStrength)
       }
     }
   }

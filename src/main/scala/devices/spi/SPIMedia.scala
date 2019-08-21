@@ -28,6 +28,7 @@ class SPIMedia(c: SPIParamsBase) extends Module {
       val sampledel = new SPISampleDelay(c).asInput
     }
     val link = new SPILinkIO(c).flip
+    val mands = Input(Bool())
   }
 
   val phy = Module(new SPIPhysical(c))
@@ -56,9 +57,11 @@ class SPIMedia(c: SPIParamsBase) extends Module {
 
   val continuous = (io.ctrl.dla.interxfr === UInt(0))
 
-  io.port.sck := phy.io.port.sck
+  io.port.sck.o := phy.io.port.sck.o
+  io.port.sck.oe := true.B
   io.port.dq <> phy.io.port.dq
-  io.port.cs := cs.dflt
+  io.port.cs.zip(cs.dflt).map{case (a,b) => a.o := b}
+  io.port.cs.map(_.oe := true.B)
 
   io.link.rx := phy.io.rx
   io.link.tx.ready := Bool(false)
@@ -120,6 +123,29 @@ class SPIMedia(c: SPIParamsBase) extends Module {
         cs.dflt := cs.toggle(cs_set)
         state := s_main
       }
+    }
+  }
+
+  
+  if (c.mands) {
+    val phySlave = Module(new SPIPhysicalSlave(c))
+    phySlave.io.port.dq0 := io.port.dq(0).i
+    phySlave.io.port.sck := io.port.sck.i
+    phySlave.io.port.cs := io.port.cs(0).i
+    phySlave.io.tx.valid := io.link.tx.valid
+    phySlave.io.tx.bits := io.link.tx.bits
+    phySlave.io.ctrl.sck := io.ctrl.sck
+    phySlave.io.ctrl.fmt := io.link.fmt
+    phySlave.io.ctrl.extradel := io.ctrl.extradel
+    phySlave.io.ctrl.sampledel := io.ctrl.sampledel
+    when (io.mands) {
+      io.port.sck.oe := false.B
+      io.port.cs(0).oe := false.B
+      io.port.dq(1).o := phySlave.io.port.dq1
+      io.port.dq(1).oe := true.B
+      io.link.tx.ready := phySlave.io.tx.ready
+      io.link.rx := phySlave.io.rx
+      io.link.active := io.port.cs(0).i
     }
   }
 }

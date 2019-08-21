@@ -12,9 +12,9 @@ class SPIDataIO extends Bundle {
 }
 
 class SPIPortIO(c: SPIParamsBase) extends SPIBundle(c) {
-  val sck = Bool(OUTPUT)
+  val sck = new SPIDataIO
   val dq = Vec(4, new SPIDataIO)
-  val cs = Vec(c.csWidth, Bool(OUTPUT))
+  val cs = Vec(c.csWidth, new SPIDataIO)
 }
 
 trait HasSPIProtocol {
