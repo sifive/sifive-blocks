@@ -98,8 +98,10 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
   val nstop = Reg(init = UInt(0, stopCountBits))
   val data8or9 = Reg(init = Bool(true))
 
-  if (c.includeFourWire)
+  if (c.includeFourWire){
     txm.io.en := txen && (!port.cts_n.get || !enwire4)
+    txm.io.cts_n.get := port.cts_n.get
+  }
   else 
     txm.io.en := txen
   txm.io.in <> txq.io.deq

@@ -16,6 +16,7 @@ class UARTTx(c: UARTParams) extends Module {
     val enparity = c.includeParity.option(Bool(INPUT))
     val parity = c.includeParity.option(Bool(INPUT))
     val data8or9 = (c.dataBits == 9).option(Bool(INPUT))
+    val cts_n = c.includeFourWire.option(Bool(INPUT))
   }
 
   val prescaler = Reg(init = UInt(0, c.divisorBits))
@@ -52,7 +53,7 @@ class UARTTx(c: UARTParams) extends Module {
     }
   }
   when (busy) {
-    prescaler := Mux(pulse, io.div, prescaler - UInt(1))
+    prescaler := Mux(pulse || io.cts_n.getOrElse(false.B), io.div, prescaler - UInt(1))
   }
   when (pulse && busy) {
     counter := counter - UInt(1)
