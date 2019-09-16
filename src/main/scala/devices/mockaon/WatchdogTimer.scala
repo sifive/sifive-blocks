@@ -3,7 +3,7 @@ package sifive.blocks.devices.mockaon
 
 import Chisel._
 import Chisel.ImplicitConversions._
-import chisel3.experimental.MultiIOModule
+import chisel3.MultiIOModule
 import freechips.rocketchip.util.AsyncResetReg
 import freechips.rocketchip.regmapper.{RegFieldDesc}
 

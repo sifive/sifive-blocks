@@ -3,7 +3,7 @@ package sifive.blocks.devices.pwm
 
 import Chisel._
 import Chisel.ImplicitConversions._
-import chisel3.experimental.MultiIOModule
+import chisel3.MultiIOModule
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
