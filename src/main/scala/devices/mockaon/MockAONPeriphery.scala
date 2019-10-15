@@ -49,5 +49,5 @@ trait HasPeripheryMockAONModuleImp extends LazyModuleImp with HasPeripheryMockAO
     clint.module.io.rtcTick := rtc_tick
   }
 
-  outer.aon.module.io.ndreset := outer.debug.module.io.ctrl.ndreset
+  outer.aon.module.io.ndreset := outer.debugOpt.map(d => d.module.io.ctrl.ndreset).getOrElse(false.B)
 }
