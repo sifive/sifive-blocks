@@ -253,7 +253,21 @@ object GPIO {
     InModuleBody { gpioNode.makeIO()(ValName(gpio.name)) }
   }
 
+  def tieoff(g: GPIOPortIO){
+    g.pins.foreach { p =>
+      p.i.ival := false.B
+    }
+    g.iof_0.foreach {i0 =>
+      i0.foreach { iof => iof.default }
+    }
+    g.iof_1.foreach {i1 =>
+      i1.foreach { iof => iof.default }
+    }
+  }
+
   def loopback(g: GPIOPortIO)(pinA: Int, pinB: Int) {
+    require(g.pins.length > pinA, s"Pin ${pinA} out of range for GPIO port with only ${g.pins.length} pins")
+    require(g.pins.length > pinB, s"Pin ${pinB} out of range for GPIO port with only ${g.pins.length} pins")
     g.pins.foreach {p =>
       p.i.ival := Mux(p.o.oe, p.o.oval, p.o.pue) & p.o.ie
     }
