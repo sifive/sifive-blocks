@@ -6,7 +6,9 @@ import sifive.blocks.devices.pinctrl.{PinCtrl, Pin, BasePin, EnhancedPin, Enhanc
 import sifive.blocks.util.BasicBusBlocker
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.diplomaticobjectmodel.model.OMRegister
+import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
+import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
+import freechips.rocketchip.diplomaticobjectmodel.logicaltree.LogicalTreeNode
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
@@ -211,6 +213,19 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
       port.iof_1.get(pin).i.ival := inSyncReg(pin)
     }
   }}
+
+  val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
+    def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
+      Seq(
+        OMGPIO(
+          hasIOF = c.includeIOF,
+          nPins = c.width,
+          memoryRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions("GPIO", resourceBindings, Some(module.omRegMap)),
+          interrupts = DiplomaticObjectModelAddressing.describeGlobalInterrupts(device.describe(resourceBindings).name, resourceBindings),
+        )
+      )
+    }
+  }
 }
 
 class TLGPIO(busWidthBytes: Int, params: GPIOParams)(implicit p: Parameters)
