@@ -18,7 +18,8 @@ case class SPIAttachParams(
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing,
   mclock: Option[ModuleValue[Clock]] = None,
-  mreset: Option[ModuleValue[Bool]] = None)
+  mreset: Option[ModuleValue[Bool]] = None,
+  clockDev: Option[FixedClockResource] = None)
   (implicit val p: Parameters)
 
 case class SPIFlashAttachParams(
@@ -32,7 +33,8 @@ case class SPIFlashAttachParams(
   intXType: ClockCrossingType = NoCrossing,
   memXType: ClockCrossingType = NoCrossing,
   mclock: Option[ModuleValue[Clock]] = None,
-  mreset: Option[ModuleValue[Bool]] = None)
+  mreset: Option[ModuleValue[Bool]] = None,
+  clockDev: Option[FixedClockResource] = None)
   (implicit val p: Parameters)
 
 object SPI {
@@ -61,6 +63,7 @@ object SPI {
 
   def attachAndMakePort(params: SPIAttachParams): ModuleValue[SPIPortIO] = {
     val spi = attach(params)
+    params.clockDev.map(_.bind(spi.device))
     val spiNode = spi.ioNode.makeSink()(params.p)
     InModuleBody { spiNode.makeIO()(ValName(spi.name)) }
   }
@@ -100,6 +103,7 @@ object SPI {
 
   def attachAndMakePort(params: SPIFlashAttachParams): ModuleValue[SPIPortIO] = {
     val qspi = attachFlash(params)
+    params.clockDev.map(_.bind(qspi.device))
     val qspiNode = qspi.ioNode.makeSink()(params.p)
     InModuleBody { qspiNode.makeIO()(ValName(qspi.name)) }
   }

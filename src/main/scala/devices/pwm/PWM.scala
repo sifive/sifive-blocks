@@ -99,7 +99,8 @@ case class PWMAttachParams(
   mclock: Option[ModuleValue[Clock]] = None,
   mreset: Option[ModuleValue[Bool]] = None,
   controlXType: ClockCrossingType = NoCrossing,
-  intXType: ClockCrossingType = NoCrossing)
+  intXType: ClockCrossingType = NoCrossing,
+  clockDev: Option[FixedClockResource] = None)
   (implicit val p: Parameters)
 
 object PWM {
@@ -126,6 +127,7 @@ object PWM {
 
   def attachAndMakePort(params: PWMAttachParams): ModuleValue[PWMPortIO] = {
     val pwm = attach(params)
+    params.clockDev.map(_.bind(pwm.device))
     val pwmNode = pwm.ioNode.makeSink()(params.p)
     InModuleBody { pwmNode.makeIO()(ValName(pwm.name)) }
   }

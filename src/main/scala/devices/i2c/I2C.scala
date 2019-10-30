@@ -584,7 +584,8 @@ case class I2CAttachParams(
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing,
   mclock: Option[ModuleValue[Clock]] = None,
-  mreset: Option[ModuleValue[Bool]] = None)
+  mreset: Option[ModuleValue[Bool]] = None,
+  clockDev: Option[FixedClockResource] = None)
   (implicit val p: Parameters)
 
 object I2C {
@@ -612,6 +613,7 @@ object I2C {
 
   def attachAndMakePort(params: I2CAttachParams): ModuleValue[I2CPort] = {
     val i2c = attach(params)
+    params.clockDev.map(_.bind(i2c.device))
     val i2cNode = i2c.ioNode.makeSink()(params.p)
     InModuleBody { i2cNode.makeIO()(ValName(i2c.name)) }
   }

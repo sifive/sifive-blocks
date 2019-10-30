@@ -141,7 +141,8 @@ case class UARTAttachParams(
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing,
   mclock: Option[ModuleValue[Clock]] = None,
-  mreset: Option[ModuleValue[Bool]] = None)
+  mreset: Option[ModuleValue[Bool]] = None,
+  clockDev: Option[FixedClockResource] = None)
   (implicit val p: Parameters)
 
 object UART {
@@ -169,6 +170,7 @@ object UART {
 
   def attachAndMakePort(params: UARTAttachParams): ModuleValue[UARTPortIO] = {
     val uart = attach(params)
+    params.clockDev.map(_.bind(uart.device))
     val uartNode = uart.ioNode.makeSink()(params.p)
     InModuleBody { uartNode.makeIO()(ValName(uart.name)) }
   }
