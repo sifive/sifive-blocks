@@ -11,6 +11,9 @@ import freechips.rocketchip.interrupts._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util.HeterogeneousBag
 import sifive.blocks.util.{NonBlockingEnqueue, NonBlockingDequeue}
+import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
+import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
+import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
 
 trait SPIParamsBase {
   val rAddress: BigInt
@@ -77,7 +80,7 @@ class SPITopModule(c: SPIParamsBase, outer: TLSPIBase)
   val ip = fifo.io.ip
   outer.interrupts(0) := (ip.txwm && ie.txwm) || (ip.rxwm && ie.rxwm)
 
-  protected val regmapBase = Seq(
+  val regmapBase = Seq(
     SPICRs.sckdiv -> Seq(RegField(c.divisorBits, ctrl.sck.div,
                          RegFieldDesc("sckdiv", "Serial clock divisor", reset=Some(3)))),
     SPICRs.sckmode ->  RegFieldGroup("sckmode", Some("Serial clock mode"), Seq(
@@ -139,6 +142,7 @@ class SPITopModule(c: SPIParamsBase, outer: TLSPIBase)
     SPICRs.sampledel -> RegFieldGroup("sampledel",Some("Number of delay stages from slave to SPI controller"),Seq(
       RegField(c.sampleDelayBits, ctrl.sampledel.sd,
       RegFieldDesc("sampledel_sd","Number of delay stages from slave to the SPI controller", reset=Some(c.defaultSampleDel))))))
+
 }
 
 class MMCDevice(spi: Device, maxMHz: Double = 20) extends SimpleDevice("mmc", Seq("mmc-spi-slot")) {
@@ -187,6 +191,22 @@ class TLSPI(w: Int, c: SPIParams)(implicit p: Parameters)
     extends TLSPIBase(w,c)(p) with HasTLControlRegMap {
   lazy val module = new SPITopModule(c, this) {
     mac.io.link <> fifo.io.link
-    regmap(regmapBase:_*)
+    val mapping = (regmapBase)
+    regmap(mapping:_*)
+    val omRegMap = OMRegister.convert(mapping:_*)
   }
+
+  val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
+    def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
+      Seq(
+        OMSPI(
+          numCS = c.csWidth,
+          memoryRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions("SPI", resourceBindings, Some(module.omRegMap)),
+          interrupts = DiplomaticObjectModelAddressing.describeGlobalInterrupts(device.describe(resourceBindings).name, resourceBindings)
+        )
+      )
+    }
+  }
+
+
 }
