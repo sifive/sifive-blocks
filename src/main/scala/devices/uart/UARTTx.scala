@@ -45,6 +45,9 @@ class UARTTx(c: UARTParams) extends Module {
       shifter := Cat(paritywithbit9, io.in.bits(7,0), Bits(0, 1))
       counter := Mux1H((0 until c.stopBits).map(i =>
         (io.nstop === UInt(i)) -> UInt(n + i + 1))) - (!io.enparity.get).asUInt - io.data8or9.getOrElse(0.U)
+      // n = max number of databits configured at elaboration + start bit + parity bit 
+      // n + i + 1 = n + stop bits + pad bit(when counter === 0 no bit is transmitted)
+      // n + i + 1 - 8_bit_mode(if c.dataBits == 9) - parity_disabled_at_runtime
     }
     else {
       val bit9 = if (c.dataBits == 9) Mux(io.data8or9.get, 1.U(1.W), io.in.bits(8)) else 1.U(1.W)
