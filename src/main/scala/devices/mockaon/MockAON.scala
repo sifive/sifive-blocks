@@ -2,7 +2,7 @@
 package sifive.blocks.devices.mockaon
 
 import Chisel._
-import chisel3.experimental.MultiIOModule
+import chisel3.MultiIOModule
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._

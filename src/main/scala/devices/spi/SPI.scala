@@ -8,6 +8,9 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
+import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
+import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
+import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
 import sifive.blocks.util.BasicBusBlocker
 
 case class SPIAttachParams(
@@ -18,7 +21,8 @@ case class SPIAttachParams(
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing,
   mclock: Option[ModuleValue[Clock]] = None,
-  mreset: Option[ModuleValue[Bool]] = None)
+  mreset: Option[ModuleValue[Bool]] = None,
+  parentLogicalTreeNode: Option[LogicalTreeNode] = None)
   (implicit val p: Parameters)
 
 case class SPIFlashAttachParams(
@@ -32,7 +36,8 @@ case class SPIFlashAttachParams(
   intXType: ClockCrossingType = NoCrossing,
   memXType: ClockCrossingType = NoCrossing,
   mclock: Option[ModuleValue[Clock]] = None,
-  mreset: Option[ModuleValue[Bool]] = None)
+  mreset: Option[ModuleValue[Bool]] = None,
+  parentLogicalTreeNode: Option[LogicalTreeNode] = None)
   (implicit val p: Parameters)
 
 object SPI {
@@ -56,6 +61,9 @@ object SPI {
     InModuleBody { spi.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
     InModuleBody { spi.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset) }
 
+    params.parentLogicalTreeNode.foreach { parent =>
+      LogicalModuleTree.add(parent, spi.logicalTreeNode)
+    }
     spi
   }
 
@@ -94,6 +102,10 @@ object SPI {
 
     InModuleBody { qspi.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
     InModuleBody { qspi.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset) }
+
+    params.parentLogicalTreeNode.foreach { parent =>
+      LogicalModuleTree.add(parent, qspi.logicalTreeNode)
+    }
 
     qspi
   }

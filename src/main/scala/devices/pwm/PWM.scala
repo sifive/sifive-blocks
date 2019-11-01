@@ -3,13 +3,16 @@ package sifive.blocks.devices.pwm
 
 import Chisel._
 import Chisel.ImplicitConversions._
-import chisel3.experimental.MultiIOModule
+import chisel3.MultiIOModule
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
+import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
+import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
+import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
 import sifive.blocks.util.{BasicBusBlocker, GenericTimer, GenericTimerIO, DefaultGenericTimerCfgDescs}
 
 // Core PWM Functionality  & Register Interface
@@ -84,8 +87,25 @@ abstract class PWM(busWidthBytes: Int, val params: PWMParams)(implicit p: Parame
     val pwm = Module(new PWMTimer(params.ncmp, params.cmpWidth))
     interrupts := pwm.io.ip
     port.gpio := pwm.io.gpio
-    regmap((GenericTimer.timerRegMap(pwm, 0, params.regBytes)):_*)
+    //regmap((GenericTimer.timerRegMap(pwm, 0, params.regBytes)):_*)
+    val mapping = (GenericTimer.timerRegMap(pwm, 0, params.regBytes))
+    regmap(mapping:_*)
+    val omRegMap = OMRegister.convert(mapping:_*)
   }
+  val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
+    def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
+      Seq(
+        OMPWM(
+          numComparators = params.ncmp,
+          compareWidth   = params.cmpWidth,
+          //TODO CHECK FOR REG BINDINGS memoryRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions("UART", resourceBindings, Some(omRegMap)),
+          memoryRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions("PWM", resourceBindings, Some(module.omRegMap)),
+          interrupts = DiplomaticObjectModelAddressing.describeGlobalInterrupts(device.describe(resourceBindings).name, resourceBindings),
+        )
+      )
+    }
+  }
+
 }
 
 class TLPWM(busWidthBytes: Int, params: PWMParams)(implicit p: Parameters)
@@ -99,7 +119,8 @@ case class PWMAttachParams(
   mclock: Option[ModuleValue[Clock]] = None,
   mreset: Option[ModuleValue[Bool]] = None,
   controlXType: ClockCrossingType = NoCrossing,
-  intXType: ClockCrossingType = NoCrossing)
+  intXType: ClockCrossingType = NoCrossing,
+  parentLogicalTreeNode: Option[LogicalTreeNode] = None)
   (implicit val p: Parameters)
 
 object PWM {
@@ -120,6 +141,10 @@ object PWM {
     params.intNode := pwm.intXing(params.intXType)
     InModuleBody { pwm.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
     InModuleBody { pwm.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset) }
+
+    params.parentLogicalTreeNode.foreach { parent =>
+      LogicalModuleTree.add(parent, pwm.logicalTreeNode)
+    }
 
     pwm
   }

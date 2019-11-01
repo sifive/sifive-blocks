@@ -1,3 +1,13 @@
-global def sifiveBlocksProject = millScalaProject "SifiveBlocks" here (rocketchipProject, Nil) "sifiveblocks" "SifiveBlocksBase"
+def scalacOpts =
+  "-deprecation",
+  "-feature",
+  "-unchecked",
+  "-language:reflectiveCalls",
+  "-Xsource:2.11",
+  Nil
 
-publish scalaProjects = sifiveBlocksProject
+global def sifiveBlocksScalaModule =
+  makeScalaModuleFromJSON here "sifiveBlocks"
+  | setScalaModuleDeps (rocketchipScalaModule, Nil)
+  | setScalaModuleScalacOptions scalacOpts
+  | addMacrosParadiseCompilerPlugin
