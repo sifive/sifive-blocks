@@ -2,12 +2,16 @@
 package sifive.blocks.devices.spi
 
 import Chisel._
+import chisel3.experimental._ 
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util.HeterogeneousBag
+import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
+import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
+import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
 
 trait SPIFlashParamsBase extends SPIParamsBase {
   val fAddress: BigInt
@@ -81,7 +85,7 @@ class SPIFlashTopModule(c: SPIFlashParamsBase, outer: TLSPIFlashBase)
   flash.io.en := flash_en
   arb.io.sel := !flash_en
 
-  protected val regmapFlash = Seq(
+  val regmapFlash = Seq(
     SPICRs.insnmode -> Seq(RegField(1, flash_en,
                            RegFieldDesc("flash_en", "SPIFlash mode select", reset=Some(1)))),
     // Note that these are all in the 'ffmt' group, but are defined with seperate calls
@@ -133,6 +137,22 @@ class TLSPIFlash(w: Int, c: SPIFlashParams)(implicit p: Parameters)
     arb.io.inner(1) <> fifo.io.link
     mac.io.link <> arb.io.outer
 
-    regmap(regmapBase ++ regmapFlash:_*)
+    val totalMapping = (regmapBase ++ regmapFlash)
+    regmap(totalMapping:_*)
+    val omRegMap = OMRegister.convert(totalMapping:_*)
   }
+
+  val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
+    def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
+      Seq(
+        OMSPIXIP(
+          numCS = c.csWidth,
+          memoryRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions("SPIXIP", resourceBindings, Some(module.omRegMap)),
+          interrupts = DiplomaticObjectModelAddressing.describeGlobalInterrupts(device.describe(resourceBindings).name, resourceBindings)
+        )
+      )
+    }
+  }
+
+  
 }

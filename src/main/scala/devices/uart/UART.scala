@@ -7,6 +7,9 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
+import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
+import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
+import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
 
 import sifive.blocks.util.{BasicBusBlocker, NonBlockingEnqueue, NonBlockingDequeue}
 
@@ -35,7 +38,8 @@ class UARTInterrupts extends Bundle {
   val txwm = Bool()
 }
 
-abstract class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
+//abstract class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
+class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
                    (implicit p: Parameters)
     extends IORegisterRouter(
       RegisterRouterParams(
@@ -44,7 +48,8 @@ abstract class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
         base = c.address,
         beatBytes = busWidthBytes),
       new UARTPortIO)
-    with HasInterruptSources {
+    //with HasInterruptSources {
+    with HasInterruptSources with HasTLControlRegMap {
 
   def nInterrupts = 1
 
@@ -93,7 +98,7 @@ abstract class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
   ip.rxwm := (rxq.io.count > rxwm)
   interrupts(0) := (ip.txwm && ie.txwm) || (ip.rxwm && ie.rxwm)
 
-  regmap(
+  val mapping = Seq(
     UARTCtrlRegs.txfifo -> RegFieldGroup("txdata",Some("Transmit data"),
                            NonBlockingEnqueue(txq.io.enq)),
     UARTCtrlRegs.rxfifo -> RegFieldGroup("rxdata",Some("Receive data"),
@@ -127,8 +132,21 @@ abstract class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
       RegField(c.divisorBits, div,
                  RegFieldDesc("div","Baud rate divisor",reset=Some(divisorInit))))
   )
-}}
+  regmap(mapping:_*)
+  val omRegMap = OMRegister.convert(mapping:_*)
+}
 
+  val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
+    def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
+      Seq(
+        OMUART(
+          memoryRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions("UART", resourceBindings, Some(module.omRegMap)),
+          interrupts = DiplomaticObjectModelAddressing.describeGlobalInterrupts(device.describe(resourceBindings).name, resourceBindings),
+        )
+      )
+    }
+  }
+}
 class TLUART(busWidthBytes: Int, params: UARTParams, divinit: Int)(implicit p: Parameters)
   extends UART(busWidthBytes, params, divinit) with HasTLControlRegMap
 
@@ -141,7 +159,8 @@ case class UARTAttachParams(
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing,
   mclock: Option[ModuleValue[Clock]] = None,
-  mreset: Option[ModuleValue[Bool]] = None)
+  mreset: Option[ModuleValue[Bool]] = None,
+  parentLogicalTreeNode: Option[LogicalTreeNode] = None)
   (implicit val p: Parameters)
 
 object UART {
@@ -163,6 +182,10 @@ object UART {
     params.intNode := uart.intXing(params.intXType)
     InModuleBody { uart.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
     InModuleBody { uart.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset) }
+
+    params.parentLogicalTreeNode.foreach { parent =>
+      LogicalModuleTree.add(parent, uart.logicalTreeNode)
+    }
 
     uart
   }
