@@ -6,6 +6,9 @@ import sifive.blocks.devices.pinctrl.{PinCtrl, Pin, BasePin, EnhancedPin, Enhanc
 import sifive.blocks.util.BasicBusBlocker
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
+import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
+import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
@@ -103,7 +106,7 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
                      else (Seq(RegField(c.width)))
 
   // Note that these are out of order.
-  regmap(
+  val mapping = Seq(
     GPIOCtrlRegs.value     -> Seq(RegField.r(c.width, valueReg,
                                   RegFieldDesc("input_value","Pin value", volatile=true))),
     GPIOCtrlRegs.output_en -> Seq(RegField.rwReg(c.width, oeReg.io,
@@ -141,6 +144,8 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
     GPIOCtrlRegs.passthru_low_ie  -> Seq(RegField(c.width, passthruLowIeReg,
                                          RegFieldDesc("passthru_low_ie", "Pass-through active-low interrupt enable", reset=Some(0))))
   )
+  regmap(mapping:_*)
+  val omRegMap = OMRegister.convert(mapping:_*)
 
   //--------------------------------------------------
   // Actual Pinmux
@@ -208,6 +213,19 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
       port.iof_1.get(pin).i.ival := inSyncReg(pin)
     }
   }}
+
+  val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
+    def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
+      Seq(
+        OMGPIO(
+          hasIOF = c.includeIOF,
+          nPins = c.width,
+          memoryRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions("GPIO", resourceBindings, Some(module.omRegMap)),
+          interrupts = DiplomaticObjectModelAddressing.describeGlobalInterrupts(device.describe(resourceBindings).name, resourceBindings),
+        )
+      )
+    }
+  }
 }
 
 class TLGPIO(busWidthBytes: Int, params: GPIOParams)(implicit p: Parameters)
@@ -221,7 +239,8 @@ case class GPIOAttachParams(
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing,
   mclock: Option[ModuleValue[Clock]] = None,
-  mreset: Option[ModuleValue[Bool]] = None)
+  mreset: Option[ModuleValue[Bool]] = None,
+  parentLogicalTreeNode: Option[LogicalTreeNode] = None)
   (implicit val p: Parameters)
 
 object GPIO {
@@ -243,6 +262,10 @@ object GPIO {
     params.intNode := gpio.intXing(params.intXType)
     InModuleBody { gpio.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
     InModuleBody { gpio.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset) }
+
+    params.parentLogicalTreeNode.foreach { parent =>
+      LogicalModuleTree.add(parent, gpio.logicalTreeNode)
+    }
 
     gpio
   }
