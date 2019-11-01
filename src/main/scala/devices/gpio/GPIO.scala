@@ -281,10 +281,10 @@ object GPIO {
       p.i.ival := false.B
     }
     g.iof_0.foreach {i0 =>
-      i0.foreach { iof => iof.default }
+      i0.foreach { iof => iof.default() }
     }
     g.iof_1.foreach {i1 =>
-      i1.foreach { iof => iof.default }
+      i1.foreach { iof => iof.default() }
     }
   }
 
