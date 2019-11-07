@@ -240,6 +240,7 @@ case class GPIOAttachParams(
   intXType: ClockCrossingType = NoCrossing,
   mclock: Option[ModuleValue[Clock]] = None,
   mreset: Option[ModuleValue[Bool]] = None,
+  clockDev: Option[FixedClockResource] = None,
   parentLogicalTreeNode: Option[LogicalTreeNode] = None)
   (implicit val p: Parameters)
 
@@ -272,6 +273,7 @@ object GPIO {
 
   def attachAndMakePort(params: GPIOAttachParams): ModuleValue[GPIOPortIO] = {
     val gpio = attach(params)
+    params.clockDev.map(_.bind(gpio.device))
     val gpioNode = gpio.ioNode.makeSink()(params.p)
     InModuleBody { gpioNode.makeIO()(ValName(gpio.name)) }
   }

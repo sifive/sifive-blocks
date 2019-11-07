@@ -82,6 +82,10 @@ abstract class PWM(busWidthBytes: Int, val params: PWMParams)(implicit p: Parame
     with HasInterruptSources {
 
   def nInterrupts = params.ncmp
+  override def extraResources(resources: ResourceBindings) = Map[String, Seq[ResourceValue]](
+    "sifive,comparator-widthbits" -> Seq(ResourceInt(params.cmpWidth)),
+    "sifive,ncomparators" -> Seq(ResourceInt(params.ncmp))
+    )
 
   lazy val module = new LazyModuleImp(this) {
     val pwm = Module(new PWMTimer(params.ncmp, params.cmpWidth))
@@ -120,6 +124,7 @@ case class PWMAttachParams(
   mreset: Option[ModuleValue[Bool]] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing,
+  clockDev: Option[FixedClockResource] = None,
   parentLogicalTreeNode: Option[LogicalTreeNode] = None)
   (implicit val p: Parameters)
 
@@ -151,6 +156,7 @@ object PWM {
 
   def attachAndMakePort(params: PWMAttachParams): ModuleValue[PWMPortIO] = {
     val pwm = attach(params)
+    params.clockDev.map(_.bind(pwm.device))
     val pwmNode = pwm.ioNode.makeSink()(params.p)
     InModuleBody { pwmNode.makeIO()(ValName(pwm.name)) }
   }
