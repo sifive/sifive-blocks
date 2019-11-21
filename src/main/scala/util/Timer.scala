@@ -43,7 +43,7 @@ case class GenericTimerCfgDescs(
 
 object DefaultGenericTimerCfgDescs  {
   def apply(prefix: String, ncmp: Int): GenericTimerCfgDescs = GenericTimerCfgDescs(
-    scale = RegFieldDesc(s"${prefix}scale", "Counter scale value."),
+    scale = RegFieldDesc(s"${prefix}scale", "Timer scale value."),
     sticky = RegFieldDesc(s"${prefix}sticky", "Sticky. Disallow clearing of ${prefix}cmpXip bits"),
     zerocmp = RegFieldDesc(s"${prefix}zerocmp", "Reset counter to zero after match."),
     deglitch =  RegFieldDesc(s"${prefix}deglitch", "Deglitch - latch ${prefix}cmpXip within same cycle."),
@@ -185,12 +185,12 @@ trait GenericTimer {
   require(ncmp > 0)
 
   protected def countLo_desc: RegFieldDesc = if (countWidth > regWidth) {
-    RegFieldDesc(s"${prefix}countlo", "Low bits of Counter", volatile=true)
+    RegFieldDesc(s"${prefix}countlo", "Low bits of Timer", volatile=true)
   } else  {
-    RegFieldDesc(s"${prefix}count", "Counter Register", volatile=true)
+    RegFieldDesc(s"${prefix}count", "Timer Register", volatile=true)
   }
-  protected def countHi_desc: RegFieldDesc = if (countWidth > regWidth) RegFieldDesc(s"${prefix}counthi", "High bits of Counter", volatile=true) else RegFieldDesc.reserved
-  protected def s_desc: RegFieldDesc = RegFieldDesc(s"${prefix}s", "Scaled value of Counter", access=RegFieldAccessType.R, volatile=true)
+  protected def countHi_desc: RegFieldDesc = if (countWidth > regWidth) RegFieldDesc(s"${prefix}counthi", "High bits of Timer", volatile=true) else RegFieldDesc.reserved
+  protected def s_desc: RegFieldDesc = RegFieldDesc(s"${prefix}s", "Scaled value of Timer", access=RegFieldAccessType.R, volatile=true)
   protected def cmp_desc: Seq[RegFieldDesc] = Seq.tabulate(ncmp){ i => RegFieldDesc(s"${prefix}cmp${i}", s"Comparator ${i}")}
   protected def feed_desc: RegFieldDesc = RegFieldDesc(s"${prefix}feed", "Feed register")
   protected def key_desc: RegFieldDesc  = RegFieldDesc(s"${prefix}key", "Key Register")
