@@ -16,11 +16,10 @@ import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree
 import sifive.blocks.util.{BasicBusBlocker, GenericTimer, GenericTimerIO, DefaultGenericTimerCfgDescs}
 
 // Core PWM Functionality  & Register Interface
-class PWMTimer(val ncmp: Int = 4, val cmpWidth: Int = 16) extends MultiIOModule with GenericTimer {
+class PWMTimer(val ncmp: Int = 4, val cmpWidth: Int = 16, val prefix: String = "pwm") extends MultiIOModule with GenericTimer {
 
   def orR(v: Vec[Bool]): Bool = v.foldLeft(Bool(false))( _||_ )
 
-  protected def prefix = "pwm"
   protected def countWidth = ((1 << scaleWidth) - 1) + cmpWidth
   protected lazy val countAlways = RegEnable(io.regs.cfg.write.countAlways, Bool(false), io.regs.cfg.write_countAlways && unlocked)
   protected lazy val feed = count.carryOut(scale + UInt(cmpWidth))
@@ -88,7 +87,7 @@ abstract class PWM(busWidthBytes: Int, val params: PWMParams)(implicit p: Parame
     )
 
   lazy val module = new LazyModuleImp(this) {
-    val pwm = Module(new PWMTimer(params.ncmp, params.cmpWidth))
+    val pwm = Module(new PWMTimer(params.ncmp, params.cmpWidth, "pwm"))
     interrupts := pwm.io.ip
     port.gpio := pwm.io.gpio
     //regmap((GenericTimer.timerRegMap(pwm, 0, params.regBytes)):_*)
