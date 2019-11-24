@@ -5,7 +5,7 @@ import freechips.rocketchip.config.Field
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.subsystem.BaseSubsystem
 
-case object PeripheryGPIOKey extends Field[Seq[GPIOParams]]
+case object PeripheryGPIOKey extends Field[Seq[GPIOParams]](Nil)
 
 trait HasPeripheryGPIO { this: BaseSubsystem =>
   val gpioNodes = p(PeripheryGPIOKey).map { ps => GPIO.attach(GPIOAttachParams(ps, pbus, ibus.fromAsync)).ioNode.makeSink }

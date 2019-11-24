@@ -6,7 +6,7 @@ import freechips.rocketchip.config.Field
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.subsystem.BaseSubsystem
 
-case object PeripheryPWMKey extends Field[Seq[PWMParams]]
+case object PeripheryPWMKey extends Field[Seq[PWMParams]](Nil)
 
 trait HasPeripheryPWM { this: BaseSubsystem =>
   val pwmNodes = p(PeripheryPWMKey).map { ps => PWM.attach(PWMAttachParams(ps, pbus, ibus.fromAsync)).ioNode.makeSink }
