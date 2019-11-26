@@ -16,7 +16,7 @@ import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree
 import sifive.blocks.util.{BasicBusBlocker, GenericTimer, GenericTimerIO, DefaultGenericTimerCfgDescs}
 
 // Core PWM Functionality  & Register Interface
-class PWMTimer(val ncmp: Int = 4, val cmpWidth: Int = 16, val prefix: String) extends MultiIOModule with GenericTimer {
+class PWMTimer(val ncmp: Int = 4, val cmpWidth: Int = 16, val prefix: String = "pwm") extends MultiIOModule with GenericTimer {
 
   def orR(v: Vec[Bool]): Bool = v.foldLeft(Bool(false))( _||_ )
   protected def countWidth = ((1 << scaleWidth) - 1) + cmpWidth
