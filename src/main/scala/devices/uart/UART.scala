@@ -44,7 +44,7 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
     extends IORegisterRouter(
       RegisterRouterParams(
         name = "serial",
-        compat = Seq("sifive,uart0"), 
+        compat = Seq("sifive,uart0"),
         base = c.address,
         beatBytes = busWidthBytes),
       new UARTPortIO)
@@ -140,6 +140,14 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
     def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
       Seq(
         OMUART(
+          divisorWidthBits = c.divisorBits,
+          divisorInit = divisorInit,
+          nRxEntries = c.nRxEntries,
+          nTxEntries = c.nTxEntries,
+          dataBits = c.dataBits,
+          stopBits = c.stopBits,
+          oversample = c.oversample,
+          nSamples = c.nSamples,
           memoryRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions("UART", resourceBindings, Some(module.omRegMap)),
           interrupts = DiplomaticObjectModelAddressing.describeGlobalInterrupts(device.describe(resourceBindings).name, resourceBindings),
         )
