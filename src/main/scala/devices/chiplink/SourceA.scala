@@ -89,7 +89,7 @@ class SourceA(info: ChipLinkInfo) extends Module
   val xmit = q_last || state === s_data
   a.valid := (io.q.valid && !stall) &&  xmit
   io.q.ready := (a.ready && !stall) || !xmit
-  (cams zip a_sel.toBools) foreach { case (cam, sel) =>
+  (cams zip a_sel.asBools) foreach { case (cam, sel) =>
     cam.io.alloc.valid := sel && a_first && xmit && io.q.valid && a.ready
     cam.io.alloc.bits  := q_source
   }
@@ -98,7 +98,7 @@ class SourceA(info: ChipLinkInfo) extends Module
   val d_clDomain = io.d_tlSource.bits >> log2Ceil(info.params.sourcesPerDomain)
   val d_sel = UIntToOH(d_clDomain)
   io.d_clSource := Vec(cams.map(_.io.data))(d_clDomain)
-  (cams zip d_sel.toBools) foreach { case (cam, sel) =>
+  (cams zip d_sel.asBools) foreach { case (cam, sel) =>
     cam.io.free.bits  := io.d_tlSource.bits
     cam.io.free.valid := io.d_tlSource.valid && sel
   }

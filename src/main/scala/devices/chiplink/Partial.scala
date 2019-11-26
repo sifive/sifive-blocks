@@ -82,7 +82,7 @@ class PartialInjector[T <: TLDataChannel](gen: T) extends Module
 
   when (partial) {
     val bytes = Seq.tabulate(4) { i => i_data(8*(i+1)-1, 8*i) }
-    val bits  = i_mask.toBools
+    val bits  = i_mask.asBools
     val mixed = Cat(Seq(bits, bytes).transpose.flatten.reverse)
     val wide  = shift | (mixed << (state << 2))
     o_data := wide

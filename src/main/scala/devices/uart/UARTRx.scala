@@ -40,7 +40,7 @@ class UARTRx(c: UARTParams) extends Module {
   val prescaler_next = prescaler_in - Mux(restore && extend, UInt(0), UInt(1))
 
   val sample = Reg(Bits(width = c.nSamples))
-  val voter = Majority(sample.toBools.toSet)
+  val voter = Majority(sample.asBools.toSet)
   val shifter = Reg(Bits(width = c.dataBits))
 
   val valid = Reg(init = Bool(false))

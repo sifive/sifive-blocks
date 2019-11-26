@@ -49,7 +49,7 @@ class RX(info: ChipLinkInfo) extends Module
   private def ioX = Seq(io.a, io.b, io.c, io.d, io.e)
 
   // Enqueue to the HellaQueues
-  (formatOH.toBools zip hqX) foreach { case (sel, hq) =>
+  (formatOH.asBools zip hqX) foreach { case (sel, hq) =>
     hq.io.enq.valid := beat.valid && sel
     hq.io.enq.bits := beat.bits
     assert (!hq.io.enq.valid || hq.io.enq.ready) // overrun impossible
