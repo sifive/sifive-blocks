@@ -16,10 +16,9 @@ import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree
 import sifive.blocks.util.{BasicBusBlocker, GenericTimer, GenericTimerIO, DefaultGenericTimerCfgDescs}
 
 // Core PWM Functionality  & Register Interface
-class PWMTimer(val ncmp: Int = 4, val cmpWidth: Int = 16, val prefix: String = "pwm") extends MultiIOModule with GenericTimer {
+class PWMTimer(val ncmp: Int = 4, val cmpWidth: Int = 16, val prefix: String) extends MultiIOModule with GenericTimer {
 
   def orR(v: Vec[Bool]): Bool = v.foldLeft(Bool(false))( _||_ )
-
   protected def countWidth = ((1 << scaleWidth) - 1) + cmpWidth
   protected lazy val countAlways = RegEnable(io.regs.cfg.write.countAlways, Bool(false), io.regs.cfg.write_countAlways && unlocked)
   protected lazy val feed = count.carryOut(scale + UInt(cmpWidth))
@@ -41,8 +40,8 @@ class PWMTimer(val ncmp: Int = 4, val cmpWidth: Int = 16, val prefix: String = "
 
   override protected lazy val feed_desc = RegFieldDesc.reserved
   override protected lazy val key_desc = RegFieldDesc.reserved
-  override protected lazy val cfg_desc = DefaultGenericTimerCfgDescs("pwm", ncmp).copy(
-    extra = Seq.tabulate(ncmp){ i => RegFieldDesc(s"pwminvert${i}", s"Invert Comparator ${i} Output", reset = Some(0))}
+  override protected lazy val cfg_desc = DefaultGenericTimerCfgDescs(prefix, ncmp).copy(
+    extra = Seq.tabulate(ncmp){ i => RegFieldDesc(s"${prefix}invert${i}", s"Invert Comparator ${i} Output", reset = Some(0))}
   )
 
   lazy val io = IO(new GenericTimerIO(regWidth, ncmp, maxcmp, scaleWidth, countWidth, cmpWidth) {
