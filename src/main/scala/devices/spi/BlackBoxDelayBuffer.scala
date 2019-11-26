@@ -2,7 +2,6 @@ package sifive.blocks.devices.spi
 
 import Chisel._
 import freechips.rocketchip.util.ShiftRegInit
-import chisel3.experimental._ 
 
 class BlackBoxDelayBuffer extends BlackBox {
   val io = IO(new Bundle() {
