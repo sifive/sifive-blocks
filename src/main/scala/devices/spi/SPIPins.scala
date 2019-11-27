@@ -2,7 +2,7 @@
 package sifive.blocks.devices.spi
 
 import Chisel._
-import chisel3.experimental.{withClockAndReset}
+import chisel3.{withClockAndReset}
 import freechips.rocketchip.util.{SynchronizerShiftReg}
 import sifive.blocks.devices.pinctrl.{PinCtrl, Pin}
 
