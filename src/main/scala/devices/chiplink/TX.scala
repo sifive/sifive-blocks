@@ -94,7 +94,7 @@ class TX(info: ChipLinkInfo) extends Module
   val winner = readys & requests
   val grant = Mux(first, winner, state)
   val allowed = Mux(first, readys, state)
-  (ioF zip allowed.toBools) foreach { case (beat, sel) => beat.ready := sel }
+  (ioF zip allowed.asBools) foreach { case (beat, sel) => beat.ready := sel }
 
   val send = Mux(first, rxQ.io.deq.valid, (state & requests) =/= UInt(0))
   assert (send === ((grant & requests) =/= UInt(0)))

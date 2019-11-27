@@ -2,7 +2,6 @@
 package sifive.blocks.devices.spi
 
 import Chisel._
-import chisel3.experimental._ 
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.regmapper._

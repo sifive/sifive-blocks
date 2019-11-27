@@ -2,7 +2,7 @@
 package sifive.blocks.devices.pwm
 
 import Chisel._
-import chisel3.experimental.{withClockAndReset}
+import chisel3.{withClockAndReset}
 import sifive.blocks.devices.pinctrl.{Pin}
 
 class PWMSignals[T <: Data](private val pingen: () => T, val c: PWMParams) extends Bundle {

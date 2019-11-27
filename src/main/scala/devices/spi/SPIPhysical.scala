@@ -3,7 +3,6 @@ package sifive.blocks.devices.spi
 
 import Chisel._
 import freechips.rocketchip.util.ShiftRegInit
-import chisel3.experimental._ 
 
 class SPIMicroOp(c: SPIParamsBase) extends SPIBundle(c) {
   val fn = Bits(width = 1)
@@ -117,7 +116,7 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
   val cinv = ctrl.sck.pha ^ ctrl.sck.pol
 
   private def convert(data: UInt, fmt: SPIFormat) =
-    Mux(fmt.endian === SPIEndian.MSB, data, Cat(data.toBools))
+    Mux(fmt.endian === SPIEndian.MSB, data, Cat(data.asBools))
 
   val rxd = Cat(io.port.dq.reverse.map(_.i))
   val rxd_delayed = Vec(Seq.fill(io.port.dq.size)(false.B))
@@ -131,7 +130,7 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
       rxd_delayed(j) := fine_grain_delay(j).io.mux_out
     }}
   else {
-    rxd_delayed := rxd.toBools
+    rxd_delayed := rxd.asBools
   }
 
   val rxd_fin = rxd_delayed.asUInt
@@ -163,7 +162,7 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
 
   io.port.sck := sck
   io.port.cs := Vec.fill(io.port.cs.size)(Bool(true)) // dummy
-  (io.port.dq zip (txd.toBools zip txen)).foreach {
+  (io.port.dq zip (txd.asBools zip txen)).foreach {
     case (dq, (o, oe)) =>
       dq.o := o
       dq.oe := oe
