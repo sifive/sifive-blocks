@@ -145,7 +145,10 @@ class TLSPIFlash(w: Int, c: SPIFlashParams)(implicit p: Parameters)
     def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
       Seq(
         OMSPIXIP(
-          numCS = c.csWidth,
+          instructionAddressBytes = c.insnAddrBytes,
+          instructionPadLengthBits = c.insnPadLenBits,
+          memMapAddressBase = c.fAddress,
+          memMapAddressSizeBytes = c.fSize,
           memoryRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions("SPIXIP", resourceBindings, Some(module.omRegMap)),
           interrupts = DiplomaticObjectModelAddressing.describeGlobalInterrupts(device.describe(resourceBindings).name, resourceBindings)
         )

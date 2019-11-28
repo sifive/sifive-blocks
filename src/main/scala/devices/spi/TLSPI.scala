@@ -19,7 +19,6 @@ trait SPIParamsBase {
   val rSize: BigInt
   val rxDepth: Int
   val txDepth: Int
-
   val csWidth: Int
   val frameBits: Int
   val delayBits: Int
@@ -199,7 +198,16 @@ class TLSPI(w: Int, c: SPIParams)(implicit p: Parameters)
     def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
       Seq(
         OMSPI(
-          numCS = c.csWidth,
+          rxDepth = c.rxDepth,
+          txDepth = c.txDepth,
+          csWidthBits = c.csWidth,
+          frameBits = c.frameBits,
+          delayBits = c.delayBits,
+          divisorBits = c.divisorBits,
+          coarseDelayBits = c.divisorBits,
+          fineDelayBits = c.fineDelayBits,
+          sampleDelayBits = c.sampleDelayBits,
+          defaultSampleDelay = c.defaultSampleDel,
           memoryRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions("SPI", resourceBindings, Some(module.omRegMap)),
           interrupts = DiplomaticObjectModelAddressing.describeGlobalInterrupts(device.describe(resourceBindings).name, resourceBindings)
         )
