@@ -170,7 +170,7 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
     RegField((if (total>32) 32 else total), reg, RegWriteFn((valid, data) => { reg := ~(~reg | Mux(valid, data, UInt(0))) | set; Bool(true) }),
       desc.map{_.copy(access = RegFieldAccessType.RW, wrType=Some(RegFieldWrType.ONE_TO_CLEAR), volatile = true)})
   def w1ToClearplus(total: Int, reg: UInt, set: UInt, desc: Option[RegFieldDesc] = None): RegField =
-    RegField((total-32), reg, RegWriteFn((valid, data) => { reg := ~(~reg | Mux(valid, (data<<32), UInt(0))) | set; Bool(true) }),
+    RegField((total-32), reg, RegWriteFn((valid, data) => { when (valid) {reg := ~(~reg | (data<<32)) | set}; Bool(true) }),
       desc.map{_.copy(access = RegFieldAccessType.RW, wrType=Some(RegFieldWrType.ONE_TO_CLEAR), volatile = true)})
   val width1 = if (c.width > 32) (c.width - 32) else 0
   val width0 = if (c.width > 32) 32 else c.width
