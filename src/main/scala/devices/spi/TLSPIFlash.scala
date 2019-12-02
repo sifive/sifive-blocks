@@ -145,6 +145,16 @@ class TLSPIFlash(w: Int, c: SPIFlashParams)(implicit p: Parameters)
     def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
       Seq(
         OMSPIXIP(
+          rxDepth = c.rxDepth,
+          txDepth = c.txDepth,
+          csWidthBits = c.csWidth,
+          frameBits = c.frameBits,
+          delayBits = c.delayBits,
+          divisorBits = c.divisorBits,
+          coarseDelayBits = c.divisorBits,
+          fineDelayBits = c.fineDelayBits,
+          sampleDelayBits = c.sampleDelayBits,
+          defaultSampleDelay = c.defaultSampleDel,
           instructionAddressBytes = c.insnAddrBytes,
           instructionPadLengthBits = c.insnPadLenBits,
           memMapAddressBase = c.fAddress,
@@ -156,5 +166,5 @@ class TLSPIFlash(w: Int, c: SPIFlashParams)(implicit p: Parameters)
     }
   }
 
-  
+
 }
