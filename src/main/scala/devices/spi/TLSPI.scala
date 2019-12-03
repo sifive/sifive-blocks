@@ -89,7 +89,7 @@ class SPITopModule(c: SPIParamsBase, outer: TLSPIBase)
     SPICRs.csid -> Seq(RegField(c.csIdBits, ctrl.cs.id,
                        RegFieldDesc("csid", "Chip select id", reset=Some(0)))),
     SPICRs.csdef -> ctrl.cs.dflt.map(x => RegField(1, x,
-                    RegFieldDesc("csdef", "Chip select default", reset=Some(1)))),
+                    RegFieldDesc("csdef", "Chip select default", group = Some("csdef"), reset=Some(1)))),
     SPICRs.csmode -> Seq(RegField(SPICSMode.width, ctrl.cs.mode,
                          RegFieldDesc("csmode", "Chip select mode", reset=Some(SPICSMode.Auto.litValue())))),
     SPICRs.dcssck -> Seq(RegField(c.delayBits, ctrl.dla.cssck,
