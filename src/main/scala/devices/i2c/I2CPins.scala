@@ -19,13 +19,13 @@ object I2CPinsFromPort {
     withClockAndReset(clock, reset) {
       pins.scl.outputPin(i2c.scl.out, pue=true.B, ie = true.B)
       pins.scl.o.oe := i2c.scl.oe
-      i2c.scl.in := SyncResetSynchronizerShiftReg(pins.scl.i.ival, syncStages, init = Bool(true),
-        name = Some("i2c_scl_sync"))
+      i2c.scl.in := (if (syncStages == 0) pins.scl.i.ival else SyncResetSynchronizerShiftReg(pins.scl.i.ival, syncStages, init = Bool(true),
+        name = Some("i2c_scl_sync")))
 
       pins.sda.outputPin(i2c.sda.out, pue=true.B, ie = true.B)
       pins.sda.o.oe := i2c.sda.oe
-      i2c.sda.in := SyncResetSynchronizerShiftReg(pins.sda.i.ival, syncStages, init = Bool(true),
-        name = Some("i2c_sda_sync"))
+      i2c.sda.in := (if (syncStages == 0) pins.sda.i.ival else SyncResetSynchronizerShiftReg(pins.sda.i.ival, syncStages, init = Bool(true),
+        name = Some("i2c_sda_sync")))
     }
   }
 }

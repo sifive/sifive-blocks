@@ -27,7 +27,7 @@ object SPIPinsFromPort {
         p.outputPin(s.o, pue = Bool(true), ds = driveStrength)
         p.o.oe := s.oe
         p.o.ie := ~s.oe
-        s.i := SynchronizerShiftReg(p.i.ival, syncStages, name = Some(s"spi_dq_${i}_sync"))
+        s.i := (if (syncStages == 0) p.i.ival else SynchronizerShiftReg(p.i.ival, syncStages, name = Some(s"spi_dq_${i}_sync")))
       }
 
       (pins.cs zip spi.cs) foreach { case (c, s) =>

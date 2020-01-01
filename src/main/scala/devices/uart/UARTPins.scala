@@ -18,7 +18,7 @@ object UARTPinsFromPort {
     withClockAndReset(clock, reset) {
       pins.txd.outputPin(uart.txd)
       val rxd_t = pins.rxd.inputPin()
-      uart.rxd := SyncResetSynchronizerShiftReg(rxd_t, syncStages, init = Bool(true), name = Some("uart_rxd_sync"))
+      uart.rxd := (if (syncStages == 0) rxd_t else SyncResetSynchronizerShiftReg(rxd_t, syncStages, init = Bool(true), name = Some("uart_rxd_sync")))
     }
   }
 }
