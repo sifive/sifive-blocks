@@ -165,7 +165,7 @@ case class UARTAttachParams(
   divinit: Int,
   controlBus: TLBusWrapper,
   intNode: IntInwardNode,
-  clockNode: ClockGroupBroadcastNode,
+  clockNode: ClockGroupIdentityNode,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing,
@@ -178,7 +178,6 @@ object UART {
   def attach(params: UARTAttachParams): TLUART = {
     implicit val p = params.p
     val name = s"uart_${nextId()}"
-    val clockName = "pbusclock"
     val tlbus =  params.controlBus
     val domain = LazyModule(new ClockSinkDomain(take = None))
     val uart = domain { LazyModule(new TLUART(tlbus.beatBytes, params.uart, params.divinit)) }
@@ -194,10 +193,10 @@ object UART {
 
       params.controlXType match {
         case SynchronousCrossing(_) =>
-          domain.clockNode := tlbus.clockNode
-          tlbus.clockNode.fixedClockResources(clockName).flatten.map(_.bind(uart.device))
+          domain.clockNode := tlbus.fixedClockNode
+          tlbus.dtsClk.map(_.bind(uart.device))
         case RationalCrossing(_) =>
-          domain.clockNode := tlbus.clockGroupNode
+          domain.clockNode := tlbus.clockNode
         case AsynchronousCrossing(_, _, _, _, _) =>
           val uartClockGroup = ClockGroup()
           uartClockGroup := params.clockNode
