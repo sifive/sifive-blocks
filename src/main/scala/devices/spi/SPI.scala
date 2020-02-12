@@ -24,7 +24,8 @@ case class SPIAttachParams(
   mclock: Option[ModuleValue[Clock]] = None,
   mreset: Option[ModuleValue[Bool]] = None,
   clockDev: Option[FixedClockResource] = None,
-  parentLogicalTreeNode: Option[LogicalTreeNode] = None)
+  parentLogicalTreeNode: Option[LogicalTreeNode] = None,
+  hasMMCDevice: Boolean = false)
   (implicit val p: Parameters)
 
 case class SPIFlashAttachParams(
@@ -74,6 +75,8 @@ object SPI {
   def attachAndMakePort(params: SPIAttachParams): ModuleValue[SPIPortIO] = {
     val spi = attach(params)
     params.clockDev.map(_.bind(spi.device))
+    val mmc = params.hasMMCDevice.option(new MMCDevice(spi.device))
+    mmc.foreach { mmc => ResourceBinding { Resource(mmc, "reg").bind(ResourceAddress(0)) } }
     val spiNode = spi.ioNode.makeSink()(params.p)
     InModuleBody { spiNode.makeIO()(ValName(spi.name)) }
   }
