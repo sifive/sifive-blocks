@@ -3,6 +3,7 @@ package sifive.blocks.devices.spi
 
 import Chisel._
 import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.util._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
@@ -39,7 +40,8 @@ case class SPIFlashAttachParams(
   mclock: Option[ModuleValue[Clock]] = None,
   mreset: Option[ModuleValue[Bool]] = None,
   clockDev: Option[FixedClockResource] = None,
-  parentLogicalTreeNode: Option[LogicalTreeNode] = None)
+  parentLogicalTreeNode: Option[LogicalTreeNode] = None,
+  hasFlashDevice: Boolean = false)
   (implicit val p: Parameters)
 
 object SPI {
@@ -116,6 +118,8 @@ object SPI {
   def attachAndMakePort(params: SPIFlashAttachParams): ModuleValue[SPIPortIO] = {
     val qspi = attachFlash(params)
     params.clockDev.map(_.bind(qspi.device))
+    val flash = params.hasFlashDevice.option(new FlashDevice(qspi.device))
+    flash.foreach { flash => ResourceBinding { Resource(flash, "reg").bind(ResourceAddress(0)) } }
     val qspiNode = qspi.ioNode.makeSink()(params.p)
     InModuleBody { qspiNode.makeIO()(ValName(qspi.name)) }
   }
