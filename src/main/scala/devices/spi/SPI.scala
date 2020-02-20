@@ -24,8 +24,7 @@ case class SPIAttachParams(
   mclock: Option[ModuleValue[Clock]] = None,
   mreset: Option[ModuleValue[Bool]] = None,
   clockDev: Option[FixedClockResource] = None,
-  parentLogicalTreeNode: Option[LogicalTreeNode] = None,
-  hasMMCDevice: Boolean = false)
+  parentLogicalTreeNode: Option[LogicalTreeNode] = None)
   (implicit val p: Parameters)
 
 case class SPIFlashAttachParams(
@@ -41,8 +40,7 @@ case class SPIFlashAttachParams(
   mclock: Option[ModuleValue[Clock]] = None,
   mreset: Option[ModuleValue[Bool]] = None,
   clockDev: Option[FixedClockResource] = None,
-  parentLogicalTreeNode: Option[LogicalTreeNode] = None,
-  hasFlashDevice: Boolean = false)
+  parentLogicalTreeNode: Option[LogicalTreeNode] = None)
   (implicit val p: Parameters)
 
 object SPI {
@@ -71,8 +69,6 @@ object SPI {
     }
 
     params.clockDev.map(_.bind(spi.device))
-    val mmc = params.hasMMCDevice.option(new MMCDevice(spi.device))
-    mmc.foreach { mmc => ResourceBinding { Resource(mmc, "reg").bind(ResourceAddress(0)) } }
 
     spi
   }
@@ -117,8 +113,6 @@ object SPI {
     }
 
     params.clockDev.map(_.bind(qspi.device))
-    val flash = params.hasFlashDevice.option(new FlashDevice(qspi.device))
-    flash.foreach { flash => ResourceBinding { Resource(flash, "reg").bind(ResourceAddress(0)) } }
 
     qspi
   }
