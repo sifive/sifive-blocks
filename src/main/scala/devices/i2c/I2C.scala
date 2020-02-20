@@ -608,13 +608,13 @@ object I2C {
     InModuleBody { i2c.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
     InModuleBody { i2c.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset) }
 
+    params.clockDev.map(_.bind(i2c.device))
+
     i2c
   }
 
-  def attachAndMakePort(params: I2CAttachParams): ModuleValue[I2CPort] = {
-    val i2c = attach(params)
-    params.clockDev.map(_.bind(i2c.device))
-    val i2cNode = i2c.ioNode.makeSink()(params.p)
-    InModuleBody { i2cNode.makeIO()(ValName(i2c.name)) }
+  def makePort(node: BundleBridgeSource[I2CPort], name: String)(implicit p: Parameters): ModuleValue[I2CPort] = {
+    val i2cNode = node.makeSink()
+    InModuleBody { i2cNode.makeIO()(ValName(name)) }
   }
 }
