@@ -69,16 +69,17 @@ object SPI {
     params.parentLogicalTreeNode.foreach { parent =>
       LogicalModuleTree.add(parent, spi.logicalTreeNode)
     }
-    spi
-  }
 
-  def attachAndMakePort(params: SPIAttachParams): ModuleValue[SPIPortIO] = {
-    val spi = attach(params)
     params.clockDev.map(_.bind(spi.device))
     val mmc = params.hasMMCDevice.option(new MMCDevice(spi.device))
     mmc.foreach { mmc => ResourceBinding { Resource(mmc, "reg").bind(ResourceAddress(0)) } }
-    val spiNode = spi.ioNode.makeSink()(params.p)
-    InModuleBody { spiNode.makeIO()(ValName(spi.name)) }
+
+    spi
+  }
+
+  def makePort(node: BundleBridgeSource[SPIPortIO], name: String)(implicit p: Parameters): ModuleValue[SPIPortIO] = {
+    val spiNode = node.makeSink()
+    InModuleBody { spiNode.makeIO()(ValName(name)) }
   }
 
   val nextFlashId = { var i = -1; () => { i += 1; i} }
@@ -115,16 +116,16 @@ object SPI {
       LogicalModuleTree.add(parent, qspi.logicalTreeNode)
     }
 
-    qspi
-  }
-
-  def attachAndMakePort(params: SPIFlashAttachParams): ModuleValue[SPIPortIO] = {
-    val qspi = attachFlash(params)
     params.clockDev.map(_.bind(qspi.device))
     val flash = params.hasFlashDevice.option(new FlashDevice(qspi.device))
     flash.foreach { flash => ResourceBinding { Resource(flash, "reg").bind(ResourceAddress(0)) } }
-    val qspiNode = qspi.ioNode.makeSink()(params.p)
-    InModuleBody { qspiNode.makeIO()(ValName(qspi.name)) }
+
+    qspi
+  }
+
+  def makeFlashPort(node: BundleBridgeSource[SPIPortIO], name: String)(implicit p: Parameters): ModuleValue[SPIPortIO] = {
+    val qspiNode = node.makeSink()
+    InModuleBody { qspiNode.makeIO()(ValName(name)) }
   }
 
   def connectPort(q: SPIPortIO): SPIPortIO = {
