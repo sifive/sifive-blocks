@@ -149,13 +149,13 @@ object PWM {
       LogicalModuleTree.add(parent, pwm.logicalTreeNode)
     }
 
+    params.clockDev.map(_.bind(pwm.device))
+
     pwm
   }
 
-  def attachAndMakePort(params: PWMAttachParams): ModuleValue[PWMPortIO] = {
-    val pwm = attach(params)
-    params.clockDev.map(_.bind(pwm.device))
-    val pwmNode = pwm.ioNode.makeSink()(params.p)
-    InModuleBody { pwmNode.makeIO()(ValName(pwm.name)) }
+  def makePort(node: BundleBridgeSource[PWMPortIO], name: String)(implicit p: Parameters): ModuleValue[PWMPortIO] = {
+    val pwmNode = node.makeSink()
+    InModuleBody { pwmNode.makeIO()(ValName(name)) }
   }
 }

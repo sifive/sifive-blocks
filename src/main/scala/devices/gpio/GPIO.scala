@@ -268,14 +268,14 @@ object GPIO {
       LogicalModuleTree.add(parent, gpio.logicalTreeNode)
     }
 
+    params.clockDev.map(_.bind(gpio.device))
+
     gpio
   }
 
-  def attachAndMakePort(params: GPIOAttachParams): ModuleValue[GPIOPortIO] = {
-    val gpio = attach(params)
-    params.clockDev.map(_.bind(gpio.device))
-    val gpioNode = gpio.ioNode.makeSink()(params.p)
-    InModuleBody { gpioNode.makeIO()(ValName(gpio.name)) }
+  def makePort(node: BundleBridgeSource[GPIOPortIO], name: String)(implicit p: Parameters): ModuleValue[GPIOPortIO] = {
+    val gpioNode = node.makeSink()
+    InModuleBody { gpioNode.makeIO()(ValName(name)) }
   }
 
   def tieoff(g: GPIOPortIO){

@@ -3,6 +3,7 @@ package sifive.blocks.devices.spi
 
 import Chisel._
 import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.util._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
@@ -66,14 +67,15 @@ object SPI {
     params.parentLogicalTreeNode.foreach { parent =>
       LogicalModuleTree.add(parent, spi.logicalTreeNode)
     }
+
+    params.clockDev.map(_.bind(spi.device))
+
     spi
   }
 
-  def attachAndMakePort(params: SPIAttachParams): ModuleValue[SPIPortIO] = {
-    val spi = attach(params)
-    params.clockDev.map(_.bind(spi.device))
-    val spiNode = spi.ioNode.makeSink()(params.p)
-    InModuleBody { spiNode.makeIO()(ValName(spi.name)) }
+  def makePort(node: BundleBridgeSource[SPIPortIO], name: String)(implicit p: Parameters): ModuleValue[SPIPortIO] = {
+    val spiNode = node.makeSink()
+    InModuleBody { spiNode.makeIO()(ValName(name)) }
   }
 
   val nextFlashId = { var i = -1; () => { i += 1; i} }
@@ -110,14 +112,14 @@ object SPI {
       LogicalModuleTree.add(parent, qspi.logicalTreeNode)
     }
 
+    params.clockDev.map(_.bind(qspi.device))
+
     qspi
   }
 
-  def attachAndMakePort(params: SPIFlashAttachParams): ModuleValue[SPIPortIO] = {
-    val qspi = attachFlash(params)
-    params.clockDev.map(_.bind(qspi.device))
-    val qspiNode = qspi.ioNode.makeSink()(params.p)
-    InModuleBody { qspiNode.makeIO()(ValName(qspi.name)) }
+  def makeFlashPort(node: BundleBridgeSource[SPIPortIO], name: String)(implicit p: Parameters): ModuleValue[SPIPortIO] = {
+    val qspiNode = node.makeSink()
+    InModuleBody { qspiNode.makeIO()(ValName(name)) }
   }
 
   def connectPort(q: SPIPortIO): SPIPortIO = {

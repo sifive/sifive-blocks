@@ -196,14 +196,14 @@ object UART {
       LogicalModuleTree.add(parent, uart.logicalTreeNode)
     }
 
+    params.clockDev.map(_.bind(uart.device))
+
     uart
   }
 
-  def attachAndMakePort(params: UARTAttachParams): ModuleValue[UARTPortIO] = {
-    val uart = attach(params)
-    params.clockDev.map(_.bind(uart.device))
-    val uartNode = uart.ioNode.makeSink()(params.p)
-    InModuleBody { uartNode.makeIO()(ValName(uart.name)) }
+  def makePort(node: BundleBridgeSource[UARTPortIO], name: String)(implicit p: Parameters): ModuleValue[UARTPortIO] = {
+    val uartNode = node.makeSink()
+    InModuleBody { uartNode.makeIO()(ValName(name)) }
   }
 
   def tieoff(port: UARTPortIO) {
