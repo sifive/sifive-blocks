@@ -17,7 +17,7 @@ import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
 
 import sifive.blocks.devices.pinctrl.{PinCtrl, Pin, BasePin, EnhancedPin, EnhancedPinCtrl}
-import sifive.blocks.util.BasicBusBlocker
+import sifive.blocks.util.{DeviceParams,DeviceAttachParams,BasicBusBlocker}
 
 // This is sort of weird because
 // the IOF end up at the RocketChipTop
@@ -35,7 +35,7 @@ class GPIOPortIO(val c: GPIOParams) extends Bundle {
 case class GPIOParams(
   address: BigInt,
   width: Int,
-  includeIOF: Boolean = false)
+  includeIOF: Boolean = false) extends DeviceParams
 
 /** The base GPIO peripheral functionality, which uses the regmap API to
   * abstract over the bus protocol to which it is being connected
@@ -241,7 +241,7 @@ case class GPIOAttachParams(
   controlWhere: BaseSubsystemBusAttachment = PBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
-  intXType: ClockCrossingType = NoCrossing)
+  intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams[GPIOPortIO]
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLGPIO = where {
     val name = s"gpio_${GPIO.nextId()}"

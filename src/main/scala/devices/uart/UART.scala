@@ -15,7 +15,7 @@ import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressin
 import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
 
-import sifive.blocks.util.{BasicBusBlocker, NonBlockingEnqueue, NonBlockingDequeue}
+import sifive.blocks.util.{DeviceParams, DeviceAttachParams, BasicBusBlocker, NonBlockingEnqueue, NonBlockingDequeue}
 
 case class UARTParams(
   address: BigInt,
@@ -25,7 +25,7 @@ case class UARTParams(
   oversample: Int = 4,
   nSamples: Int = 3,
   nTxEntries: Int = 8,
-  nRxEntries: Int = 8)
+  nRxEntries: Int = 8) extends DeviceParams
 {
   def oversampleFactor = 1 << oversample
   require(divisorBits > oversample)
@@ -167,7 +167,7 @@ case class UARTAttachParams(
   controlWhere: BaseSubsystemBusAttachment = PBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
-  intXType: ClockCrossingType = NoCrossing)
+  intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams[UARTPortIO]
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLUART = where {
     val name = s"uart_${UART.nextId()}"
