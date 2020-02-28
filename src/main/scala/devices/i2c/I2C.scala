@@ -45,15 +45,19 @@ import Chisel._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
+import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
+import freechips.rocketchip.subsystem.{Attachable, BaseSubsystemBusAttachment, PBUS}
 import freechips.rocketchip.tilelink._
+import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.util.{AsyncResetRegVec, Majority}
-import sifive.blocks.util.BasicBusBlocker
+
+import sifive.blocks.util._
 
 case class I2CParams(
   address: BigInt,
   controlXType: ClockCrossingType = NoCrossing,
-  intXType: ClockCrossingType = NoCrossing)
+  intXType: ClockCrossingType = NoCrossing) extends DeviceParams
 
 class I2CPin extends Bundle {
   val in  = Bool(INPUT)
@@ -577,41 +581,56 @@ class TLI2C(busWidthBytes: Int, params: I2CParams)(implicit p: Parameters)
   extends I2C(busWidthBytes, params) with HasTLControlRegMap
 
 case class I2CAttachParams(
-  i2c: I2CParams,
-  controlBus: TLBusWrapper,
-  intNode: IntInwardNode,
+  device: I2CParams,
+  controlWhere: BaseSubsystemBusAttachment = PBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
-  intXType: ClockCrossingType = NoCrossing,
-  mclock: Option[ModuleValue[Clock]] = None,
-  mreset: Option[ModuleValue[Bool]] = None,
-  clockDev: Option[FixedClockResource] = None)
-  (implicit val p: Parameters)
-
-object I2C {
-  val nextId = { var i = -1; () => { i += 1; i} }
-
-  def attach(params: I2CAttachParams): TLI2C = {
-    implicit val p = params.p
-    val name = s"i2c_${nextId()}"
-    val cbus = params.controlBus
-    val i2c = LazyModule(new TLI2C(cbus.beatBytes, params.i2c))
+  intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams[I2CPort]
+{
+  def attachTo(where: Attachable)(implicit p: Parameters): TLI2C = where {
+    val name = s"i2c_${I2C.nextId()}"
+    val tlbus = where.attach(controlWhere)
+    val i2cClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
+    val i2c = i2cClockDomainWrapper { LazyModule(new TLI2C(tlbus.beatBytes, device)) }
     i2c.suggestName(name)
 
-    cbus.coupleTo(s"device_named_$name") { bus =>
-      val blockerNode = params.blockerAddr.map(BasicBusBlocker(_, cbus, cbus.beatBytes, name))
-      (i2c.controlXing(params.controlXType)
-        := TLFragmenter(cbus)
-        := blockerNode.map { _ := bus } .getOrElse { bus })
-    }
-    params.intNode := i2c.intXing(params.intXType)
-    InModuleBody { i2c.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
-    InModuleBody { i2c.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset) }
+    tlbus.coupleTo(s"device_named_$name") { bus =>
 
-    params.clockDev.map(_.bind(i2c.device))
+      val blockerOpt = blockerAddr.map { a =>
+        val blocker = LazyModule(new TLClockBlocker(BasicBusBlockerParams(a, tlbus.beatBytes, tlbus.beatBytes)))
+        tlbus.coupleTo(s"bus_blocker_for_$name") { blocker.controlNode := TLFragmenter(tlbus) := _ }
+        blocker
+      }
+
+      i2cClockDomainWrapper.clockNode := (controlXType match {
+        case _: SynchronousCrossing =>
+          tlbus.dtsClk.map(_.bind(i2c.device))
+          tlbus.fixedClockNode
+        case _: RationalCrossing =>
+          tlbus.clockNode
+        case _: AsynchronousCrossing =>
+          val i2cClockGroup = ClockGroup()
+          i2cClockGroup := where.asyncClockGroupsNode
+          blockerOpt.map { _.clockNode := i2cClockGroup } .getOrElse { i2cClockGroup }
+      })
+
+      (i2c.controlXing(controlXType)
+        := TLFragmenter(tlbus)
+        := blockerOpt.map { _.node := bus } .getOrElse { bus })
+    }
+
+    (intXType match {
+      case _: SynchronousCrossing => where.ibus.fromSync
+      case _: RationalCrossing => where.ibus.fromRational
+      case _: AsynchronousCrossing => where.ibus.fromAsync
+    }) := i2c.intXing(intXType)
 
     i2c
   }
+}
+
+object I2C {
+  val nextId = { var i = -1; () => { i += 1; i} }
 
   def makePort(node: BundleBridgeSource[I2CPort], name: String)(implicit p: Parameters): ModuleValue[I2CPort] = {
     val i2cNode = node.makeSink()

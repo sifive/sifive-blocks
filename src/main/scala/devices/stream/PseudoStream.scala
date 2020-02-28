@@ -2,11 +2,16 @@
 package sifive.blocks.devices.stream
 
 import Chisel._
+
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
+import freechips.rocketchip.subsystem.{Attachable, BaseSubsystemBusAttachment, PBUS}
 import freechips.rocketchip.tilelink._
-import sifive.blocks.util.{BasicBusBlocker, NonBlockingEnqueue, NonBlockingDequeue}
+import freechips.rocketchip.devices.tilelink._
+
+import sifive.blocks.util._
 
 case class PseudoStreamParams(
     address: BigInt,
