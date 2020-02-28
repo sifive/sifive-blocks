@@ -4,16 +4,21 @@ package sifive.blocks.devices.pwm
 import Chisel._
 import Chisel.ImplicitConversions._
 import chisel3.MultiIOModule
+
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
+import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
+import freechips.rocketchip.subsystem.{Attachable, BaseSubsystemBusAttachment, PBUS}
 import freechips.rocketchip.tilelink._
+import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.util._
 import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
 import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
-import sifive.blocks.util.{BasicBusBlocker, GenericTimer, GenericTimerIO, DefaultGenericTimerCfgDescs}
+
+import sifive.blocks.util._
 
 // Core PWM Functionality  & Register Interface
 class PWMTimer(val ncmp: Int = 4, val cmpWidth: Int = 16, val prefix: String = "pwm") extends MultiIOModule with GenericTimer {
@@ -62,7 +67,7 @@ case class PWMParams(
   size: Int = 0x1000,
   regBytes: Int = 4,
   ncmp: Int = 4,
-  cmpWidth: Int = 16)
+  cmpWidth: Int = 16) extends DeviceParams
 
 class PWMPortIO(val c: PWMParams) extends Bundle {
   val gpio = Vec(c.ncmp, Bool()).asOutput
@@ -114,45 +119,58 @@ class TLPWM(busWidthBytes: Int, params: PWMParams)(implicit p: Parameters)
   extends PWM(busWidthBytes, params) with HasTLControlRegMap
 
 case class PWMAttachParams(
-  pwm: PWMParams,
-  controlBus: TLBusWrapper,
-  intNode: IntInwardNode,
+  device: PWMParams,
+  controlWhere: BaseSubsystemBusAttachment = PBUS,
   blockerAddr: Option[BigInt] = None,
-  mclock: Option[ModuleValue[Clock]] = None,
-  mreset: Option[ModuleValue[Bool]] = None,
   controlXType: ClockCrossingType = NoCrossing,
-  intXType: ClockCrossingType = NoCrossing,
-  clockDev: Option[FixedClockResource] = None,
-  parentLogicalTreeNode: Option[LogicalTreeNode] = None)
-  (implicit val p: Parameters)
-
-object PWM {
-  val nextId = { var i = -1; () => { i += 1; i} }
-
-  def attach(params: PWMAttachParams): TLPWM = {
-    implicit val p = params.p
-    val name = s"pwm_${nextId()}"
-    val cbus = params.controlBus
-    val pwm = LazyModule(new TLPWM(cbus.beatBytes, params.pwm))
+  intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams[PWMPortIO]
+{
+  def attachTo(where: Attachable)(implicit p: Parameters): TLPWM = {
+    val name = s"pwm_${PWM.nextId()}"
+    val tlbus = where.attach(controlWhere)
+    val pwmClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
+    val pwm = pwmClockDomainWrapper { LazyModule(new TLPWM(tlbus.beatBytes, device)) }
     pwm.suggestName(name)
-    cbus.coupleTo(s"device_named_$name") { bus =>
-      val blockerNode = params.blockerAddr.map(BasicBusBlocker(_, cbus, cbus.beatBytes, name))
-      (pwm.controlXing(params.controlXType)
-        := TLFragmenter(cbus)
-        := blockerNode.map { _ := bus } .getOrElse { bus })
-    }
-    params.intNode := pwm.intXing(params.intXType)
-    InModuleBody { pwm.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
-    InModuleBody { pwm.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset) }
 
-    params.parentLogicalTreeNode.foreach { parent =>
-      LogicalModuleTree.add(parent, pwm.logicalTreeNode)
+    tlbus.coupleTo(s"device_named_$name") { bus =>
+
+      val blockerOpt = blockerAddr.map { a =>
+        val blocker = LazyModule(new TLClockBlocker(BasicBusBlockerParams(a, tlbus.beatBytes, tlbus.beatBytes)))
+        tlbus.coupleTo(s"bus_blocker_for_$name") { blocker.controlNode := TLFragmenter(tlbus) := _ }
+        blocker
+      }
+
+      pwmClockDomainWrapper.clockNode := (controlXType match {
+        case _: SynchronousCrossing =>
+          tlbus.dtsClk.map(_.bind(pwm.device))
+          tlbus.fixedClockNode
+        case _: RationalCrossing =>
+          tlbus.clockNode
+        case _: AsynchronousCrossing =>
+          val pwmClockGroup = ClockGroup()
+          pwmClockGroup := where.asyncClockGroupsNode
+          blockerOpt.map { _.clockNode := pwmClockGroup } .getOrElse { pwmClockGroup }
+      })
+
+      (pwm.controlXing(controlXType)
+        := TLFragmenter(tlbus)
+        := blockerOpt.map { _.node := bus } .getOrElse { bus })
     }
 
-    params.clockDev.map(_.bind(pwm.device))
+    (intXType match {
+      case _: SynchronousCrossing => where.ibus.fromSync
+      case _: RationalCrossing => where.ibus.fromRational
+      case _: AsynchronousCrossing => where.ibus.fromAsync
+    }) := pwm.intXing(intXType)
+
+    LogicalModuleTree.add(where.logicalTreeNode, pwm.logicalTreeNode)
 
     pwm
   }
+}
+
+object PWM {
+  val nextId = { var i = -1; () => { i += 1; i} }
 
   def makePort(node: BundleBridgeSource[PWMPortIO], name: String)(implicit p: Parameters): ModuleValue[PWMPortIO] = {
     val pwmNode = node.makeSink()

@@ -15,7 +15,7 @@ import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressin
 import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
 
-import sifive.blocks.util.{DeviceParams, DeviceAttachParams, BasicBusBlocker, NonBlockingEnqueue, NonBlockingDequeue}
+import sifive.blocks.util._
 
 case class UARTParams(
   address: BigInt,
