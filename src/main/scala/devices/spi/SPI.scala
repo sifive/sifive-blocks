@@ -2,76 +2,146 @@
 package sifive.blocks.devices.spi
 
 import Chisel._
+
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
+import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
+import freechips.rocketchip.subsystem.{Attachable, BaseSubsystemBusAttachment, PBUS}
 import freechips.rocketchip.tilelink._
+import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
 import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
-import sifive.blocks.util.BasicBusBlocker
+
+import sifive.blocks.util._
 
 case class SPIAttachParams(
-  spi: SPIParams,
-  controlBus: TLBusWrapper,
-  intNode: IntInwardNode,
+  device: SPIParams,
+  controlWhere: BaseSubsystemBusAttachment = PBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
-  intXType: ClockCrossingType = NoCrossing,
-  mclock: Option[ModuleValue[Clock]] = None,
-  mreset: Option[ModuleValue[Bool]] = None,
-  clockDev: Option[FixedClockResource] = None,
-  parentLogicalTreeNode: Option[LogicalTreeNode] = None)
-  (implicit val p: Parameters)
+  intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams[SPIPortIO]
+{
+  def attachTo(where: Attachable)(implicit p: Parameters): TLSPI = where {
+    val name = s"spi_${SPI.nextId()}"
+    val tlbus = where.attach(controlWhere)
+    val spiClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
+    val spi = spiClockDomainWrapper { LazyModule(new TLSPI(tlbus.beatBytes, device)) }
+    spi.suggestName(name)
+
+    tlbus.coupleTo(s"device_named_$name") { bus =>
+
+      val blockerOpt = blockerAddr.map { a =>
+        val blocker = LazyModule(new TLClockBlocker(BasicBusBlockerParams(a, tlbus.beatBytes, tlbus.beatBytes)))
+        tlbus.coupleTo(s"bus_blocker_for_$name") { blocker.controlNode := TLFragmenter(tlbus) := _ }
+        blocker
+      }
+
+      spiClockDomainWrapper.clockNode := (controlXType match {
+        case _: SynchronousCrossing =>
+          tlbus.dtsClk.map(_.bind(spi.device))
+          tlbus.fixedClockNode
+        case _: RationalCrossing =>
+          tlbus.clockNode
+        case _: AsynchronousCrossing =>
+          val spiClockGroup = ClockGroup()
+          spiClockGroup := where.asyncClockGroupsNode
+          blockerOpt.map { _.clockNode := spiClockGroup } .getOrElse { spiClockGroup }
+      })
+
+      (spi.controlXing(controlXType)
+        := TLFragmenter(tlbus)
+        := blockerOpt.map { _.node := bus } .getOrElse { bus })
+    }
+
+    (intXType match {
+      case _: SynchronousCrossing => where.ibus.fromSync
+      case _: RationalCrossing => where.ibus.fromRational
+      case _: AsynchronousCrossing => where.ibus.fromAsync
+    }) := spi.intXing(intXType)
+
+    LogicalModuleTree.add(where.logicalTreeNode, spi.logicalTreeNode)
+
+    spi
+  }
+}
 
 case class SPIFlashAttachParams(
-  spi: SPIFlashParams,
-  controlBus: TLBusWrapper,
-  memBus: TLBusWrapper,
-  intNode: IntInwardNode,
+  device: SPIFlashParams,
+  controlWhere: BaseSubsystemBusAttachment = PBUS,
+  dataWhere: BaseSubsystemBusAttachment = PBUS,
   fBufferDepth: Int = 0,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing,
-  memXType: ClockCrossingType = NoCrossing,
-  mclock: Option[ModuleValue[Clock]] = None,
-  mreset: Option[ModuleValue[Bool]] = None,
-  clockDev: Option[FixedClockResource] = None,
-  parentLogicalTreeNode: Option[LogicalTreeNode] = None)
-  (implicit val p: Parameters)
+  memXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams[SPIPortIO]
+{
+  def attachTo(where: Attachable)(implicit p: Parameters): TLSPIFlash = where {
+    val name = s"qspi_${SPI.nextFlashId()}" // TODO should these be shared with regular SPIs?
+    val cbus = where.attach(controlWhere)
+    val mbus = where.attach(dataWhere)
+    val qspiClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
+    val qspi = qspiClockDomainWrapper { LazyModule(new TLSPIFlash(cbus.beatBytes, device)) }
+    qspi.suggestName(name)
+
+    cbus.coupleTo(s"device_named_$name") { bus =>
+
+      val blockerOpt = blockerAddr.map { a =>
+        val blocker = LazyModule(new TLClockBlocker(BasicBusBlockerParams(a, cbus.beatBytes, cbus.beatBytes)))
+        cbus.coupleTo(s"bus_blocker_for_$name") { blocker.controlNode := TLFragmenter(cbus) := _ }
+        blocker
+      }
+
+      qspiClockDomainWrapper.clockNode := (controlXType match {
+        case _: SynchronousCrossing =>
+          cbus.dtsClk.map(_.bind(qspi.device))
+          cbus.fixedClockNode
+        case _: RationalCrossing =>
+          cbus.clockNode
+        case _: AsynchronousCrossing =>
+          val qspiClockGroup = ClockGroup()
+          qspiClockGroup := where.asyncClockGroupsNode
+          blockerOpt.map { _.clockNode := qspiClockGroup } .getOrElse { qspiClockGroup }
+      })
+
+      (qspi.controlXing(controlXType)
+        := TLFragmenter(cbus)
+        := blockerOpt.map { _.node := bus } .getOrElse { bus })
+    }
+
+    mbus.coupleTo(s"device_named_$name") { bus =>
+
+      val blockerOpt = blockerAddr.map { a =>
+        val blocker = LazyModule(new TLClockBlocker(BasicBusBlockerParams(a+0x1000, mbus.beatBytes, mbus.beatBytes)))
+        mbus.coupleTo(s"bus_blocker_for_$name") { blocker.controlNode := TLFragmenter(mbus) := _ }
+        blocker
+      }
+
+      (qspi.memXing(memXType)
+        := TLFragmenter(1, mbus.blockBytes)
+        := TLBuffer(BufferParams(fBufferDepth), BufferParams.none)
+        := TLWidthWidget(mbus.beatBytes)
+        := blockerOpt.map { _.node := bus } .getOrElse { bus })
+    }
+
+    (intXType match {
+      case _: SynchronousCrossing => where.ibus.fromSync
+      case _: RationalCrossing => where.ibus.fromRational
+      case _: AsynchronousCrossing => where.ibus.fromAsync
+    }) := qspi.intXing(intXType)
+
+    LogicalModuleTree.add(where.logicalTreeNode, qspi.logicalTreeNode)
+
+    qspi
+  }
+}
 
 object SPI {
   val nextId = { var i = -1; () => { i += 1; i} }
-  def attach(params: SPIAttachParams): TLSPI = {
-    implicit val p = params.p
-    val name = s"spi_${nextId()}"
-    val cbus = params.controlBus
-    val spi = LazyModule(new TLSPI(cbus.beatBytes, params.spi))
-    spi.suggestName(name)
-
-    cbus.coupleTo(s"device_named_$name") { bus =>
-      val blockerNode = params.blockerAddr.map(BasicBusBlocker(_, cbus, cbus.beatBytes, name))
-      (spi.controlXing(params.controlXType)
-        := TLFragmenter(cbus)
-        := blockerNode.map { _ := bus } .getOrElse { bus })
-    }
-
-    params.intNode := spi.intXing(params.intXType)
-
-    InModuleBody { spi.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
-    InModuleBody { spi.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset) }
-
-    params.parentLogicalTreeNode.foreach { parent =>
-      LogicalModuleTree.add(parent, spi.logicalTreeNode)
-    }
-
-    params.clockDev.map(_.bind(spi.device))
-
-    spi
-  }
 
   def makePort(node: BundleBridgeSource[SPIPortIO], name: String)(implicit p: Parameters): ModuleValue[SPIPortIO] = {
     val spiNode = node.makeSink()
@@ -79,43 +149,6 @@ object SPI {
   }
 
   val nextFlashId = { var i = -1; () => { i += 1; i} }
-  def attachFlash(params: SPIFlashAttachParams): TLSPIFlash = {
-    implicit val p = params.p
-    val name = s"qspi_${nextFlashId()}" // TODO should these be shared with regular SPIs?
-    val cbus = params.controlBus
-    val mbus = params.memBus
-    val qspi = LazyModule(new TLSPIFlash(cbus.beatBytes, params.spi))
-    qspi.suggestName(name)
-
-    cbus.coupleTo(s"device_named_$name") { bus =>
-      val blockerNode = params.blockerAddr.map(BasicBusBlocker(_, cbus, cbus.beatBytes, name))
-      (qspi.controlXing(params.controlXType)
-        := TLFragmenter(cbus.beatBytes, cbus.blockBytes)
-        := blockerNode.map { _ := bus } .getOrElse { bus })
-    }
-
-    mbus.coupleTo(s"mem_named_$name") { bus =>
-      val blockerNode = params.blockerAddr.map(a => BasicBusBlocker(a+0x1000, cbus, mbus.beatBytes, name))
-      (qspi.memXing(params.memXType)
-        := TLFragmenter(1, mbus.blockBytes)
-        := TLBuffer(BufferParams(params.fBufferDepth), BufferParams.none)
-        := TLWidthWidget(mbus.beatBytes)
-        := blockerNode.map { _ := bus } .getOrElse { bus })
-    }
-
-    params.intNode := qspi.intXing(params.intXType)
-
-    InModuleBody { qspi.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
-    InModuleBody { qspi.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset) }
-
-    params.parentLogicalTreeNode.foreach { parent =>
-      LogicalModuleTree.add(parent, qspi.logicalTreeNode)
-    }
-
-    params.clockDev.map(_.bind(qspi.device))
-
-    qspi
-  }
 
   def makeFlashPort(node: BundleBridgeSource[SPIPortIO], name: String)(implicit p: Parameters): ModuleValue[SPIPortIO] = {
     val qspiNode = node.makeSink()

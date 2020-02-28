@@ -9,9 +9,7 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.regmapper.IORegisterRouter
 import freechips.rocketchip.subsystem.{Attachable, BaseSubsystemBusAttachment}
 
-trait DeviceParams {
-  val address: BigInt
-}
+trait DeviceParams
 
 trait DeviceAttachParams[T <: Data] {
   val device: DeviceParams

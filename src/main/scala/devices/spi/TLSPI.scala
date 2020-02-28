@@ -13,6 +13,7 @@ import sifive.blocks.util.{NonBlockingEnqueue, NonBlockingDequeue}
 import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
 import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
+import sifive.blocks.util._
 
 trait SPIParamsBase {
   val rAddress: BigInt
@@ -49,7 +50,7 @@ case class SPIParams(
     sampleDelayBits: Int = 5,
     defaultSampleDel: Int = 3
     )
-  extends SPIParamsBase {
+  extends SPIParamsBase with DeviceParams {
 
   require(frameBits >= 4)
   require((fineDelayBits == 0) | (fineDelayBits == 5), s"Require fine delay bits to be 0 or 5 and not $fineDelayBits")
