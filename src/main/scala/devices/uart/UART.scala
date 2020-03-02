@@ -167,7 +167,7 @@ case class UARTAttachParams(
   controlWhere: BaseSubsystemBusAttachment = PBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
-  intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams[UARTPortIO]
+  intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLUART = where {
     val name = s"uart_${UART.nextId()}"

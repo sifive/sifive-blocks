@@ -123,7 +123,7 @@ case class PWMAttachParams(
   controlWhere: BaseSubsystemBusAttachment = PBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
-  intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams[PWMPortIO]
+  intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLPWM = {
     val name = s"pwm_${PWM.nextId()}"

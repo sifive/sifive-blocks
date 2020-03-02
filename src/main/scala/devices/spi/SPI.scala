@@ -24,7 +24,7 @@ case class SPIAttachParams(
   controlWhere: BaseSubsystemBusAttachment = PBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
-  intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams[SPIPortIO]
+  intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLSPI = where {
     val name = s"spi_${SPI.nextId()}"
@@ -78,7 +78,7 @@ case class SPIFlashAttachParams(
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing,
-  memXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams[SPIPortIO]
+  memXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLSPIFlash = where {
     val name = s"qspi_${SPI.nextFlashId()}" // TODO should these be shared with regular SPIs?

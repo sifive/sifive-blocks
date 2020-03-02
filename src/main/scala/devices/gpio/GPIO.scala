@@ -241,7 +241,7 @@ case class GPIOAttachParams(
   controlWhere: BaseSubsystemBusAttachment = PBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
-  intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams[GPIOPortIO]
+  intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLGPIO = where {
     val name = s"gpio_${GPIO.nextId()}"

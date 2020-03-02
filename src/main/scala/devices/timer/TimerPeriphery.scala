@@ -7,20 +7,23 @@ import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.subsystem.BaseSubsystem
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
+import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper.{RegisterRouter, RegisterRouterParams}
+import freechips.rocketchip.subsystem.{Attachable, BaseSubsystemBusAttachment, PBUS}
 import freechips.rocketchip.tilelink._
+import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
 import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
 
-import sifive.blocks.util.{GenericTimer, BasicBusBlocker}
+import sifive.blocks.util._
 import sifive.blocks.devices.pwm._
 
 case class TimerParams(
   address: BigInt,
   size: Int = 0x1000,
   regBytes: Int = 4,
-  cmpWidth: Int = 16)
+  cmpWidth: Int = 16) extends DeviceParams
 
 case object PeripheryTimerKey extends Field[Seq[TimerParams]] (Nil)
 
@@ -74,42 +77,57 @@ trait HasPeripheryTimer { this: BaseSubsystem =>
 }
 
 case class TimerAttachParams(
-  timer: TimerParams,
-  controlBus: TLBusWrapper,
-  intNode: IntInwardNode,
+  device: TimerParams,
+  controlWhere: BaseSubsystemBusAttachment = PBUS,
   blockerAddr: Option[BigInt] = None,
-  mclock: Option[ModuleValue[Clock]] = None,
-  mreset: Option[ModuleValue[Bool]] = None,
   controlXType: ClockCrossingType = NoCrossing,
-  intXType: ClockCrossingType = NoCrossing,
-  clockDev: Option[FixedClockResource] = None,
-  parentLogicalTreeNode: Option[LogicalTreeNode] = None)
-  (implicit val p: Parameters)
+  intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
+{
+  def attachTo(where: Attachable)(implicit p: Parameters): Timer = where {
+    val name = s"timer_${TimerDevice.nextId()}"
+    val tlbus = where.attach(controlWhere)
+    val timerClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
+    val timer = timerClockDomainWrapper { LazyModule(new Timer(tlbus.beatBytes, device)) }
+    timer.suggestName(name)
+
+    tlbus.coupleTo(s"device_named_$name") { bus =>
+
+      val blockerOpt = blockerAddr.map { a =>
+        val blocker = LazyModule(new TLClockBlocker(BasicBusBlockerParams(a, tlbus.beatBytes, tlbus.beatBytes)))
+        tlbus.coupleTo(s"bus_blocker_for_$name") { blocker.controlNode := TLFragmenter(tlbus) := _ }
+        blocker
+      }
+
+      timerClockDomainWrapper.clockNode := (controlXType match {
+        case _: SynchronousCrossing =>
+          tlbus.dtsClk.map(_.bind(timer.device))
+          tlbus.fixedClockNode
+        case _: RationalCrossing =>
+          tlbus.clockNode
+        case _: AsynchronousCrossing =>
+          val timerClockGroup = ClockGroup()
+          timerClockGroup := where.asyncClockGroupsNode
+          blockerOpt.map { _.clockNode := timerClockGroup } .getOrElse { timerClockGroup }
+      })
+
+      (timer.controlXing(controlXType)
+        := TLFragmenter(tlbus)
+        := blockerOpt.map { _.node := bus } .getOrElse { bus })
+    }
+
+    (intXType match {
+      case _: SynchronousCrossing => where.ibus.fromSync
+      case _: RationalCrossing => where.ibus.fromRational
+      case _: AsynchronousCrossing => where.ibus.fromAsync
+    }) := timer.intXing(intXType)
+
+    LogicalModuleTree.add(where.logicalTreeNode, timer.logicalTreeNode)
+
+    timer
+  }
+}
 
 object TimerDevice { // This anti-pattern name is needed because Timer is a Chisel keyword
   val nextId = { var i = -1; () => { i += 1; i} }
-
-  def attach(params: TimerAttachParams): Timer = {
-    implicit val p = params.p
-    val name = s"timer_${nextId()}"
-    val cbus = params.controlBus
-    val timer = LazyModule(new Timer(cbus.beatBytes, params.timer))
-    timer.suggestName(name)
-    cbus.coupleTo(s"device_named_$name") { bus =>
-      val blockerNode = params.blockerAddr.map(BasicBusBlocker(_, cbus, cbus.beatBytes, name))
-      (timer.controlXing(params.controlXType)
-        := TLFragmenter(cbus)
-        := blockerNode.map { _ := bus } .getOrElse { bus })
-    }
-    params.clockDev.map(_.bind(timer.device))
-    params.intNode := timer.intXing(params.intXType)
-    InModuleBody { timer.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
-    InModuleBody { timer.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset) }
-
-    params.parentLogicalTreeNode.foreach { parent =>
-      LogicalModuleTree.add(parent, timer.logicalTreeNode)
-    }
-    timer
-  }
 
 }
