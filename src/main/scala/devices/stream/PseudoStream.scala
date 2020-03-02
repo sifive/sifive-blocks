@@ -16,7 +16,7 @@ import sifive.blocks.util._
 case class PseudoStreamParams(
     address: BigInt,
     nChannels: Int = 1,
-    dataBits: Int = 32) {
+    dataBits: Int = 32) extends DeviceParams {
   require(dataBits <= 63)
 }
 
@@ -96,7 +96,7 @@ case class PseudoStreamAttachParams(
   device: PseudoStreamParams,
   controlWhere: BaseSubsystemBusAttachment = SBUS,
   blockerAddr: Option[BigInt] = None,
-  controlXType: ClockCrossingType = NoCrossing)
+  controlXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLPseudoStream = where {
     val name = s"stream_${PseudoStream.nextId()}"

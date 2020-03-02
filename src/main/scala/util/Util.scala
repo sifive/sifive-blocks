@@ -16,7 +16,6 @@ trait DeviceAttachParams {
   val controlWhere: BaseSubsystemBusAttachment
   val blockerAddr: Option[BigInt]
   val controlXType: ClockCrossingType
-  val intXType: ClockCrossingType
 
   def attachTo(where: Attachable)(implicit p: Parameters): RegisterRouter
 }

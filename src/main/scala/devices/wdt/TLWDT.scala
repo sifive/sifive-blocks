@@ -24,7 +24,7 @@ import sifive.blocks.devices.mockaon.WatchdogTimer
 case class WDTParams(
   address: BigInt,
   size: Int = 0x1000,
-  regBytes: Int = 4)
+  regBytes: Int = 4) extends DeviceParams
 
 class WDTPortIO(val c: WDTParams) extends Bundle {
   val corerst = Bool(INPUT)
@@ -76,7 +76,7 @@ case class WDTAttachParams(
   controlWhere: BaseSubsystemBusAttachment = PBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
-  intXType: ClockCrossingType = NoCrossing)
+  intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLWDT = where {
     val name = s"wdt_${WDT.nextId()}"
