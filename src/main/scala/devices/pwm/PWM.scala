@@ -33,7 +33,7 @@ class PWMTimer(val ncmp: Int = 4, val cmpWidth: Int = 16) extends MultiIOModule 
     val sel = (0 until ncmp).map(i => s(cmpWidth-1) && center(i))
     val reg = Reg(Vec(ncmp, Bool()))
     reg := (sel & elapsed) | (~sel & (elapsed | (Vec.fill(ncmp){doSticky} & reg)))
-    when (orR(io.regs.cfg.write_ip) && unlocked) { reg := io.regs.cfg.write_ip }
+    when (orR(io.regs.cfg.write_ip) && unlocked) { reg := io.regs.cfg.write.ip }
     reg
   }
 
