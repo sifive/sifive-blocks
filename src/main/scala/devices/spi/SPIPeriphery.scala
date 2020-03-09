@@ -9,7 +9,9 @@ import freechips.rocketchip.diplomacy._
 case object PeripherySPIKey extends Field[Seq[SPIParams]]
 
 trait HasPeripherySPI { this: BaseSubsystem =>
-  val spiNodes = p(PeripherySPIKey).map { ps => SPI.attach(SPIAttachParams(ps, pbus, ibus.fromAsync)).ioNode.makeSink() }
+  val spiNodes = p(PeripherySPIKey).map { ps =>
+    SPIAttachParams(ps).attachTo(this).ioNode.makeSink() 
+  }
 }
 
 trait HasPeripherySPIBundle {
@@ -25,7 +27,7 @@ case object PeripherySPIFlashKey extends Field[Seq[SPIFlashParams]]
 
 trait HasPeripherySPIFlash { this: BaseSubsystem =>
   val qspiNodes = p(PeripherySPIFlashKey).map { ps =>
-    SPI.attachFlash(SPIFlashAttachParams(ps, pbus, pbus, ibus.fromAsync, fBufferDepth = 8)).ioNode.makeSink()
+    SPIFlashAttachParams(ps, fBufferDepth = 8).attachTo(this).ioNode.makeSink()
   }
 }
 

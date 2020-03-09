@@ -11,6 +11,7 @@ import freechips.rocketchip.util.HeterogeneousBag
 import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
 import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
+import sifive.blocks.util._
 
 trait SPIFlashParamsBase extends SPIParamsBase {
   val fAddress: BigInt
@@ -37,7 +38,7 @@ case class SPIFlashParams(
     sampleDelayBits: Int = 5,
     defaultSampleDel: Int = 3
     )
-  extends SPIFlashParamsBase {
+  extends SPIFlashParamsBase with DeviceParams {
   val frameBits = 8
   val insnAddrBytes = 4
   val insnPadLenBits = 4

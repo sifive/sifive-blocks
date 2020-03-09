@@ -8,20 +8,23 @@ import chisel3.MultiIOModule
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
+import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
+import freechips.rocketchip.subsystem.{Attachable, BaseSubsystemBusAttachment, PBUS}
+import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.util._
 import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
 import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
 
-import sifive.blocks.util.{BasicBusBlocker, GenericTimer, GenericTimerIO, DefaultGenericTimerCfgDescs}
+import sifive.blocks.util._
 import sifive.blocks.devices.mockaon.WatchdogTimer
 
 case class WDTParams(
   address: BigInt,
   size: Int = 0x1000,
-  regBytes: Int = 4)
+  regBytes: Int = 4) extends DeviceParams
 
 class WDTPortIO(val c: WDTParams) extends Bundle {
   val corerst = Bool(INPUT)
@@ -69,48 +72,61 @@ class TLWDT(busWidthBytes: Int, params: WDTParams)(implicit p: Parameters)
   extends WDT(busWidthBytes, params) with HasTLControlRegMap
 
 case class WDTAttachParams(
-  wdt: WDTParams,
-  controlBus: TLBusWrapper,
-  intNode: IntInwardNode,
+  device: WDTParams,
+  controlWhere: BaseSubsystemBusAttachment = PBUS,
   blockerAddr: Option[BigInt] = None,
-  mclock: Option[ModuleValue[Clock]] = None,
-  mreset: Option[ModuleValue[Bool]] = None,
   controlXType: ClockCrossingType = NoCrossing,
-  intXType: ClockCrossingType = NoCrossing,
-  clockDev: Option[FixedClockResource] = None,
-  parentLogicalTreeNode: Option[LogicalTreeNode] = None)
-  (implicit val p: Parameters)
+  intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
+{
+  def attachTo(where: Attachable)(implicit p: Parameters): TLWDT = where {
+    val name = s"wdt_${WDT.nextId()}"
+    val tlbus = where.attach(controlWhere)
+    val wdtClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
+    val wdt = wdtClockDomainWrapper { LazyModule(new TLWDT(tlbus.beatBytes, device)) }
+    wdt.suggestName(name)
+
+    tlbus.coupleTo(s"device_named_$name") { bus =>
+
+      val blockerOpt = blockerAddr.map { a =>
+        val blocker = LazyModule(new TLClockBlocker(BasicBusBlockerParams(a, tlbus.beatBytes, tlbus.beatBytes)))
+        tlbus.coupleTo(s"bus_blocker_for_$name") { blocker.controlNode := TLFragmenter(tlbus) := _ }
+        blocker
+      }
+
+      wdtClockDomainWrapper.clockNode := (controlXType match {
+        case _: SynchronousCrossing =>
+          tlbus.dtsClk.map(_.bind(wdt.device))
+          tlbus.fixedClockNode
+        case _: RationalCrossing =>
+          tlbus.clockNode
+        case _: AsynchronousCrossing =>
+          val wdtClockGroup = ClockGroup()
+          wdtClockGroup := where.asyncClockGroupsNode
+          blockerOpt.map { _.clockNode := wdtClockGroup } .getOrElse { wdtClockGroup }
+      })
+
+      (wdt.controlXing(controlXType)
+        := TLFragmenter(tlbus)
+        := blockerOpt.map { _.node := bus } .getOrElse { bus })
+    }
+
+    (intXType match {
+      case _: SynchronousCrossing => where.ibus.fromSync
+      case _: RationalCrossing => where.ibus.fromRational
+      case _: AsynchronousCrossing => where.ibus.fromAsync
+    }) := wdt.intXing(intXType)
+
+    LogicalModuleTree.add(where.logicalTreeNode, wdt.logicalTreeNode)
+
+    wdt
+  }
+}
 
 object WDT {
   val nextId = { var i = -1; () => { i += 1; i} }
 
-  def attach(params: WDTAttachParams): TLWDT = {
-    implicit val p = params.p
-    val name = s"wdt_${nextId()}"
-    val cbus = params.controlBus
-    val wdt = LazyModule(new TLWDT(cbus.beatBytes, params.wdt))
-    wdt.suggestName(name)
-    cbus.coupleTo(s"device_named_$name") { bus =>
-      val blockerNode = params.blockerAddr.map(BasicBusBlocker(_, cbus, cbus.beatBytes, name))
-      (wdt.controlXing(params.controlXType)
-        := TLFragmenter(cbus)
-        := blockerNode.map { _ := bus } .getOrElse { bus })
-    }
-    params.intNode := wdt.intXing(params.intXType)
-    params.clockDev.map(_.bind(wdt.device))
-    InModuleBody { wdt.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
-    InModuleBody { wdt.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset) }
-
-    params.parentLogicalTreeNode.foreach { parent =>
-      LogicalModuleTree.add(parent, wdt.logicalTreeNode)
-    }
-
-    wdt
-  }
-
-  def attachAndMakePort(params: WDTAttachParams): ModuleValue[WDTPortIO] = {
-    val wdt = attach(params)
-    val wdtNode = wdt.ioNode.makeSink()(params.p)
-    InModuleBody { wdtNode.makeIO()(ValName(wdt.name)) }
+  def makePort(node: BundleBridgeSource[WDTPortIO], name: String)(implicit p: Parameters): ModuleValue[WDTPortIO] = {
+    val wdtNode = node.makeSink()
+    InModuleBody { wdtNode.makeIO()(ValName(name)) }
   }
 }

@@ -2,17 +2,22 @@
 package sifive.blocks.devices.gpio
 
 import Chisel._
-import sifive.blocks.devices.pinctrl.{PinCtrl, Pin, BasePin, EnhancedPin, EnhancedPinCtrl}
-import sifive.blocks.util.BasicBusBlocker
+
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.interrupts._
+import freechips.rocketchip.prci._
+import freechips.rocketchip.regmapper._
+import freechips.rocketchip.subsystem.{Attachable, BaseSubsystemBusAttachment, PBUS}
+import freechips.rocketchip.tilelink._
+import freechips.rocketchip.devices.tilelink._
+import freechips.rocketchip.util.{AsyncResetRegVec, SynchronizerShiftReg}
 import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
 import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
-import freechips.rocketchip.interrupts._
-import freechips.rocketchip.regmapper._
-import freechips.rocketchip.tilelink._
-import freechips.rocketchip.util.{AsyncResetRegVec, SynchronizerShiftReg}
+
+import sifive.blocks.devices.pinctrl.{PinCtrl, Pin, BasePin, EnhancedPin, EnhancedPinCtrl}
+import sifive.blocks.util.{DeviceParams,DeviceAttachParams,BasicBusBlocker}
 
 // This is sort of weird because
 // the IOF end up at the RocketChipTop
@@ -30,7 +35,7 @@ class GPIOPortIO(val c: GPIOParams) extends Bundle {
 case class GPIOParams(
   address: BigInt,
   width: Int,
-  includeIOF: Boolean = false)
+  includeIOF: Boolean = false) extends DeviceParams
 
 /** The base GPIO peripheral functionality, which uses the regmap API to
   * abstract over the bus protocol to which it is being connected
@@ -232,46 +237,58 @@ class TLGPIO(busWidthBytes: Int, params: GPIOParams)(implicit p: Parameters)
   extends GPIO(busWidthBytes, params) with HasTLControlRegMap
 
 case class GPIOAttachParams(
-  gpio: GPIOParams,
-  controlBus: TLBusWrapper,
-  intNode: IntInwardNode,
+  device: GPIOParams,
+  controlWhere: BaseSubsystemBusAttachment = PBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
-  intXType: ClockCrossingType = NoCrossing,
-  mclock: Option[ModuleValue[Clock]] = None,
-  mreset: Option[ModuleValue[Bool]] = None,
-  clockDev: Option[FixedClockResource] = None,
-  parentLogicalTreeNode: Option[LogicalTreeNode] = None)
-  (implicit val p: Parameters)
-
-object GPIO {
-  val nextId = { var i = -1; () => { i += 1; i} }
-
-  def attach(params: GPIOAttachParams): TLGPIO = {
-    implicit val p = params.p
-    val name = s"gpio_${nextId()}"
-    val cbus = params.controlBus
-    val gpio = LazyModule(new TLGPIO(cbus.beatBytes, params.gpio))
+  intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
+{
+  def attachTo(where: Attachable)(implicit p: Parameters): TLGPIO = where {
+    val name = s"gpio_${GPIO.nextId()}"
+    val cbus = where.attach(controlWhere)
+    val gpioClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
+    val gpio = gpioClockDomainWrapper { LazyModule(new TLGPIO(cbus.beatBytes, device)) }
     gpio.suggestName(name)
 
     cbus.coupleTo(s"device_named_$name") { bus =>
-      val blockerNode = params.blockerAddr.map(BasicBusBlocker(_, cbus, cbus.beatBytes, name))
-      (gpio.controlXing(params.controlXType)
+
+      val blockerOpt = blockerAddr.map { a =>
+        val blocker = LazyModule(new TLClockBlocker(BasicBusBlockerParams(a, cbus.beatBytes, cbus.beatBytes)))
+        cbus.coupleTo(s"bus_blocker_for_$name") { blocker.controlNode := TLFragmenter(cbus) := _ }
+        blocker
+      }
+
+      gpioClockDomainWrapper.clockNode := (controlXType match {
+        case _: SynchronousCrossing =>
+          cbus.dtsClk.map(_.bind(gpio.device))
+          cbus.fixedClockNode
+        case _: RationalCrossing =>
+          cbus.clockNode
+        case _: AsynchronousCrossing =>
+          val gpioClockGroup = ClockGroup()
+          gpioClockGroup := where.asyncClockGroupsNode
+          blockerOpt.map { _.clockNode := gpioClockGroup } .getOrElse { gpioClockGroup }
+      })
+
+      (gpio.controlXing(controlXType)
         := TLFragmenter(cbus)
-        := blockerNode.map { _ := bus } .getOrElse { bus })
-    }
-    params.intNode := gpio.intXing(params.intXType)
-    InModuleBody { gpio.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
-    InModuleBody { gpio.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset) }
-
-    params.parentLogicalTreeNode.foreach { parent =>
-      LogicalModuleTree.add(parent, gpio.logicalTreeNode)
+        := blockerOpt.map { _.node := bus } .getOrElse { bus })
     }
 
-    params.clockDev.map(_.bind(gpio.device))
+    (intXType match {
+      case _: SynchronousCrossing => where.ibus.fromSync
+      case _: RationalCrossing => where.ibus.fromRational
+      case _: AsynchronousCrossing => where.ibus.fromAsync
+    }) := gpio.intXing(intXType)
+
+    LogicalModuleTree.add(where.logicalTreeNode, gpio.logicalTreeNode)
 
     gpio
   }
+}
+
+object GPIO {
+  val nextId = { var i = -1; () => { i += 1; i} }
 
   def makePort(node: BundleBridgeSource[GPIOPortIO], name: String)(implicit p: Parameters): ModuleValue[GPIOPortIO] = {
     val gpioNode = node.makeSink()

@@ -2,16 +2,20 @@
 package sifive.blocks.devices.uart
 
 import Chisel._
+
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
+import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
+import freechips.rocketchip.subsystem.{Attachable, BaseSubsystemBusAttachment, PBUS}
 import freechips.rocketchip.tilelink._
+import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
 import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
 
-import sifive.blocks.util.{BasicBusBlocker, NonBlockingEnqueue, NonBlockingDequeue}
+import sifive.blocks.util._
 
 case class UARTParams(
   address: BigInt,
@@ -21,7 +25,7 @@ case class UARTParams(
   oversample: Int = 4,
   nSamples: Int = 3,
   nTxEntries: Int = 8,
-  nRxEntries: Int = 8)
+  nRxEntries: Int = 8) extends DeviceParams
 {
   def oversampleFactor = 1 << oversample
   require(divisorBits > oversample)
@@ -159,47 +163,59 @@ class TLUART(busWidthBytes: Int, params: UARTParams, divinit: Int)(implicit p: P
   extends UART(busWidthBytes, params, divinit) with HasTLControlRegMap
 
 case class UARTAttachParams(
-  uart: UARTParams,
-  divinit: Int,
-  controlBus: TLBusWrapper,
-  intNode: IntInwardNode,
+  device: UARTParams,
+  controlWhere: BaseSubsystemBusAttachment = PBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
-  intXType: ClockCrossingType = NoCrossing,
-  mclock: Option[ModuleValue[Clock]] = None,
-  mreset: Option[ModuleValue[Bool]] = None,
-  parentLogicalTreeNode: Option[LogicalTreeNode] = None,
-  clockDev: Option[FixedClockResource] = None)
-  (implicit val p: Parameters)
-
-object UART {
-  val nextId = { var i = -1; () => { i += 1; i} }
-
-  def attach(params: UARTAttachParams): TLUART = {
-    implicit val p = params.p
-    val name = s"uart_${nextId()}"
-    val cbus =  params.controlBus
-    val uart = LazyModule(new TLUART(cbus.beatBytes, params.uart, params.divinit))
+  intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
+{
+  def attachTo(where: Attachable)(implicit p: Parameters): TLUART = where {
+    val name = s"uart_${UART.nextId()}"
+    val tlbus = where.attach(controlWhere)
+    val divinit = (tlbus.dtsFrequency.get / 115200).toInt
+    val uartClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
+    val uart = uartClockDomainWrapper { LazyModule(new TLUART(tlbus.beatBytes, device, divinit)) }
     uart.suggestName(name)
 
-    cbus.coupleTo(s"device_named_$name") { bus =>
-      val blockerNode = params.blockerAddr.map(BasicBusBlocker(_, cbus, cbus.beatBytes, name))
-      (uart.controlXing(params.controlXType)
-        := TLFragmenter(cbus)
-        := blockerNode.map { _ := bus } .getOrElse { bus })
-    }
-    params.intNode := uart.intXing(params.intXType)
-    InModuleBody { uart.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock) }
-    InModuleBody { uart.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset) }
+    tlbus.coupleTo(s"device_named_$name") { bus =>
 
-    params.parentLogicalTreeNode.foreach { parent =>
-      LogicalModuleTree.add(parent, uart.logicalTreeNode)
+      val blockerOpt = blockerAddr.map { a =>
+        val blocker = LazyModule(new TLClockBlocker(BasicBusBlockerParams(a, tlbus.beatBytes, tlbus.beatBytes)))
+        tlbus.coupleTo(s"bus_blocker_for_$name") { blocker.controlNode := TLFragmenter(tlbus) := _ }
+        blocker
+      }
+
+      uartClockDomainWrapper.clockNode := (controlXType match {
+        case _: SynchronousCrossing =>
+          tlbus.dtsClk.map(_.bind(uart.device))
+          tlbus.fixedClockNode
+        case _: RationalCrossing =>
+          tlbus.clockNode
+        case _: AsynchronousCrossing =>
+          val uartClockGroup = ClockGroup()
+          uartClockGroup := where.asyncClockGroupsNode
+          blockerOpt.map { _.clockNode := uartClockGroup } .getOrElse { uartClockGroup }
+      })
+
+      (uart.controlXing(controlXType)
+        := TLFragmenter(tlbus)
+        := blockerOpt.map { _.node := bus } .getOrElse { bus })
     }
 
-    params.clockDev.map(_.bind(uart.device))
+    (intXType match {
+      case _: SynchronousCrossing => where.ibus.fromSync
+      case _: RationalCrossing => where.ibus.fromRational
+      case _: AsynchronousCrossing => where.ibus.fromAsync
+    }) := uart.intXing(intXType)
+
+    LogicalModuleTree.add(where.logicalTreeNode, uart.logicalTreeNode)
 
     uart
   }
+}
+
+object UART {
+  val nextId = { var i = -1; () => { i += 1; i} }
 
   def makePort(node: BundleBridgeSource[UARTPortIO], name: String)(implicit p: Parameters): ModuleValue[UARTPortIO] = {
     val uartNode = node.makeSink()
@@ -214,3 +230,4 @@ object UART {
     port.rxd := port.txd
   }
 }
+
