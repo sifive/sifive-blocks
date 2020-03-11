@@ -11,7 +11,7 @@ import freechips.rocketchip.interrupts._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
-import freechips.rocketchip.subsystem.{Attachable, BaseSubsystemBusAttachment, PBUS}
+import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, PBUS}
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.util._
 import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
@@ -73,14 +73,14 @@ class TLWDT(busWidthBytes: Int, params: WDTParams)(implicit p: Parameters)
 
 case class WDTAttachParams(
   device: WDTParams,
-  controlWhere: BaseSubsystemBusAttachment = PBUS,
+  controlWhere: TLBusWrapperLocation = PBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLWDT = where {
     val name = s"wdt_${WDT.nextId()}"
-    val tlbus = where.attach(controlWhere)
+    val tlbus = where.locateTLBusWrapper(controlWhere)
     val wdtClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
     val wdt = wdtClockDomainWrapper { LazyModule(new TLWDT(tlbus.beatBytes, device)) }
     wdt.suggestName(name)

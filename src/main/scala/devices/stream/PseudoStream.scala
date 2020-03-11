@@ -7,7 +7,7 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
-import freechips.rocketchip.subsystem.{Attachable, BaseSubsystemBusAttachment, SBUS}
+import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, SBUS}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
 
@@ -94,13 +94,13 @@ class TLPseudoStream(busWidthBytes: Int, params: PseudoStreamParams)(implicit p:
 
 case class PseudoStreamAttachParams(
   device: PseudoStreamParams,
-  controlWhere: BaseSubsystemBusAttachment = SBUS,
+  controlWhere: TLBusWrapperLocation = SBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLPseudoStream = where {
     val name = s"stream_${PseudoStream.nextId()}"
-    val tlbus = where.attach(controlWhere)
+    val tlbus = where.locateTLBusWrapper(controlWhere)
     val streamClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
     val stream = streamClockDomainWrapper { LazyModule(new TLPseudoStream(tlbus.beatBytes, device)) }
     stream.suggestName(name)

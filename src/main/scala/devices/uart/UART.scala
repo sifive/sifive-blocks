@@ -8,7 +8,7 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
-import freechips.rocketchip.subsystem.{Attachable, BaseSubsystemBusAttachment, PBUS}
+import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, PBUS}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
@@ -164,14 +164,14 @@ class TLUART(busWidthBytes: Int, params: UARTParams, divinit: Int)(implicit p: P
 
 case class UARTAttachParams(
   device: UARTParams,
-  controlWhere: BaseSubsystemBusAttachment = PBUS,
+  controlWhere: TLBusWrapperLocation = PBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLUART = where {
     val name = s"uart_${UART.nextId()}"
-    val tlbus = where.attach(controlWhere)
+    val tlbus = where.locateTLBusWrapper(controlWhere)
     val divinit = (tlbus.dtsFrequency.get / 115200).toInt
     val uartClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
     val uart = uartClockDomainWrapper { LazyModule(new TLUART(tlbus.beatBytes, device, divinit)) }
