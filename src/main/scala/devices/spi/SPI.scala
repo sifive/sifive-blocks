@@ -10,7 +10,7 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
-import freechips.rocketchip.subsystem.{Attachable, BaseSubsystemBusAttachment, PBUS}
+import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, PBUS}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
@@ -21,14 +21,14 @@ import sifive.blocks.util._
 
 case class SPIAttachParams(
   device: SPIParams,
-  controlWhere: BaseSubsystemBusAttachment = PBUS,
+  controlWhere: TLBusWrapperLocation = PBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLSPI = where {
     val name = s"spi_${SPI.nextId()}"
-    val tlbus = where.attach(controlWhere)
+    val tlbus = where.locateTLBusWrapper(controlWhere)
     val spiClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
     val spi = spiClockDomainWrapper { LazyModule(new TLSPI(tlbus.beatBytes, device)) }
     spi.suggestName(name)
@@ -72,8 +72,8 @@ case class SPIAttachParams(
 
 case class SPIFlashAttachParams(
   device: SPIFlashParams,
-  controlWhere: BaseSubsystemBusAttachment = PBUS,
-  dataWhere: BaseSubsystemBusAttachment = PBUS,
+  controlWhere: TLBusWrapperLocation = PBUS,
+  dataWhere: TLBusWrapperLocation = PBUS,
   fBufferDepth: Int = 0,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
@@ -82,8 +82,8 @@ case class SPIFlashAttachParams(
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLSPIFlash = where {
     val name = s"qspi_${SPI.nextFlashId()}" // TODO should these be shared with regular SPIs?
-    val cbus = where.attach(controlWhere)
-    val mbus = where.attach(dataWhere)
+    val cbus = where.locateTLBusWrapper(controlWhere)
+    val mbus = where.locateTLBusWrapper(dataWhere)
     val qspiClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
     val qspi = qspiClockDomainWrapper { LazyModule(new TLSPIFlash(cbus.beatBytes, device)) }
     qspi.suggestName(name)

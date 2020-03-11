@@ -10,7 +10,7 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
-import freechips.rocketchip.subsystem.{Attachable, BaseSubsystemBusAttachment, PBUS}
+import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, PBUS}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.util._
@@ -120,14 +120,14 @@ class TLPWM(busWidthBytes: Int, params: PWMParams)(implicit p: Parameters)
 
 case class PWMAttachParams(
   device: PWMParams,
-  controlWhere: BaseSubsystemBusAttachment = PBUS,
+  controlWhere: TLBusWrapperLocation = PBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLPWM = {
     val name = s"pwm_${PWM.nextId()}"
-    val tlbus = where.attach(controlWhere)
+    val tlbus = where.locateTLBusWrapper(controlWhere)
     val pwmClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
     val pwm = pwmClockDomainWrapper { LazyModule(new TLPWM(tlbus.beatBytes, device)) }
     pwm.suggestName(name)

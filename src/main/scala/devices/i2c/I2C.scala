@@ -47,7 +47,7 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
-import freechips.rocketchip.subsystem.{Attachable, BaseSubsystemBusAttachment, PBUS}
+import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, PBUS}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.util.{AsyncResetRegVec, Majority}
@@ -582,14 +582,14 @@ class TLI2C(busWidthBytes: Int, params: I2CParams)(implicit p: Parameters)
 
 case class I2CAttachParams(
   device: I2CParams,
-  controlWhere: BaseSubsystemBusAttachment = PBUS,
+  controlWhere: TLBusWrapperLocation = PBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLI2C = where {
     val name = s"i2c_${I2C.nextId()}"
-    val tlbus = where.attach(controlWhere)
+    val tlbus = where.locateTLBusWrapper(controlWhere)
     val i2cClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
     val i2c = i2cClockDomainWrapper { LazyModule(new TLI2C(tlbus.beatBytes, device)) }
     i2c.suggestName(name)
