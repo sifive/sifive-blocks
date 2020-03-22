@@ -17,7 +17,7 @@ case class MSITarget(address: BigInt, spacing: Int, number: Int)
 
 class MSIMaster(targets: Seq[MSITarget])(implicit p: Parameters) extends LazyModule
 {
-  val masterNode = TLClientNode(Seq(TLClientPortParameters(Seq(TLClientParameters("MSI Master", sourceId = IdRange(0,2))))))
+  val masterNode = TLClientNode(Seq(TLMasterPortParameters.v1(Seq(TLMasterParameters.v1("MSI Master", sourceId = IdRange(0,2))))))
 
   // A terminal interrupt node of flexible number
   val intNode = IntNexusNode(

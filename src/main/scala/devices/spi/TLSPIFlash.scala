@@ -116,8 +116,8 @@ class SPIFlashTopModule(c: SPIFlashParamsBase, outer: TLSPIFlashBase)
 
 abstract class TLSPIFlashBase(w: Int, c: SPIFlashParamsBase)(implicit p: Parameters) extends TLSPIBase(w,c)(p) {
   require(isPow2(c.fSize))
-  val fnode = TLManagerNode(Seq(TLManagerPortParameters(
-    managers = Seq(TLManagerParameters(
+  val fnode = TLManagerNode(Seq(TLSlavePortParameters.v1(
+    managers = Seq(TLSlaveParameters.v1(
       address     = Seq(AddressSet(c.fAddress, c.fSize-1)),
       resources   = device.reg("mem"),
       regionType  = RegionType.UNCACHED,

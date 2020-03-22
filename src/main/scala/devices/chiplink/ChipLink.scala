@@ -12,12 +12,12 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
 
   val device = new SimpleBus("chiplink", Seq("sifive,chiplink"))
 
-  private def maybeManager(x: Seq[AddressSet], f: Seq[AddressSet] => TLManagerParameters) =
+  private def maybeManager(x: Seq[AddressSet], f: Seq[AddressSet] => TLSlaveParameters) =
     if (x.isEmpty) Nil else Seq(f(x))
 
-  private val slaveNode = TLManagerNode(Seq(TLManagerPortParameters(
+  private val slaveNode = TLManagerNode(Seq(TLSlavePortParameters.v1(
     managers =
-      maybeManager(params.TLUH, a => TLManagerParameters(
+      maybeManager(params.TLUH, a => TLSlaveParameters.v1(
         address            = a,
         resources          = device.ranges,
         regionType         = RegionType.GET_EFFECTS,
@@ -31,7 +31,7 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
         mayDenyPut         = true,
         mayDenyGet         = true,
         fifoId             = Some(0))) ++
-      maybeManager(params.TLC, a => TLManagerParameters(
+      maybeManager(params.TLC, a => TLSlaveParameters.v1(
         address            = a,
         resources          = device.ranges,
         regionType         = RegionType.TRACKED,
@@ -52,9 +52,9 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
     minLatency = params.latency)))
 
   // Masters 1+ require order; Master 0 is unordered and may cache
-  private val masterNode = TLClientNode(Seq(TLClientPortParameters(
+  private val masterNode = TLClientNode(Seq(TLMasterPortParameters.v1(
     clients = Seq.tabulate(params.domains) { i =>
-      TLClientParameters(
+      TLMasterParameters.v1(
         name          = "ChipLink Domain #" + i,
         sourceId      = IdRange(i*params.sourcesPerDomain, (i + 1)*params.sourcesPerDomain),
         requestFifo   = i > 0,
