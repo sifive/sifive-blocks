@@ -66,18 +66,23 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
   require(divisorInit >> c.divisorBits == 0, s"UART divisor reg (width $c.divisorBits) not wide enough to hold $divisorInit")
 
   lazy val module = new LazyModuleImp(this) {
+    /*
     val io = new Bundle {
       val controlIn = controlNode.in(0)._1
     }
+    */
 
-  /*
-  val (bundle, edge) = controlNode.in(0)
-  val a = bundle.a
-  val d = bundle.d
-  overprovision(a.bits.source, 20.W)
-  */
-  val a = io.controlIn.a
-  overprovision(a.bits.source, 20.W)
+    /*
+    val (bundle, edge) = controlNode.in(0)
+    val a = bundle.a
+    val d = bundle.d
+    overprovision(a.bits.source, 20.W)
+    */
+
+    /*
+    val a = io.controlIn.a
+    overprovision(a.bits.source, 20.W)
+    */
 
   val txm = Module(new UARTTx(c))
   val txq = Module(new Queue(txm.io.in.bits, c.nTxEntries))
