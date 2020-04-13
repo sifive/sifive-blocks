@@ -88,7 +88,7 @@ class UARTRx(c: UARTParams) extends Module {
             // act according to frame bit stage at its respective sampling point
             // check parity bit for error
             when (parity_bit) {
-              io.errorparity.get := (shifter.toBools.reduce(_ ^ _) ^ voter ^ io.parity.get)
+              io.errorparity.get := (shifter.asBools.reduce(_ ^ _) ^ voter ^ io.parity.get)
             }
             when (data_last) {
               state := s_idle

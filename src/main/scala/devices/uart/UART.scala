@@ -210,6 +210,9 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
           stopBits = c.stopBits,
           oversample = c.oversample,
           nSamples = c.nSamples,
+          includeFourWire = c.includeFourWire,
+          includeParity = c.includeParity,
+          includeIndependentParity = c.includeIndependentParity,
           memoryRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions("UART", resourceBindings, Some(module.omRegMap)),
           interrupts = DiplomaticObjectModelAddressing.describeGlobalInterrupts(device.describe(resourceBindings).name, resourceBindings),
         )

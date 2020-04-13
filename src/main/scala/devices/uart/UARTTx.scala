@@ -39,7 +39,7 @@ class UARTTx(c: UARTParams) extends Module {
   when (io.in.fire() && plusarg_tx) {
     if (c.includeParity) {
       val includebit9 = if (c.dataBits == 9) Mux(io.data8or9.get, Bool(false), io.in.bits(8)) else Bool(false)
-      val parity = Mux(io.enparity.get, includebit9 ^ io.in.bits(7,0).toBools.reduce(_ ^ _) ^ io.parity.get, Bool(true))
+      val parity = Mux(io.enparity.get, includebit9 ^ io.in.bits(7,0).asBools.reduce(_ ^ _) ^ io.parity.get, Bool(true))
       val paritywithbit9 = if (c.dataBits == 9) Mux(io.data8or9.get, Cat(1.U(1.W), parity), Cat(parity, io.in.bits(8))) 
                            else Cat(1.U(1.W), parity)
       shifter := Cat(paritywithbit9, io.in.bits(7,0), Bits(0, 1))
