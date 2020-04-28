@@ -14,7 +14,7 @@ case class DevicesLocated(loc: HierarchicalLocation) extends Field[Seq[DeviceAtt
 trait CanHaveDevices { this: Attachable =>
   def location: HierarchicalLocation
   val devicesConfigs: Seq[DeviceAttachParams] = p(DevicesLocated(location))
-  val devices: Seq[RegisterRouter] = devicesConfigs.map(_.attachTo(this))
+  val devices: Seq[LazyModule] = devicesConfigs.map(_.attachTo(this))
 }
 
 trait DeviceParams
@@ -25,5 +25,5 @@ trait DeviceAttachParams {
   val blockerAddr: Option[BigInt]
   val controlXType: ClockCrossingType
 
-  def attachTo(where: Attachable)(implicit p: Parameters): RegisterRouter
+  def attachTo(where: Attachable)(implicit p: Parameters): LazyModule
 }
