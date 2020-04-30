@@ -115,16 +115,15 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
   val rise = ~valueReg & inSyncReg;
   val fall = valueReg & ~inSyncReg;
 
-
-  
+  implicit val mode64: Boolean = c.width > 32
   def rwReg32base(total: Int, bb: SimpleRegIO, desc: Option[RegFieldDesc] = None) : RegField =
-  {  RegField((if (total>32) 32 else total), bb.q, RegWriteFn((valid, data) => {
+  if (mode64) RegField((if (total>32) 32 else total), bb.q, RegWriteFn((valid, data) => {
       when (valid) { 
         bb.d := Cat(bb.q(total-1, 32), data) 
         bb.en := true.B
       }
       Bool(true)
-    }), desc)}
+    }), desc) else RegField.rwReg(total, bb, desc)
   def rwReg32plus(total: Int, bb: SimpleRegIO, desc: Option[RegFieldDesc] = None) : RegField =
   {  RegField((total-32), (bb.q >> 32), RegWriteFn((valid, data) => {
       when (valid) { 
@@ -147,12 +146,12 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
   def reg32base(total: Int, regg: UInt, desc: RegFieldDesc) : RegField =
   {
     val maxx = if (total > 32) 31 else (total-1)
-    RegField((maxx+1), regg(maxx, 0), RegWriteFn { (valid, data) => {
+    if (mode64) RegField((maxx+1), regg(maxx, 0), RegWriteFn { (valid, data) => {
       val reggbools = regg.asBools.drop(maxx+1)
       val databools = data.asBools
       when (valid) {regg := Vec(databools ++ reggbools).asUInt}
       Bool(true)
-    }}, desc)
+    }}, desc) else RegField(total, regg, desc)
   }
   val iofEnFields =  if (c.includeIOF) (Seq(rwReg32base(c.width, iofEnReg.io,
                         Some(RegFieldDesc("iof_en","HW I/O functon enable", reset=Some(0))))))
@@ -167,8 +166,8 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
                         RegFieldDesc("iof_sel","HW I/O function select", reset=Some(0)))))
                      else (Seq(RegField(c.width)))
   def w1ToClearbase(total: Int, reg: UInt, set: UInt, desc: Option[RegFieldDesc] = None): RegField =
-    RegField((if (total>32) 32 else total), reg, RegWriteFn((valid, data) => { reg := ~(~reg | Mux(valid, data, UInt(0))) | set; Bool(true) }),
-      desc.map{_.copy(access = RegFieldAccessType.RW, wrType=Some(RegFieldWrType.ONE_TO_CLEAR), volatile = true)})
+    if (mode64) RegField((if (total>32) 32 else total), reg, RegWriteFn((valid, data) => { reg := ~(~reg | Mux(valid, data, UInt(0))) | set; Bool(true) }),
+      desc.map{_.copy(access = RegFieldAccessType.RW, wrType=Some(RegFieldWrType.ONE_TO_CLEAR), volatile = true)}) else RegField.w1ToClear(total, reg, set, desc)
   def w1ToClearplus(total: Int, reg: UInt, set: UInt, desc: Option[RegFieldDesc] = None): RegField =
     RegField((total-32), reg, RegWriteFn((valid, data) => { when (valid) {reg := ~(~reg | (data<<32)) | set}; Bool(true) }),
       desc.map{_.copy(access = RegFieldAccessType.RW, wrType=Some(RegFieldWrType.ONE_TO_CLEAR), volatile = true)})
@@ -177,79 +176,81 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
   val mapping = Seq(
     GPIOCtrlRegs.value     -> Seq(RegField.r(width0, valueReg,
                                   RegFieldDesc("input_value","Pin value", volatile=true))),
-    (GPIOCtrlRegs.value + 4) -> Seq(RegField.r(width1, valueReg >> 32,
-                                  RegFieldDesc("input_value","Pin value", volatile=true))),
     GPIOCtrlRegs.output_en -> Seq(rwReg32base(c.width, oeReg.io,
-                                  Some(RegFieldDesc("output_en","Pin output enable", reset=Some(0))))),
-    (GPIOCtrlRegs.output_en+4)-> Seq(rwReg32plus(c.width, oeReg.io,
                                   Some(RegFieldDesc("output_en","Pin output enable", reset=Some(0))))),
     GPIOCtrlRegs.rise_ie   -> Seq(reg32base(c.width, riseIeReg,
                                   RegFieldDesc("rise_ie","Rise interrupt enable", reset=Some(0)))),
-    (GPIOCtrlRegs.rise_ie + 4)  -> Seq(reg32plus(c.width, riseIeReg,
-                                  RegFieldDesc("rise_ie","Rise interrupt enable", reset=Some(0)))),
     GPIOCtrlRegs.rise_ip   -> Seq(w1ToClearbase(c.width, riseIpReg, rise,
-                                  Some(RegFieldDesc("rise_ip","Rise interrupt pending", volatile=true)))),
-    (GPIOCtrlRegs.rise_ip+4)   -> Seq(w1ToClearplus(c.width, riseIpReg, rise,
                                   Some(RegFieldDesc("rise_ip","Rise interrupt pending", volatile=true)))),
     GPIOCtrlRegs.fall_ie   -> Seq(reg32base(c.width, fallIeReg,
                                   RegFieldDesc("fall_ie", "Fall interrupt enable", reset=Some(0)))),
-    (GPIOCtrlRegs.fall_ie + 4)  -> Seq(reg32plus(c.width, fallIeReg,
-                                  RegFieldDesc("fall_ie", "Fall interrupt enable", reset=Some(0)))),
     GPIOCtrlRegs.fall_ip   -> Seq(w1ToClearbase(c.width, fallIpReg, fall,
-                                  Some(RegFieldDesc("fall_ip","Fall interrupt pending", volatile=true)))),
-    (GPIOCtrlRegs.fall_ip+4)   -> Seq(w1ToClearplus(c.width, fallIpReg, fall,
                                   Some(RegFieldDesc("fall_ip","Fall interrupt pending", volatile=true)))),
     GPIOCtrlRegs.high_ie   -> Seq(reg32base(c.width, highIeReg,
                                   RegFieldDesc("high_ie","High interrupt enable", reset=Some(0)))),
-    (GPIOCtrlRegs.high_ie + 4)  -> Seq(reg32plus(c.width, highIeReg,
-                                  RegFieldDesc("high_ie","High interrupt enable", reset=Some(0)))),
     GPIOCtrlRegs.high_ip   -> Seq(w1ToClearbase(c.width, highIpReg, valueReg,
-                                  Some(RegFieldDesc("high_ip","High interrupt pending", volatile=true)))),
-    (GPIOCtrlRegs.high_ip +4)  -> Seq(w1ToClearplus(c.width, highIpReg, valueReg,
                                   Some(RegFieldDesc("high_ip","High interrupt pending", volatile=true)))),
     GPIOCtrlRegs.low_ie    -> Seq(reg32base(c.width, lowIeReg,
                                   RegFieldDesc("low_ie","Low interrupt enable", reset=Some(0)))),
-    (GPIOCtrlRegs.low_ie + 4)   -> Seq(reg32plus(c.width, lowIeReg,
-                                  RegFieldDesc("low_ie","Low interrupt enable", reset=Some(0)))),
     GPIOCtrlRegs.low_ip    -> Seq(w1ToClearbase(c.width,lowIpReg, ~valueReg,
-                                  Some(RegFieldDesc("low_ip","Low interrupt pending", volatile=true)))),
-    (GPIOCtrlRegs.low_ip+4)    -> Seq(w1ToClearplus(c.width,lowIpReg, ~valueReg,
                                   Some(RegFieldDesc("low_ip","Low interrupt pending", volatile=true)))),
     GPIOCtrlRegs.port      -> Seq(reg32base(c.width, portReg,
                                   RegFieldDesc("output_value","Output value", reset=Some(0)))),
-    (GPIOCtrlRegs.port  + 4)    -> Seq(reg32plus(c.width, portReg,
-                                  RegFieldDesc("output_value","Output value", reset=Some(0)))),
     GPIOCtrlRegs.pullup_en -> Seq(rwReg32base(c.width, pueReg.io,
-                                  Some(RegFieldDesc("pue","Internal pull-up enable", reset=Some(0))))),
-    (GPIOCtrlRegs.pullup_en + 4) -> Seq(rwReg32plus(c.width, pueReg.io,
                                   Some(RegFieldDesc("pue","Internal pull-up enable", reset=Some(0))))),
     GPIOCtrlRegs.iof_en    -> iofEnFields,
     GPIOCtrlRegs.iof_sel   -> iofSelFields,
-    (GPIOCtrlRegs.iof_en+4)    -> iofEnFields1,
-    (GPIOCtrlRegs.iof_sel+4)   -> iofSelFields1,
     GPIOCtrlRegs.drive     -> Seq(reg32base(c.width, dsReg,
-                                  RegFieldDesc("ds","Pin drive strength selection", reset=Some(0)))),
-    (GPIOCtrlRegs.drive  + 4)   -> Seq(reg32plus(c.width, dsReg,
                                   RegFieldDesc("ds","Pin drive strength selection", reset=Some(0)))),
     GPIOCtrlRegs.input_en  -> Seq(rwReg32base(c.width, ieReg.io,
                                   Some(RegFieldDesc("input_en","Pin input enable", reset=Some(0))))),
-    (GPIOCtrlRegs.input_en + 4) -> Seq(rwReg32plus(c.width, ieReg.io,
-                                  Some(RegFieldDesc("input_en","Pin input enable", reset=Some(0))))),
     GPIOCtrlRegs.out_xor   -> Seq(reg32base(c.width, xorReg,
-                                  RegFieldDesc("out_xor","Output XOR (invert) enable", reset=Some(0)))),
-    (GPIOCtrlRegs.out_xor + 4)  -> Seq(reg32plus(c.width, xorReg,
                                   RegFieldDesc("out_xor","Output XOR (invert) enable", reset=Some(0)))),
     GPIOCtrlRegs.passthru_high_ie -> Seq(reg32base(c.width, passthruHighIeReg,
                                          RegFieldDesc("passthru_high_ie", "Pass-through active-high interrupt enable", reset=Some(0)))),
-    (GPIOCtrlRegs.passthru_high_ie + 4) -> Seq(reg32plus(c.width, passthruHighIeReg,
-                                         RegFieldDesc("passthru_high_ie", "Pass-through active-high interrupt enable", reset=Some(0)))),
     GPIOCtrlRegs.passthru_low_ie  -> Seq(reg32base(c.width, passthruLowIeReg,
                                          RegFieldDesc("passthru_low_ie", "Pass-through active-low interrupt enable", reset=Some(0)))),
+  )
+  val mappingmode64 = if (mode64) Seq(
+    (GPIOCtrlRegs.output_en+4)-> Seq(rwReg32plus(c.width, oeReg.io,
+                                  Some(RegFieldDesc("output_en","Pin output enable", reset=Some(0))))),
+    (GPIOCtrlRegs.value + 4) -> Seq(RegField.r(width1, valueReg >> 32,
+                                  RegFieldDesc("input_value","Pin value", volatile=true))),
+    (GPIOCtrlRegs.rise_ie + 4)  -> Seq(reg32plus(c.width, riseIeReg,
+                                  RegFieldDesc("rise_ie","Rise interrupt enable", reset=Some(0)))),
+    (GPIOCtrlRegs.rise_ip+4)   -> Seq(w1ToClearplus(c.width, riseIpReg, rise,
+                                  Some(RegFieldDesc("rise_ip","Rise interrupt pending", volatile=true)))),
+    (GPIOCtrlRegs.fall_ie + 4)  -> Seq(reg32plus(c.width, fallIeReg,
+                                  RegFieldDesc("fall_ie", "Fall interrupt enable", reset=Some(0)))),
+    (GPIOCtrlRegs.fall_ip+4)   -> Seq(w1ToClearplus(c.width, fallIpReg, fall,
+                                  Some(RegFieldDesc("fall_ip","Fall interrupt pending", volatile=true)))),
+    (GPIOCtrlRegs.high_ie + 4)  -> Seq(reg32plus(c.width, highIeReg,
+                                  RegFieldDesc("high_ie","High interrupt enable", reset=Some(0)))),
+    (GPIOCtrlRegs.high_ip +4)  -> Seq(w1ToClearplus(c.width, highIpReg, valueReg,
+                                  Some(RegFieldDesc("high_ip","High interrupt pending", volatile=true)))),
+    (GPIOCtrlRegs.low_ie + 4)   -> Seq(reg32plus(c.width, lowIeReg,
+                                  RegFieldDesc("low_ie","Low interrupt enable", reset=Some(0)))),
+    (GPIOCtrlRegs.low_ip+4)    -> Seq(w1ToClearplus(c.width,lowIpReg, ~valueReg,
+                                  Some(RegFieldDesc("low_ip","Low interrupt pending", volatile=true)))),
+    (GPIOCtrlRegs.port  + 4)    -> Seq(reg32plus(c.width, portReg,
+                                  RegFieldDesc("output_value","Output value", reset=Some(0)))),
+    (GPIOCtrlRegs.pullup_en + 4) -> Seq(rwReg32plus(c.width, pueReg.io,
+                                  Some(RegFieldDesc("pue","Internal pull-up enable", reset=Some(0))))),
+    (GPIOCtrlRegs.iof_en+4)    -> iofEnFields1,
+    (GPIOCtrlRegs.iof_sel+4)   -> iofSelFields1,
+    (GPIOCtrlRegs.drive  + 4)   -> Seq(reg32plus(c.width, dsReg,
+                                  RegFieldDesc("ds","Pin drive strength selection", reset=Some(0)))),
+    (GPIOCtrlRegs.input_en + 4) -> Seq(rwReg32plus(c.width, ieReg.io,
+                                  Some(RegFieldDesc("input_en","Pin input enable", reset=Some(0))))),
+    (GPIOCtrlRegs.out_xor + 4)  -> Seq(reg32plus(c.width, xorReg,
+                                  RegFieldDesc("out_xor","Output XOR (invert) enable", reset=Some(0)))),
+    (GPIOCtrlRegs.passthru_high_ie + 4) -> Seq(reg32plus(c.width, passthruHighIeReg,
+                                         RegFieldDesc("passthru_high_ie", "Pass-through active-high interrupt enable", reset=Some(0)))),
     (GPIOCtrlRegs.passthru_low_ie + 4) -> Seq(reg32plus(c.width, passthruLowIeReg,
                                          RegFieldDesc("passthru_low_ie", "Pass-through active-low interrupt enable", reset=Some(0))))
-  )
-  regmap(mapping:_*)
-  val omRegMap = OMRegister.convert(mapping:_*)
+  ) else Nil
+  regmap(mapping ++ mappingmode64:_*)
+  val omRegMap = OMRegister.convert(mapping ++ mappingmode64:_*)
 
   //--------------------------------------------------
   // Actual Pinmux
