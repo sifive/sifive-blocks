@@ -10,18 +10,14 @@ import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, PBUS}
 import freechips.rocketchip.tilelink._
-<<<<<<< HEAD
 import freechips.rocketchip.devices.tilelink._
-import freechips.rocketchip.util.{AsyncResetRegVec, SynchronizerShiftReg}
+import freechips.rocketchip.util.{AsyncResetRegVec, SynchronizerShiftReg, SimpleRegIO}
 import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
 import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
 
 import sifive.blocks.devices.pinctrl.{PinCtrl, Pin, BasePin, EnhancedPin, EnhancedPinCtrl}
 import sifive.blocks.util.{DeviceParams,DeviceAttachParams,BasicBusBlocker}
-=======
-import freechips.rocketchip.util.{AsyncResetRegVec, SynchronizerShiftReg, SimpleRegIO}
->>>>>>> 7fb6186... bug fixes
 
 // This is sort of weird because
 // the IOF end up at the RocketChipTop
@@ -39,7 +35,7 @@ class GPIOPortIO(val c: GPIOParams) extends Bundle {
 case class GPIOParams(
   address: BigInt,
   width: Int,
-  includeIOF: Boolean = false) extends DeviceParams
+  includeIOF: Boolean = false) extends DeviceParams { require(width <= 64, "GPIO supports only upto 64 pins") }
 
 /** The base GPIO peripheral functionality, which uses the regmap API to
   * abstract over the bus protocol to which it is being connected
@@ -153,26 +149,26 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
       Bool(true)
     }}, desc) else RegField(total, regg, desc)
   }
+  val width1 = if (c.width > 32) (c.width - 32) else 0
+  val width0 = if (c.width > 32) 32 else c.width
   val iofEnFields =  if (c.includeIOF) (Seq(rwReg32base(c.width, iofEnReg.io,
                         Some(RegFieldDesc("iof_en","HW I/O functon enable", reset=Some(0))))))
-                     else (Seq(RegField(c.width)))
+                     else (Seq(RegField(width0)))
   val iofSelFields = if (c.includeIOF) (Seq(reg32base(c.width, iofSelReg,
                         RegFieldDesc("iof_sel","HW I/O function select", reset=Some(0)))))
-                     else (Seq(RegField(c.width)))
-  val iofEnFields1 =  if (c.includeIOF) (Seq(rwReg32plus(c.width, iofEnReg.io,
+                     else (Seq(RegField(width0)))
+  val iofEnFields1 =  if (c.includeIOF && mode64) (Seq(rwReg32plus(c.width, iofEnReg.io,
                         Some(RegFieldDesc("iof_en","HW I/O functon enable", reset=Some(0))))))
-                     else (Seq(RegField(c.width)))
-  val iofSelFields1 = if (c.includeIOF) (Seq(reg32plus(c.width, iofSelReg,
+                     else (Seq(RegField(width1)))
+  val iofSelFields1 = if (c.includeIOF && mode64) (Seq(reg32plus(c.width, iofSelReg,
                         RegFieldDesc("iof_sel","HW I/O function select", reset=Some(0)))))
-                     else (Seq(RegField(c.width)))
+                     else (Seq(RegField(width1)))
   def w1ToClearbase(total: Int, reg: UInt, set: UInt, desc: Option[RegFieldDesc] = None): RegField =
     if (mode64) RegField((if (total>32) 32 else total), reg, RegWriteFn((valid, data) => { reg := ~(~reg | Mux(valid, data, UInt(0))) | set; Bool(true) }),
       desc.map{_.copy(access = RegFieldAccessType.RW, wrType=Some(RegFieldWrType.ONE_TO_CLEAR), volatile = true)}) else RegField.w1ToClear(total, reg, set, desc)
   def w1ToClearplus(total: Int, reg: UInt, set: UInt, desc: Option[RegFieldDesc] = None): RegField =
     RegField((total-32), reg, RegWriteFn((valid, data) => { when (valid) {reg := ~(~reg | (data<<32)) | set}; Bool(true) }),
       desc.map{_.copy(access = RegFieldAccessType.RW, wrType=Some(RegFieldWrType.ONE_TO_CLEAR), volatile = true)})
-  val width1 = if (c.width > 32) (c.width - 32) else 0
-  val width0 = if (c.width > 32) 32 else c.width
   val mapping = Seq(
     GPIOCtrlRegs.value     -> Seq(RegField.r(width0, valueReg,
                                   RegFieldDesc("input_value","Pin value", volatile=true))),
@@ -211,7 +207,7 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
     GPIOCtrlRegs.passthru_low_ie  -> Seq(reg32base(c.width, passthruLowIeReg,
                                          RegFieldDesc("passthru_low_ie", "Pass-through active-low interrupt enable", reset=Some(0)))),
   )
-  val mappingmode64 = if (mode64) Seq(
+  def genmapping = Seq(
     (GPIOCtrlRegs.output_en+4)-> Seq(rwReg32plus(c.width, oeReg.io,
                                   Some(RegFieldDesc("output_en","Pin output enable", reset=Some(0))))),
     (GPIOCtrlRegs.value + 4) -> Seq(RegField.r(width1, valueReg >> 32,
@@ -248,7 +244,8 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
                                          RegFieldDesc("passthru_high_ie", "Pass-through active-high interrupt enable", reset=Some(0)))),
     (GPIOCtrlRegs.passthru_low_ie + 4) -> Seq(reg32plus(c.width, passthruLowIeReg,
                                          RegFieldDesc("passthru_low_ie", "Pass-through active-low interrupt enable", reset=Some(0))))
-  ) else Nil
+  )
+  val mappingmode64 = if (mode64) genmapping else Nil
   regmap(mapping ++ mappingmode64:_*)
   val omRegMap = OMRegister.convert(mapping ++ mappingmode64:_*)
 
