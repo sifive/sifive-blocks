@@ -180,7 +180,7 @@ trait GenericTimer {
   protected def gang: Vec[Bool] = Vec.fill(ncmp){Bool(false)}
   protected val scaleWidth = 4
   protected val regWidth = 32
-  val maxcmp = 8
+  val maxcmp = 4
   require(ncmp <= maxcmp)
   require(ncmp > 0)
 
