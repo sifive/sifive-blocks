@@ -15,7 +15,7 @@ case object DevicesKey extends Field[Seq[DeviceAttachParams]](Nil)
 trait CanHaveDevices extends CanHaveConfigurableHierarchy { this: Attachable =>
   def location: HierarchicalLocation
 
-  val devicesConfigs: Seq[DevicesAttachParams] = p(DevicesKey)
+  val devicesConfigs: Seq[DeviceAttachParams] = p(DevicesKey)
   val isRoot = (p(HierarchyKey).linearize.head == location)
   val devices: Seq[LazyModule] = isRoot.option(devicesConfigs.map { params =>
     params.attachTo(hierarchyMap(params.instWhere))
