@@ -32,7 +32,7 @@ class EmptySubsystem(name: String, params: EmptySubsystemParams)(implicit p: Par
   implicit val asyncClockGroupsNode = params.asyncClockGroupsNode
 
   lazy val module = new LazyModuleImp(this) {
-    override def desiredName: String = name
+    //override def desiredName: String = name
   }
 }
 

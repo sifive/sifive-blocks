@@ -47,7 +47,7 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
-import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, PBUS}
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.util.{AsyncResetRegVec, Majority}
@@ -583,6 +583,7 @@ class TLI2C(busWidthBytes: Int, params: I2CParams)(implicit p: Parameters)
 case class I2CAttachParams(
   device: I2CParams,
   controlWhere: TLBusWrapperLocation = PBUS,
+  instWhere: HierarchicalLocation = InSubsystem,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams

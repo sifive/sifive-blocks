@@ -7,7 +7,7 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
-import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, SBUS}
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
 
@@ -95,6 +95,7 @@ class TLPseudoStream(busWidthBytes: Int, params: PseudoStreamParams)(implicit p:
 case class PseudoStreamAttachParams(
   device: PseudoStreamParams,
   controlWhere: TLBusWrapperLocation = SBUS,
+  instWhere: HierarchicalLocation = InSubsystem,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
 {

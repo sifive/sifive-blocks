@@ -11,7 +11,7 @@ import freechips.rocketchip.interrupts._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
-import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, PBUS}
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.util._
 import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
@@ -74,6 +74,7 @@ class TLWDT(busWidthBytes: Int, params: WDTParams)(implicit p: Parameters)
 case class WDTAttachParams(
   device: WDTParams,
   controlWhere: TLBusWrapperLocation = PBUS,
+  instWhere: HierarchicalLocation = InSubsystem,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams

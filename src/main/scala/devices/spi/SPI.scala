@@ -10,7 +10,7 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
-import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, PBUS}
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
@@ -22,6 +22,7 @@ import sifive.blocks.util._
 case class SPIAttachParams(
   device: SPIParams,
   controlWhere: TLBusWrapperLocation = PBUS,
+  instWhere: HierarchicalLocation = InSubsystem,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
@@ -74,6 +75,7 @@ case class SPIFlashAttachParams(
   device: SPIFlashParams,
   controlWhere: TLBusWrapperLocation = PBUS,
   dataWhere: TLBusWrapperLocation = PBUS,
+  instWhere: HierarchicalLocation = InSubsystem,
   fBufferDepth: Int = 0,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,

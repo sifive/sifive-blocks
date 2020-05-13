@@ -8,7 +8,7 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
-import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, PBUS}
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.util.{AsyncResetRegVec, SynchronizerShiftReg}
@@ -239,6 +239,7 @@ class TLGPIO(busWidthBytes: Int, params: GPIOParams)(implicit p: Parameters)
 case class GPIOAttachParams(
   device: GPIOParams,
   controlWhere: TLBusWrapperLocation = PBUS,
+  instWhere: HierarchicalLocation = InSubsystem,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams

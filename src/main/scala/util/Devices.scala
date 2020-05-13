@@ -10,11 +10,11 @@ import freechips.rocketchip.regmapper.RegisterRouter
 import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, HierarchicalLocation}
 import freechips.rocketchip.util._
 
-case class DevicesLocated(loc: HierarchicalLocation) extends Field[Seq[DeviceAttachParams]](Nil)
-case object DevicesKey extends Field[Seq[DevicesAttachParams]](Nil)
+case object DevicesKey extends Field[Seq[DeviceAttachParams]](Nil)
 
 trait CanHaveDevices extends CanHaveConfigurableHierarchy { this: Attachable =>
   def location: HierarchicalLocation
+
   val devicesConfigs: Seq[DevicesAttachParams] = p(DevicesKey)
   val isRoot = (p(HierarchyKey).linearize.head == location)
   val devices: Seq[LazyModule] = isRoot.option(devicesConfigs.map { params =>
@@ -24,7 +24,7 @@ trait CanHaveDevices extends CanHaveConfigurableHierarchy { this: Attachable =>
 
 trait DeviceParams
 
-trait DevicesAttachParams {
+trait DeviceAttachParams {
   val device: DeviceParams
   val controlWhere: TLBusWrapperLocation
   val instWhere: HierarchicalLocation
@@ -33,15 +33,3 @@ trait DevicesAttachParams {
 
   def attachTo(where: Attachable)(implicit p: Parameters): LazyModule
 }
-
-// Deprecate below
-trait DeviceAttachParams {
-  val device: DeviceParams
-  val controlWhere: TLBusWrapperLocation
-  val blockerAddr: Option[BigInt]
-  val controlXType: ClockCrossingType
-
-  def attachTo(where: Attachable)(implicit p: Parameters): LazyModule
-}
-
-
