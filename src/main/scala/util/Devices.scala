@@ -17,6 +17,8 @@ trait CanHaveDevices extends CanHaveConfigurableHierarchy { this: Attachable =>
 
   val devicesConfigs: Seq[DeviceAttachParams] = p(DevicesKey)
   val isRoot = (p(HierarchyKey).linearize.head == location)
+
+  // Only instantiate devices if this scope is the root of the hierarchy
   val devices: Seq[LazyModule] = isRoot.option(devicesConfigs.map { params =>
     params.attachTo(hierarchyMap(params.instWhere))
   }).getOrElse(Nil)

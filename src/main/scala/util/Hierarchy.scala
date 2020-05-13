@@ -27,6 +27,7 @@ case class EmptySubsystemParams(
 class EmptySubsystem(name: String, params: EmptySubsystemParams)(implicit p: Parameters) extends LazyModule with Attachable {
 
   val ibus = params.ibus
+  def attachableSubhierarchies = None
   override val tlBusWrapperLocationMap = params.tlBusWrapperLocationMap
   def logicalTreeNode = params.logicalTreeNode
   implicit val asyncClockGroupsNode = params.asyncClockGroupsNode
@@ -45,14 +46,20 @@ trait CanHaveConfigurableHierarchy { this: Attachable =>
     context: Attachable,
     params: EmptySubsystemParams): Unit = {
 
-    if(root == InSystem || root == InSubsystem) {
-      hierarchyMap += (root -> context)
-    }
+    // Add the current hiearchy to the map
+    hierarchyMap += (root -> context)
 
+    // If the current hierarchy has attachable subhierarchies, add those to the map
+    context.attachableSubhierarchies.foreach(_.foreach { hierarchy =>
+      hierarchy match {
+        case ss: BaseSubsystem => hierarchyMap += (InSubsystem -> ss)
+        case _ => throw new Exception("Undefined subhierarchy type.")
+    }})
+
+    // Create and recurse on child hierarchies
     val edges = graph.getEdges(root)
     edges.foreach { edge =>
       val ess = context { LazyModule(new EmptySubsystem(edge.name, params)) }
-      hierarchyMap += (edge -> ess)
       createHierarchyMap(edge, graph, ess, params)
     }
   }
