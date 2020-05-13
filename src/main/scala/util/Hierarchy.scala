@@ -78,3 +78,33 @@ trait CanHaveConfigurableHierarchy { this: Attachable =>
   println(hierarchyMap)
 
 }
+
+class Hierarchy(val root: HierarchicalLocation) {
+  require(root == InSystem || root == InSubsystem, "Invalid root hierarchy")
+
+  val graph = new MutableDiGraph[HierarchicalLocation]
+  graph.addVertex(root)
+
+  def addSubhierarchy(parent: HierarchicalLocation, child: HierarchicalLocation): Unit = {
+    graph.addVertex(child)
+    graph.addEdge(parent,child) 
+  }
+
+  def closeHierarchy(): DiGraph[HierarchicalLocation] = {
+    DiGraph(graph)
+  }
+
+}
+
+object Hierarchy {
+  def init(root: HierarchicalLocation): Hierarchy = {
+    val hierarchy = new Hierarchy(root)
+    hierarchy
+  }
+
+  def default(root: HierarchicalLocation): DiGraph[HierarchicalLocation] = {
+    val h = init(root)
+    h.closeHierarchy()
+  }
+
+}
