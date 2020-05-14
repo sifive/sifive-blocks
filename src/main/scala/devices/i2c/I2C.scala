@@ -580,6 +580,8 @@ abstract class I2C(busWidthBytes: Int, params: I2CParams)(implicit p: Parameters
 class TLI2C(busWidthBytes: Int, params: I2CParams)(implicit p: Parameters)
   extends I2C(busWidthBytes, params) with HasTLControlRegMap
 
+case object I2CDevicesKey extends Field[Seq[I2CAttachParams]](Nil)
+
 case class I2CAttachParams(
   device: I2CParams,
   controlWhere: TLBusWrapperLocation = PBUS,

@@ -92,6 +92,8 @@ abstract class PseudoStream(busWidthBytes: Int, val params: PseudoStreamParams)(
 class TLPseudoStream(busWidthBytes: Int, params: PseudoStreamParams)(implicit p: Parameters)
   extends PseudoStream(busWidthBytes, params) with HasTLControlRegMap
 
+case object PseudoStreamDevicesKey extends Field[Seq[PseudoStreamAttachParams]](Nil)
+
 case class PseudoStreamAttachParams(
   device: PseudoStreamParams,
   controlWhere: TLBusWrapperLocation = SBUS,

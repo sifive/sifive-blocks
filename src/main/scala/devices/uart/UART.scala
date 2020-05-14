@@ -223,6 +223,8 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
 class TLUART(busWidthBytes: Int, params: UARTParams, divinit: Int)(implicit p: Parameters)
   extends UART(busWidthBytes, params, divinit) with HasTLControlRegMap
 
+case object UARTDevicesKey extends Field[Seq[UARTAttachParams]](Nil)
+
 case class UARTAttachParams(
   device: UARTParams,
   controlWhere: TLBusWrapperLocation = PBUS,

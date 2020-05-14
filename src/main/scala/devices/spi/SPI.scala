@@ -19,6 +19,8 @@ import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree
 
 import sifive.blocks.util._
 
+case object SPIDevicesKey extends Field[Seq[SPIAttachParams]](Nil)
+
 case class SPIAttachParams(
   device: SPIParams,
   controlWhere: TLBusWrapperLocation = PBUS,
@@ -70,6 +72,8 @@ case class SPIAttachParams(
     spi
   }
 }
+
+case object SPIFlashDevicesKey extends Field[Seq[SPIFlashAttachParams]](Nil)
 
 case class SPIFlashAttachParams(
   device: SPIFlashParams,

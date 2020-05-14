@@ -76,6 +76,8 @@ trait HasPeripheryTimer { this: BaseSubsystem =>
   }
 }
 
+case object TimerDevicesKey extends Field[Seq[TimerAttachParams]](Nil)
+
 case class TimerAttachParams(
   device: TimerParams,
   controlWhere: TLBusWrapperLocation = PBUS,

@@ -236,6 +236,8 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
 class TLGPIO(busWidthBytes: Int, params: GPIOParams)(implicit p: Parameters)
   extends GPIO(busWidthBytes, params) with HasTLControlRegMap
 
+case object GPIODevicesKey extends Field[Seq[GPIOAttachParams]](Nil)
+
 case class GPIOAttachParams(
   device: GPIOParams,
   controlWhere: TLBusWrapperLocation = PBUS,

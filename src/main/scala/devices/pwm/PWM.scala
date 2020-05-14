@@ -118,6 +118,8 @@ abstract class PWM(busWidthBytes: Int, val params: PWMParams)(implicit p: Parame
 class TLPWM(busWidthBytes: Int, params: PWMParams)(implicit p: Parameters)
   extends PWM(busWidthBytes, params) with HasTLControlRegMap
 
+case object PWMDevicesKey extends Field[Seq[PWMAttachParams]](Nil)
+
 case class PWMAttachParams(
   device: PWMParams,
   controlWhere: TLBusWrapperLocation = PBUS,

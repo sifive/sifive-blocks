@@ -71,6 +71,8 @@ abstract class WDT(busWidthBytes: Int, val params: WDTParams)(implicit p: Parame
 class TLWDT(busWidthBytes: Int, params: WDTParams)(implicit p: Parameters)
   extends WDT(busWidthBytes, params) with HasTLControlRegMap
 
+case object WDTDevicesKey extends Field[Seq[WDTAttachParams]](Nil)
+
 case class WDTAttachParams(
   device: WDTParams,
   controlWhere: TLBusWrapperLocation = PBUS,
