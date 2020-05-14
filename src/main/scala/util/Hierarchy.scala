@@ -24,6 +24,7 @@ case class EmptySubsystemParams(
   tlBusWrapperLocationMap: LocationMap[TLBusWrapper],
   logicalTreeNode: LogicalTreeNode,
   asyncClockGroupsNode: ClockGroupEphemeralNode)
+
 class EmptySubsystem(name: String, params: EmptySubsystemParams)(implicit p: Parameters) extends LazyModule with Attachable {
 
   val ibus = params.ibus
