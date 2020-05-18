@@ -5,7 +5,7 @@ import Chisel._
 import Chisel.ImplicitConversions._
 import chisel3.MultiIOModule
 
-import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.prci._

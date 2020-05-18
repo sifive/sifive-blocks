@@ -3,7 +3,7 @@ package sifive.blocks.devices.gpio
 
 import Chisel._
 
-import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.prci._

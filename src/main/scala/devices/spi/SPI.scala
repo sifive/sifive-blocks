@@ -3,7 +3,7 @@ package sifive.blocks.devices.spi
 
 import Chisel._
 
-import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.util._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomacy._

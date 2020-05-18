@@ -71,7 +71,7 @@ trait CanHaveConfigurableHierarchy { this: Attachable =>
     logicalTreeNode = this.logicalTreeNode,
     asyncClockGroupsNode = this.asyncClockGroupsNode)
 
-  var hierarchyMap = Map[HierarchicalLocation, Attachable]()
+  val hierarchyMap = LocationMap.empty[Attachable]
   createHierarchyMap(location, p(HierarchyKey), this, essParams)
   println("\n\n\nPrinting p(HierarchyKey):")
   println(p(HierarchyKey))
