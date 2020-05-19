@@ -7,12 +7,13 @@ import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.regmapper.RegisterRouter
-import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, HierarchicalLocation}
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util._
 
 case object DevicesKey extends Field[Seq[DeviceAttachParams]](Nil)
 
-trait CanHaveDevices extends CanHaveConfigurableHierarchy { this: Attachable =>
+trait CanHaveDevices { this: HasConfigurableHierarchy =>
+  implicit val p: Parameters
   def location: HierarchicalLocation
 
   val devicesConfigs: Seq[DeviceAttachParams] = p(DevicesKey)
