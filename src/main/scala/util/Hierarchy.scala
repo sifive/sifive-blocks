@@ -15,7 +15,7 @@ import freechips.rocketchip.util.LocationMap
 
 import firrtl.graph._
 
-case object HierarchyKey extends Field[DiGraph[HierarchicalLocation]]
+case object HierarchyKey extends Field[Option[DiGraph[HierarchicalLocation]]](None)
 
 case object ESS0 extends HierarchicalLocation("ESS0")
 case object ESS1 extends HierarchicalLocation("ESS1")
@@ -71,7 +71,7 @@ trait HasConfigurableHierarchy { this: Attachable =>
 
 
   val hierarchyMap = LocationMap.empty[Attachable]
-  createHierarchyMap(location, p(HierarchyKey), this)
+  p(HierarchyKey).foreach(createHierarchyMap(location, _, this))
   println("\n\n\nPrinting p(HierarchyKey):")
   println(p(HierarchyKey))
   println("\n\n\nPrinting generated hierarchyMap:")
