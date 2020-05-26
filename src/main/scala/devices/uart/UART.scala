@@ -238,6 +238,8 @@ case class UARTAttachParams(
     val uart = uartClockDomainWrapper { LazyModule(new TLUART(tlbus.beatBytes, device, divinit)) }
     uart.suggestName(name)
 
+    println(s"${where.ibus}")
+
     tlbus.coupleTo(s"device_named_$name") { bus =>
 
       val blockerOpt = blockerAddr.map { a =>

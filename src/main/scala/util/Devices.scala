@@ -7,14 +7,16 @@ import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.regmapper.RegisterRouter
-import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, HierarchicalLocation}
+import freechips.rocketchip.subsystem._
 
 case class DevicesLocated(loc: HierarchicalLocation) extends Field[Seq[DeviceAttachParams]](Nil)
 
 trait CanHaveDevices { this: Attachable =>
   def location: HierarchicalLocation
-  val devicesConfigs: Seq[DeviceAttachParams] = p(DevicesLocated(location))
-  val devices: Seq[LazyModule] = devicesConfigs.map(_.attachTo(this))
+  val ibus: InterruptBusWrapper
+  //val subHierarchies: Option[Seq[CanHaveDevices]]
+  val devicesConfigs: Seq[DeviceAttachParams] = p(DevicesLocated(location))// ++ subHierarchies.foreach(_.foreach(_.devicesConfigs))
+  val devices: Seq[LazyModule] = devicesConfigs.map(_.attachTo(this))// ++ subHierarchies.foreach(_.foreach(_.devices))
 }
 
 trait DeviceParams
