@@ -14,26 +14,24 @@ import freechips.rocketchip.prci._
 import freechips.rocketchip.util.LocationMap
 
 import firrtl.graph._
-import scala.collection.mutable.ListBuffer
 
 case object HierarchyKey extends Field[Option[DiGraph[HierarchicalLocation]]](None)
 
-case object ESS0 extends HierarchicalLocation("ESS0")
-case object ESS1 extends HierarchicalLocation("ESS1")
+case object DSS00 extends HierarchicalLocation("DSS00")
+case object DSS01 extends HierarchicalLocation("DSS01")
 
-case class EmptySubsystemParams(
+case class DevicesSubsystemParams(
   name: String,
   logicalTreeNode: LogicalTreeNode,
   asyncClockGroupsNode: ClockGroupEphemeralNode)
 
-class EmptySubsystem(val location: HierarchicalLocation = ESS0, val ibus: InterruptBusWrapper, params: EmptySubsystemParams)(implicit p: Parameters)
+class DevicesSubsystem(val location: HierarchicalLocation, val ibus: InterruptBusWrapper, params: DevicesSubsystemParams)(implicit p: Parameters)
   extends LazyModule 
     with Attachable
     with HasConfigurableTLNetworkTopology 
     with CanHaveDevices {
 
   def devicesSubhierarchies = None
-
   def logicalTreeNode = params.logicalTreeNode
   implicit val asyncClockGroupsNode = params.asyncClockGroupsNode
 
@@ -56,21 +54,19 @@ trait HasConfigurableHierarchy { this: Attachable =>
     // Create and recurse on child hierarchies
     val edges = graph.getEdges(root)
     edges.foreach { edge =>
-      val essParams = EmptySubsystemParams(
+      val dssParams = DevicesSubsystemParams(
         name = edge.name,
         logicalTreeNode = this.logicalTreeNode,
         asyncClockGroupsNode = this.asyncClockGroupsNode)
-      val ess = context { LazyModule(new EmptySubsystem(edge, ibus, essParams)) }
+      val dss = context { LazyModule(new DevicesSubsystem(edge, ibus, essParams)) }
       createHierarchyMap(edge, graph, ess)
-      busLocationFunctions.foreach { case(hier, func) => tlBusWrapperLocationMap ++= func }
     }
   }
-
 
   val busLocationFunctions = LocationMap.empty[LocationMap[TLBusWrapper]]
   val hierarchyMap = LocationMap.empty[Attachable]
   p(HierarchyKey).foreach(createHierarchyMap(location, _, this))
-
+  busLocationFunctions.foreach { case(hier, func) => tlBusWrapperLocationMap ++= func }
 }
 
 class Hierarchy(val root: HierarchicalLocation) {
@@ -84,10 +80,13 @@ class Hierarchy(val root: HierarchicalLocation) {
     graph.addEdge(parent,child) 
   }
 
+  def addSubhierarchies(parent: HierarchicalLocation, children: Seq[HierarchicalLocation]): Unit = {
+    children.foreach(addSubhierarchy(_))
+  }
+
   def closeHierarchy(): DiGraph[HierarchicalLocation] = {
     DiGraph(graph)
   }
-
 }
 
 object Hierarchy {
@@ -100,5 +99,4 @@ object Hierarchy {
     val h = init(root)
     h.closeHierarchy()
   }
-
 }
