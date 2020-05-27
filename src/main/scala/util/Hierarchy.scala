@@ -48,7 +48,6 @@ trait HasConfigurableHierarchy { this: Attachable =>
     graph: DiGraph[HierarchicalLocation],
     context: Attachable): Unit = {
 
-    busLocationFunctions += (root -> context.tlBusWrapperLocationMap)
     hierarchyMap += (root -> context)
 
     // Create and recurse on child hierarchies
@@ -65,8 +64,12 @@ trait HasConfigurableHierarchy { this: Attachable =>
 
   val busLocationFunctions = LocationMap.empty[LocationMap[TLBusWrapper]]
   val hierarchyMap = LocationMap.empty[Attachable]
+
   p(HierarchyKey).foreach(createHierarchyMap(location, _, this))
-  busLocationFunctions.foreach { case(hier, func) => tlBusWrapperLocationMap ++= func }
+
+  hierarchyMap.foreach { case(label, context) =>
+    tlBusWrapperLocationMap ++= context.tlBusWrapperLocationMap
+  }
 }
 
 class Hierarchy(val root: HierarchicalLocation) {
