@@ -9,7 +9,7 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper.{RegisterRouter, RegisterRouterParams}
-import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, PBUS}
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
@@ -75,6 +75,8 @@ trait HasPeripheryTimer { this: BaseSubsystem =>
     timer
   }
 }
+
+case class TimerLocated(loc: HierarchicalLocation) extends Field[Seq[TimerAttachParams]](Nil)
 
 case class TimerAttachParams(
   device: TimerParams,

@@ -42,12 +42,12 @@
 package sifive.blocks.devices.i2c
 
 import Chisel._
-import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
-import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, PBUS}
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.util.{AsyncResetRegVec, Majority}
@@ -579,6 +579,8 @@ abstract class I2C(busWidthBytes: Int, params: I2CParams)(implicit p: Parameters
 
 class TLI2C(busWidthBytes: Int, params: I2CParams)(implicit p: Parameters)
   extends I2C(busWidthBytes, params) with HasTLControlRegMap
+
+case class I2CLocated(loc: HierarchicalLocation) extends Field[Seq[I2CAttachParams]](Nil)
 
 case class I2CAttachParams(
   device: I2CParams,

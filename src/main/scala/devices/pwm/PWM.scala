@@ -5,12 +5,12 @@ import Chisel._
 import Chisel.ImplicitConversions._
 import chisel3.MultiIOModule
 
-import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
-import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, PBUS}
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.util._
@@ -117,6 +117,8 @@ abstract class PWM(busWidthBytes: Int, val params: PWMParams)(implicit p: Parame
 
 class TLPWM(busWidthBytes: Int, params: PWMParams)(implicit p: Parameters)
   extends PWM(busWidthBytes, params) with HasTLControlRegMap
+
+case class PWMLocated(loc: HierarchicalLocation) extends Field[Seq[PWMAttachParams]](Nil)
 
 case class PWMAttachParams(
   device: PWMParams,

@@ -3,12 +3,12 @@ package sifive.blocks.devices.uart
 
 import Chisel._
 
-import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
-import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, PBUS}
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.util._
@@ -222,6 +222,8 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
 }
 class TLUART(busWidthBytes: Int, params: UARTParams, divinit: Int)(implicit p: Parameters)
   extends UART(busWidthBytes, params, divinit) with HasTLControlRegMap
+
+case class UARTLocated(loc: HierarchicalLocation) extends Field[Seq[UARTAttachParams]](Nil)
 
 case class UARTAttachParams(
   device: UARTParams,

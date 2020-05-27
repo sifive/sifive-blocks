@@ -3,14 +3,14 @@ package sifive.blocks.devices.spi
 
 import Chisel._
 
-import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.util._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
-import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, PBUS}
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
@@ -18,6 +18,8 @@ import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
 
 import sifive.blocks.util._
+
+case class SPILocated(loc: HierarchicalLocation) extends Field[Seq[SPIAttachParams]](Nil)
 
 case class SPIAttachParams(
   device: SPIParams,
@@ -69,6 +71,8 @@ case class SPIAttachParams(
     spi
   }
 }
+
+case class SPIFlashLocated(loc: HierarchicalLocation) extends Field[Seq[SPIFlashAttachParams]](Nil)
 
 case class SPIFlashAttachParams(
   device: SPIFlashParams,
