@@ -17,8 +17,8 @@ import firrtl.graph._
 
 case object HierarchyKey extends Field[Option[DiGraph[HierarchicalLocation]]](None)
 
-case object DSS00 extends HierarchicalLocation("DSS00")
-case object DSS01 extends HierarchicalLocation("DSS01")
+case object DSS0 extends HierarchicalLocation("DSS0")
+case object DSS1 extends HierarchicalLocation("DSS1")
 
 case class DevicesSubsystemParams(
   name: String,
@@ -58,8 +58,8 @@ trait HasConfigurableHierarchy { this: Attachable =>
         name = edge.name,
         logicalTreeNode = this.logicalTreeNode,
         asyncClockGroupsNode = this.asyncClockGroupsNode)
-      val dss = context { LazyModule(new DevicesSubsystem(edge, ibus, essParams)) }
-      createHierarchyMap(edge, graph, ess)
+      val dss = context { LazyModule(new DevicesSubsystem(edge, ibus, dssParams)) }
+      createHierarchyMap(edge, graph, dss)
     }
   }
 
@@ -81,7 +81,7 @@ class Hierarchy(val root: HierarchicalLocation) {
   }
 
   def addSubhierarchies(parent: HierarchicalLocation, children: Seq[HierarchicalLocation]): Unit = {
-    children.foreach(addSubhierarchy(_))
+    children.foreach(addSubhierarchy(parent,_))
   }
 
   def closeHierarchy(): DiGraph[HierarchicalLocation] = {
