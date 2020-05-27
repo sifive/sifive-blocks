@@ -34,10 +34,8 @@ class EmptySubsystem(val location: HierarchicalLocation = ESS0, val ibus: Interr
     with HasConfigurableTLNetworkTopology 
     with CanHaveDevices {
 
-  println(s"\n\n\nCreating EmptySubsystem with location = ${location.name}\n\n\n")
+  def devicesSubhierarchies = None
 
-  //val ibus = params.ibus
-  println(s"Printing ibus from ESS: ${ibus}")
   def logicalTreeNode = params.logicalTreeNode
   implicit val asyncClockGroupsNode = params.asyncClockGroupsNode
 
@@ -49,24 +47,17 @@ class EmptySubsystem(val location: HierarchicalLocation = ESS0, val ibus: Interr
 trait HasConfigurableHierarchy { this: Attachable =>
   def location: HierarchicalLocation
 
-  println(s"Printing ibus from trait HasConfigurableHierarchy: ${ibus}")
   def createHierarchyMap(
     root: HierarchicalLocation,
     graph: DiGraph[HierarchicalLocation],
     context: Attachable): Unit = {
 
-    println(s"Printing ibus from createHierarcyMap: ${ibus}")
-
-    // Add the current hierarchy's bus map to the bus map map
-    println(s"\n\n\nAdding ESS ${root.name} to busLocationFunctions\n\n\n")
     busLocationFunctions += (root -> context.tlBusWrapperLocationMap)
-
-    println(s"\n\n\nbusLocationFunctions = ${busLocationFunctions}\n")
+    hierarchyMap += (root -> context)
 
     // Create and recurse on child hierarchies
     val edges = graph.getEdges(root)
     edges.foreach { edge =>
-      println(s"\n\nCreating hierarchy ${edge.name}\n\n")
       val essParams = EmptySubsystemParams(
         name = edge.name,
         ibus = this.ibus,
@@ -81,11 +72,8 @@ trait HasConfigurableHierarchy { this: Attachable =>
 
 
   val busLocationFunctions = LocationMap.empty[LocationMap[TLBusWrapper]]
+  val hierarchyMap = LocationMap.empty[Attachable]
   p(HierarchyKey).foreach(createHierarchyMap(location, _, this))
-  println("\n\n\nPrinting p(HierarchyKey):")
-  println(p(HierarchyKey))
-  println("\n\n\nPrinting generated busLocationFunctions:")
-  println(busLocationFunctions)
 
 }
 

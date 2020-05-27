@@ -13,10 +13,13 @@ case class DevicesLocated(loc: HierarchicalLocation) extends Field[Seq[DeviceAtt
 
 trait CanHaveDevices { this: Attachable =>
   def location: HierarchicalLocation
-  val ibus: InterruptBusWrapper
-  //val subHierarchies: Option[Seq[CanHaveDevices]]
-  val devicesConfigs: Seq[DeviceAttachParams] = p(DevicesLocated(location))// ++ subHierarchies.foreach(_.foreach(_.devicesConfigs))
-  val devices: Seq[LazyModule] = devicesConfigs.map(_.attachTo(this))// ++ subHierarchies.foreach(_.foreach(_.devices))
+  def devicesSubhierarchies: Option[Seq[CanHaveDevices]]
+
+  val devicesConfigs: Seq[DeviceAttachParams] = p(DevicesLocated(location)) ++
+    devicesSubhierarchies.map(_.filter(_.location != location).map(_.devicesConfigs)).getOrElse(Nil).flatten
+
+  val devices: Seq[LazyModule] = p(DevicesLocated(location)).map(_.attachTo(this)) ++
+    devicesSubhierarchies.map(_.filter(_.location != location).map(_.devices)).getOrElse(Nil).flatten
 }
 
 trait DeviceParams
