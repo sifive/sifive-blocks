@@ -17,9 +17,6 @@ import firrtl.graph._
 
 case object HierarchyKey extends Field[Option[DiGraph[HierarchicalLocation]]](None)
 
-case object DSS0 extends HierarchicalLocation("DSS0")
-case object DSS1 extends HierarchicalLocation("DSS1")
-
 case class DevicesSubsystemParams(
   name: String,
   logicalTreeNode: LogicalTreeNode,
