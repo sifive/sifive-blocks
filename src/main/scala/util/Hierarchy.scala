@@ -23,8 +23,6 @@ case object ESS1 extends HierarchicalLocation("ESS1")
 
 case class EmptySubsystemParams(
   name: String,
-  location: HierarchicalLocation,
-  ibus: InterruptBusWrapper,
   logicalTreeNode: LogicalTreeNode,
   asyncClockGroupsNode: ClockGroupEphemeralNode)
 
@@ -40,7 +38,7 @@ class EmptySubsystem(val location: HierarchicalLocation = ESS0, val ibus: Interr
   implicit val asyncClockGroupsNode = params.asyncClockGroupsNode
 
   lazy val module = new LazyModuleImp(this) {
-    //override def desiredName: String = name
+    override def desiredName: String = params.name
   }
 }
 
@@ -60,8 +58,6 @@ trait HasConfigurableHierarchy { this: Attachable =>
     edges.foreach { edge =>
       val essParams = EmptySubsystemParams(
         name = edge.name,
-        ibus = this.ibus,
-        location = edge,
         logicalTreeNode = this.logicalTreeNode,
         asyncClockGroupsNode = this.asyncClockGroupsNode)
       val ess = context { LazyModule(new EmptySubsystem(edge, ibus, essParams)) }
