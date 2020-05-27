@@ -62,6 +62,14 @@ trait HasConfigurableHierarchy { this: Attachable =>
     }
   }
 
+  def getDevicesSubhierarchies: Seq[CanHaveDevices] = {
+    hierarchyMap
+      .values
+      .toSeq
+      .asInstanceOf[Seq[CanHaveDevices]]
+      .filter(_.location != location)
+  }
+
   val busLocationFunctions = LocationMap.empty[LocationMap[TLBusWrapper]]
   val hierarchyMap = LocationMap.empty[Attachable]
 

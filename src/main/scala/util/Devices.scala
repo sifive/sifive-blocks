@@ -16,10 +16,10 @@ trait CanHaveDevices { this: Attachable =>
   def devicesSubhierarchies: Option[Seq[CanHaveDevices]]
 
   val devicesConfigs: Seq[DeviceAttachParams] = p(DevicesLocated(location)) ++
-    devicesSubhierarchies.map(_.filter(_.location != location).map(_.devicesConfigs)).getOrElse(Nil).flatten
+    devicesSubhierarchies.map(_.map(_.devicesConfigs)).getOrElse(Nil).flatten
 
   val devices: Seq[LazyModule] = p(DevicesLocated(location)).map(_.attachTo(this)) ++
-    devicesSubhierarchies.map(_.filter(_.location != location).map(_.devices)).getOrElse(Nil).flatten
+    devicesSubhierarchies.map(_.map(_.devices)).getOrElse(Nil).flatten
 }
 
 trait DeviceParams
