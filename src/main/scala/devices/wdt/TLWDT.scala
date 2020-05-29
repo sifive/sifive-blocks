@@ -5,13 +5,13 @@ import Chisel._
 import Chisel.ImplicitConversions._
 import chisel3.MultiIOModule
 
-import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
-import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, PBUS}
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.util._
 import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
@@ -70,6 +70,8 @@ abstract class WDT(busWidthBytes: Int, val params: WDTParams)(implicit p: Parame
 
 class TLWDT(busWidthBytes: Int, params: WDTParams)(implicit p: Parameters)
   extends WDT(busWidthBytes, params) with HasTLControlRegMap
+
+case class WDTLocated(loc: HierarchicalLocation) extends Field[Seq[WDTAttachParams]](Nil)
 
 case class WDTAttachParams(
   device: WDTParams,
