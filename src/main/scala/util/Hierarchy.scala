@@ -46,7 +46,6 @@ trait HasConfigurableHierarchy { this: Attachable =>
   }
 
   val hierarchyMap = LocationMap.empty[Attachable]
-
   p(HierarchyKey).foreach(createHierarchyMap(location, _, this))
 
   hierarchyMap.foreach { case(label, context) =>
