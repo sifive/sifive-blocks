@@ -4,8 +4,10 @@ package sifive.blocks.util
 import Chisel._
 
 import freechips.rocketchip.config.{Field, Parameters}
+import freechips.rocketchip.diplomaticobjectmodel.logicaltree.LogicalTreeNode
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper.RegisterRouter
 import freechips.rocketchip.subsystem._
 
@@ -31,4 +33,24 @@ trait DeviceAttachParams {
   val controlXType: ClockCrossingType
 
   def attachTo(where: Attachable)(implicit p: Parameters): LazyModule
+}
+
+case class DevicesSubsystemParams(
+  name: String,
+  logicalTreeNode: LogicalTreeNode,
+  asyncClockGroupsNode: ClockGroupEphemeralNode)
+
+class DevicesSubsystem(val location: HierarchicalLocation, val ibus: InterruptBusWrapper, params: DevicesSubsystemParams)(implicit p: Parameters)
+  extends LazyModule
+    with Attachable
+    with HasConfigurableTLNetworkTopology
+    with CanHaveDevices {
+
+  def devicesSubhierarchies = None
+  def logicalTreeNode = params.logicalTreeNode
+  implicit val asyncClockGroupsNode = params.asyncClockGroupsNode
+
+  lazy val module = new LazyModuleImp(this) {
+    override def desiredName: String = params.name
+  }
 }
