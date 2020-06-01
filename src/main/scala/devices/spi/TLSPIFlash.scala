@@ -144,6 +144,15 @@ class TLSPIFlash(w: Int, c: SPIFlashParams)(implicit p: Parameters)
 
   val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
     def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
+      // Get all the memory regions, but don't associate a register map to any of them yet
+      val diplomaticRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions("SPIXIP", resourceBindings/*, Some(module.omRegMap)*/)
+      // The regmap goes with the "control" region so add it and don't alter the others.
+      require(diplomaticRegions.exists(_.description == "control"),
+        "There should be a memory region with description \"control\" to connect the regmap to")
+      val memoryRegions = diplomaticRegions.map{ memRegion =>
+        if (memRegion.description == "control") { memRegion.copy(registerMap = Some(module.omRegMap)) } else {memRegion}
+      }
+
       Seq(
         OMSPIXIP(
           rxDepth = c.rxDepth,
@@ -160,7 +169,7 @@ class TLSPIFlash(w: Int, c: SPIFlashParams)(implicit p: Parameters)
           instructionPadLengthBits = c.insnPadLenBits,
           memMapAddressBase = c.fAddress,
           memMapAddressSizeBytes = c.fSize,
-          memoryRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions("SPIXIP", resourceBindings, Some(module.omRegMap)),
+          memoryRegions = memoryRegions,
           interrupts = DiplomaticObjectModelAddressing.describeGlobalInterrupts(device.describe(resourceBindings).name, resourceBindings)
         )
       )
