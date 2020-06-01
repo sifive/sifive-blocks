@@ -5,12 +5,12 @@ import Chisel._
 import Chisel.ImplicitConversions._
 import chisel3.MultiIOModule
 
-import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
-import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, PBUS}
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.util._
@@ -39,7 +39,7 @@ class PWMTimer(val ncmp: Int = 4, val cmpWidth: Int = 16, val prefix: String = "
     val sel = (0 until ncmp).map(i => s(cmpWidth-1) && center(i))
     val reg = Reg(Vec(ncmp, Bool()))
     reg := (sel & elapsed) | (~sel & (elapsed | (Vec.fill(ncmp){doSticky} & reg)))
-    when (orR(io.regs.cfg.write_ip) && unlocked) { reg := io.regs.cfg.write_ip }
+    when (orR(io.regs.cfg.write_ip) && unlocked) { reg := io.regs.cfg.write.ip }
     reg
   }
 
@@ -117,6 +117,8 @@ abstract class PWM(busWidthBytes: Int, val params: PWMParams)(implicit p: Parame
 
 class TLPWM(busWidthBytes: Int, params: PWMParams)(implicit p: Parameters)
   extends PWM(busWidthBytes, params) with HasTLControlRegMap
+
+case class PWMLocated(loc: HierarchicalLocation) extends Field[Seq[PWMAttachParams]](Nil)
 
 case class PWMAttachParams(
   device: PWMParams,

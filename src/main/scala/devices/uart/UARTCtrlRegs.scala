@@ -12,4 +12,7 @@ object UARTCtrlRegs {
   val ie     = 0x10
   val ip     = 0x14
   val div    = 0x18
+  val parity = 0x1c
+  val wire4  = 0x20
+  val either8or9 = 0x24
 }

@@ -3,11 +3,11 @@ package sifive.blocks.devices.stream
 
 import Chisel._
 
-import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper._
-import freechips.rocketchip.subsystem.{Attachable, TLBusWrapperLocation, SBUS}
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
 
@@ -91,6 +91,8 @@ abstract class PseudoStream(busWidthBytes: Int, val params: PseudoStreamParams)(
 
 class TLPseudoStream(busWidthBytes: Int, params: PseudoStreamParams)(implicit p: Parameters)
   extends PseudoStream(busWidthBytes, params) with HasTLControlRegMap
+
+case class PseudoStreamLocated(loc: HierarchicalLocation) extends Field[Seq[PseudoStreamAttachParams]](Nil)
 
 case class PseudoStreamAttachParams(
   device: PseudoStreamParams,
