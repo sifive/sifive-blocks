@@ -94,14 +94,14 @@ class GenericTimerCfgRegIFC (
     RegFieldGroup(s"${prefix}cfg", Some(s"${prefix} Configuration"),
       Seq(
         RegField(scaleWidth, RegReadFn(read.scale), RegWriteFn((v, d) => writeFn(v, d, write.scale, write_scale)), descs.scale),
-        RegField(8-scaleWidth),
+        RegField(8-scaleWidth,RegFieldDesc.reserved),
         RegField(1, RegReadFn(read.sticky), RegWriteFn((v, d) => writeFn(v, d, write.sticky, write_sticky)), descs.sticky),
         RegField(1, RegReadFn(read.zerocmp), RegWriteFn((v, d) => writeFn(v, d, write.zerocmp, write_zerocmp)), descs.zerocmp),
         RegField(1, RegReadFn(read.deglitch), RegWriteFn((v, d) => writeFn(v, d, write.deglitch, write_deglitch)), descs.deglitch),
-        RegField(1),
+        RegField(1,RegFieldDesc.reserved),
         RegField(1, RegReadFn(read.countAlways), RegWriteFn((v, d) => writeFn(v, d, write.countAlways, write_countAlways)), descs.countAlways),
         RegField(1, RegReadFn(read.running), RegWriteFn((v, d) => writeFn(v, d, write.running, write_running)), descs.running),
-        RegField(2)
+        RegField(2,RegFieldDesc.reserved)
       ) ++ Seq.tabulate(ncmp) { i =>
         RegField(1, RegReadFn(read.center(i)), RegWriteFn((v, d) => writeFn(v, d, write.center(i), write_center(i))), descs.center(i))
       }
@@ -120,7 +120,7 @@ class GenericTimerCfgRegIFC (
         RegField(1, RegReadFn(read.ip(i)),
           RegWriteFn((v, d) => writeFn(v, d, write.ip(i), write_ip(i))), descs.ip(i))
       }
-      ++ (if (ncmp < maxcmp) Seq(RegField(maxcmp - ncmp)) else Nil)
+      ++ (if (ncmp < maxcmp) Seq(RegField((maxcmp - ncmp),RegFieldDesc.reserved)) else Nil)
     )
   }
 
