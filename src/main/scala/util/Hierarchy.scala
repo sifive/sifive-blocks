@@ -33,6 +33,7 @@ trait HasConfigurableHierarchy { this: Attachable =>
         logicalTreeNode = context.logicalTreeNode,
         asyncClockGroupsNode = context.asyncClockGroupsNode)
       val dss = context { LazyModule(new DevicesSubsystem(edge, ibus, dssParams)) }
+      dss.suggestName(edge.name)
       createHierarchyMap(edge, graph, dss)
     }
   }
