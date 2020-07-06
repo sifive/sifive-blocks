@@ -228,17 +228,23 @@ case class UARTLocated(loc: HierarchicalLocation) extends Field[Seq[UARTAttachPa
 case class UARTAttachParams(
   device: UARTParams,
   controlWhere: TLBusWrapperLocation = PBUS,
-  blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
+  blockerAddr: Option[BigInt] = None,
+  clockSinkWhere: Option[ClockSinkLocation] = None,
   intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLUART = where {
+  //def attachTo(where: Attachable)(implicit p: Parameters): (TLUART, LocationMap[ClockSourceNode], LocationMap[ClockSinkNode]) = where {
     val name = s"uart_${UART.nextId()}"
     val tlbus = where.locateTLBusWrapper(controlWhere)
     val divinit = (tlbus.dtsFrequency.get / 115200).toInt
     val uartClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
     val uart = uartClockDomainWrapper { LazyModule(new TLUART(tlbus.beatBytes, device, divinit)) }
     uart.suggestName(name)
+
+    val clockSourceMap = LocationMap.empty[ClockSourceNode]
+    val clockSinkMap = LocationMap.empty[ClockSinkNode] 
+    clockSinkWhere.foreach { node => clockSinkMap += (node -> uartClockDomainWrapper.clockNode) }
 
     tlbus.coupleTo(s"device_named_$name") { bus =>
 
@@ -274,6 +280,7 @@ case class UARTAttachParams(
     LogicalModuleTree.add(where.logicalTreeNode, uart.logicalTreeNode)
 
     uart
+//    (uart, clockSourceMap, clockSinkMap) 
   }
 }
 
