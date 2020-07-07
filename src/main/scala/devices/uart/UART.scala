@@ -29,7 +29,9 @@ case class UARTParams(
   nRxEntries: Int = 8,
   includeFourWire: Boolean = false,
   includeParity: Boolean = false,
-  includeIndependentParity: Boolean = false) extends DeviceParams // Tx and Rx have opposite parity modes
+  includeIndependentParity: Boolean = false, // Tx and Rx have opposite parity modes
+  initBaudRate: BigInt = BigInt(115200),
+) extends DeviceParams
 {
   def oversampleFactor = 1 << oversample
   require(divisorBits > oversample)
@@ -235,7 +237,7 @@ case class UARTAttachParams(
   def attachTo(where: Attachable)(implicit p: Parameters): TLUART = where {
     val name = s"uart_${UART.nextId()}"
     val tlbus = where.locateTLBusWrapper(controlWhere)
-    val divinit = (tlbus.dtsFrequency.get / 115200).toInt
+    val divinit = (tlbus.dtsFrequency.get / device.initBaudRate).toInt
     val uartClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
     val uart = uartClockDomainWrapper { LazyModule(new TLUART(tlbus.beatBytes, device, divinit)) }
     uart.suggestName(name)
