@@ -29,7 +29,7 @@ case class UARTParams(
   nRxEntries: Int = 8,
   includeFourWire: Boolean = false,
   includeParity: Boolean = false,
-  includeIndependentParity: Boolean = false) extends DeviceParams // Tx and Rx have opposite parity modes
+  includeIndependentParity: Boolean = false) extends UARTDeviceParams // Tx and Rx have opposite parity modes
 {
   def oversampleFactor = 1 << oversample
   require(divisorBits > oversample)
@@ -231,10 +231,12 @@ case class UARTAttachParams(
   controlXType: ClockCrossingType = NoCrossing,
   blockerAddr: Option[BigInt] = None,
   clockSinkWhere: Option[ClockSinkLocation] = None,
-  intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
+  intXType: ClockCrossingType = NoCrossing) extends UARTDeviceAttachParams
 {
-  def attachTo(where: Attachable)(implicit p: Parameters): TLUART = where {
-  //def attachTo(where: Attachable)(implicit p: Parameters): (TLUART, LocationMap[ClockSourceNode], LocationMap[ClockSinkNode]) = where {
+  //def attachTo(where: Attachable)(implicit p: Parameters): TLUART = where {
+  def attachTo(where: Attachable)(implicit p: Parameters): DeviceInstance[TLUART] = where {
+
+    println(s"\n\nCREATING A UART IN ${where}\n\n")
     val name = s"uart_${UART.nextId()}"
     val tlbus = where.locateTLBusWrapper(controlWhere)
     val divinit = (tlbus.dtsFrequency.get / 115200).toInt
@@ -244,7 +246,9 @@ case class UARTAttachParams(
 
     val clockSourceMap = LocationMap.empty[ClockSourceNode]
     val clockSinkMap = LocationMap.empty[ClockSinkNode] 
-    clockSinkWhere.foreach { node => clockSinkMap += (node -> uartClockDomainWrapper.clockNode) }
+    clockSinkWhere.foreach { node =>
+      clockSinkMap += (node -> uartClockDomainWrapper.clockNode)
+    }
 
     tlbus.coupleTo(s"device_named_$name") { bus =>
 
@@ -254,6 +258,7 @@ case class UARTAttachParams(
         blocker
       }
 
+      /*
       uartClockDomainWrapper.clockNode := (controlXType match {
         case _: SynchronousCrossing =>
           tlbus.dtsClk.map(_.bind(uart.device))
@@ -265,6 +270,7 @@ case class UARTAttachParams(
           uartClockGroup := where.asyncClockGroupsNode
           blockerOpt.map { _.clockNode := uartClockGroup } .getOrElse { uartClockGroup }
       })
+      */
 
       (uart.controlXing(controlXType)
         := TLFragmenter(tlbus)
@@ -279,8 +285,8 @@ case class UARTAttachParams(
 
     LogicalModuleTree.add(where.logicalTreeNode, uart.logicalTreeNode)
 
-    uart
-//    (uart, clockSourceMap, clockSinkMap) 
+    //uart
+    DeviceInstance(uart, clockSourceMap, clockSinkMap) 
   }
 }
 
