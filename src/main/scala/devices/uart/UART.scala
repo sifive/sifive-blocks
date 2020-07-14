@@ -244,7 +244,7 @@ case class UARTAttachParams(
     val uart = uartClockDomainWrapper { LazyModule(new TLUART(tlbus.beatBytes, device, divinit)) }
     uart.suggestName(name)
 
-    val clockSourceMap = LocationMap.empty[ClockSourceNode]
+    val clockSourceMap = LocationMap.empty[FixedClockBroadcastNode]
     val clockSinkMap = LocationMap.empty[ClockSinkNode] 
     clockSinkWhere.foreach { node =>
       clockSinkMap += (node -> uartClockDomainWrapper.clockNode)

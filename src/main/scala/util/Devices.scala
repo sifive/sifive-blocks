@@ -18,7 +18,7 @@ case class DevicesLocated(loc: HierarchicalLocation) extends Field[Seq[DeviceAtt
 
 case class DeviceInstance[T <: LazyModule](
   instance: T,
-  clockSourceMap: LocationMap[ClockSourceNode],
+  clockSourceMap: LocationMap[FixedClockBroadcastNode],
   clockSinkMap: LocationMap[ClockSinkNode])
 
 trait CanHaveDevices { this: Attachable =>
