@@ -51,6 +51,7 @@ trait HasConfigurableHierarchy { this: Attachable =>
 
   hierarchyMap.foreach { case(label, context) =>
     tlBusWrapperLocationMap ++= context.tlBusWrapperLocationMap
+    anyLocationMap ++= context.anyLocationMap
   }
 }
 

@@ -16,11 +16,6 @@ import sifive.blocks.devices.uart._
 
 case class DevicesLocated(loc: HierarchicalLocation) extends Field[Seq[DeviceAttachParams]](Nil)
 
-case class DeviceInstance[T <: LazyModule](
-  instance: T,
-  clockSourceMap: LocationMap[FixedClockBroadcastNode],
-  clockSinkMap: LocationMap[ClockSinkNode])
-
 trait CanHaveDevices { this: Attachable =>
   def location: HierarchicalLocation
   def devicesSubhierarchies: Option[Seq[CanHaveDevices]]
@@ -31,22 +26,6 @@ trait CanHaveDevices { this: Attachable =>
   val devices: Seq[LazyModule] = p(DevicesLocated(location)).map(_.attachTo(this)) ++
     devicesSubhierarchies.map(_.map(_.devices)).getOrElse(Nil).flatten
 
-  val uartDevicesConfigs: Seq[UARTDeviceAttachParams] = p(UARTLocated(location)) ++
-    devicesSubhierarchies.map(_.map(_.uartDevicesConfigs)).getOrElse(Nil).flatten
-
-  val uartDevices: Seq[DeviceInstance[TLUART]] = p(UARTLocated(location)).map(_.attachTo(this)) ++
-    devicesSubhierarchies.map(_.map(_.uartDevices)).getOrElse(Nil).flatten
-}
-
-trait UARTDeviceParams
-
-trait UARTDeviceAttachParams {
-  val device: UARTDeviceParams
-  val controlWhere: TLBusWrapperLocation
-  val blockerAddr: Option[BigInt]
-  val controlXType: ClockCrossingType
-
-  def attachTo(where: Attachable)(implicit p: Parameters): DeviceInstance[_] 
 }
 
 trait DeviceParams
