@@ -76,16 +76,21 @@ case class WDTLocated(loc: HierarchicalLocation) extends Field[Seq[WDTAttachPara
 case class WDTAttachParams(
   device: WDTParams,
   controlWhere: TLBusWrapperLocation = PBUS,
-  blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
+  blockerAddr: Option[BigInt] = None,
+  clockSinkWhere: Option[ClockSinkLocation] = None,
   intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLWDT = where {
-    val name = s"wdt_${WDT.nextId()}"
+    val id = WDT.nextId()
+    val name = s"wdt_${id}"
     val tlbus = where.locateTLBusWrapper(controlWhere)
     val wdtClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
     val wdt = wdtClockDomainWrapper { LazyModule(new TLWDT(tlbus.beatBytes, device)) }
     wdt.suggestName(name)
+
+    val sinkLocation = clockSinkWhere.getOrElse(new ClockSinkLocation(s"wdt${id}_sink"))
+    where.anyLocationMap += (sinkLocation -> wdtClockDomainWrapper.clockNode)
 
     tlbus.coupleTo(s"device_named_$name") { bus =>
 
@@ -94,18 +99,6 @@ case class WDTAttachParams(
         tlbus.coupleTo(s"bus_blocker_for_$name") { blocker.controlNode := TLFragmenter(tlbus) := _ }
         blocker
       }
-
-      wdtClockDomainWrapper.clockNode := (controlXType match {
-        case _: SynchronousCrossing =>
-          tlbus.dtsClk.map(_.bind(wdt.device))
-          tlbus.fixedClockNode
-        case _: RationalCrossing =>
-          tlbus.clockNode
-        case _: AsynchronousCrossing =>
-          val wdtClockGroup = ClockGroup()
-          wdtClockGroup := where.asyncClockGroupsNode
-          blockerOpt.map { _.clockNode := wdtClockGroup } .getOrElse { wdtClockGroup }
-      })
 
       (wdt.controlXing(controlXType)
         := TLFragmenter(tlbus)

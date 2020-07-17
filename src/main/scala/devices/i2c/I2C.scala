@@ -585,16 +585,21 @@ case class I2CLocated(loc: HierarchicalLocation) extends Field[Seq[I2CAttachPara
 case class I2CAttachParams(
   device: I2CParams,
   controlWhere: TLBusWrapperLocation = PBUS,
-  blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
+  blockerAddr: Option[BigInt] = None,
+  clockSinkWhere: Option[ClockSinkLocation] = None,
   intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLI2C = where {
-    val name = s"i2c_${I2C.nextId()}"
+    val id = I2C.nextId()
+    val name = s"i2c_${id}"
     val tlbus = where.locateTLBusWrapper(controlWhere)
     val i2cClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
     val i2c = i2cClockDomainWrapper { LazyModule(new TLI2C(tlbus.beatBytes, device)) }
     i2c.suggestName(name)
+
+    val sinkLocation = clockSinkWhere.getOrElse(new ClockSinkLocation(s"i2c${id}_sink"))
+    where.anyLocationMap += (sinkLocation -> i2cClockDomainWrapper.clockNode)
 
     tlbus.coupleTo(s"device_named_$name") { bus =>
 
@@ -603,18 +608,6 @@ case class I2CAttachParams(
         tlbus.coupleTo(s"bus_blocker_for_$name") { blocker.controlNode := TLFragmenter(tlbus) := _ }
         blocker
       }
-
-      i2cClockDomainWrapper.clockNode := (controlXType match {
-        case _: SynchronousCrossing =>
-          tlbus.dtsClk.map(_.bind(i2c.device))
-          tlbus.fixedClockNode
-        case _: RationalCrossing =>
-          tlbus.clockNode
-        case _: AsynchronousCrossing =>
-          val i2cClockGroup = ClockGroup()
-          i2cClockGroup := where.asyncClockGroupsNode
-          blockerOpt.map { _.clockNode := i2cClockGroup } .getOrElse { i2cClockGroup }
-      })
 
       (i2c.controlXing(controlXType)
         := TLFragmenter(tlbus)

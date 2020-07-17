@@ -241,16 +241,21 @@ case class GPIOLocated(loc: HierarchicalLocation) extends Field[Seq[GPIOAttachPa
 case class GPIOAttachParams(
   device: GPIOParams,
   controlWhere: TLBusWrapperLocation = PBUS,
-  blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
+  blockerAddr: Option[BigInt] = None,
+  clockSinkWhere: Option[ClockSinkLocation] = None,
   intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLGPIO = where {
-    val name = s"gpio_${GPIO.nextId()}"
+    val id = GPIO.nextId()
+    val name = s"gpio_${id}"
     val cbus = where.locateTLBusWrapper(controlWhere)
     val gpioClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
     val gpio = gpioClockDomainWrapper { LazyModule(new TLGPIO(cbus.beatBytes, device)) }
     gpio.suggestName(name)
+
+    val sinkLocation = clockSinkWhere.getOrElse(new ClockSinkLocation(s"gpio${id}_sink"))
+    where.anyLocationMap += (sinkLocation -> gpioClockDomainWrapper.clockNode)
 
     cbus.coupleTo(s"device_named_$name") { bus =>
 
@@ -259,18 +264,6 @@ case class GPIOAttachParams(
         cbus.coupleTo(s"bus_blocker_for_$name") { blocker.controlNode := TLFragmenter(cbus) := _ }
         blocker
       }
-
-      gpioClockDomainWrapper.clockNode := (controlXType match {
-        case _: SynchronousCrossing =>
-          cbus.dtsClk.map(_.bind(gpio.device))
-          cbus.fixedClockNode
-        case _: RationalCrossing =>
-          cbus.clockNode
-        case _: AsynchronousCrossing =>
-          val gpioClockGroup = ClockGroup()
-          gpioClockGroup := where.asyncClockGroupsNode
-          blockerOpt.map { _.clockNode := gpioClockGroup } .getOrElse { gpioClockGroup }
-      })
 
       (gpio.controlXing(controlXType)
         := TLFragmenter(cbus)

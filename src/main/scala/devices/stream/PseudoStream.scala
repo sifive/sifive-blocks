@@ -97,15 +97,20 @@ case class PseudoStreamLocated(loc: HierarchicalLocation) extends Field[Seq[Pseu
 case class PseudoStreamAttachParams(
   device: PseudoStreamParams,
   controlWhere: TLBusWrapperLocation = SBUS,
+  controlXType: ClockCrossingType = NoCrossing,
   blockerAddr: Option[BigInt] = None,
-  controlXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
+  clockSinkWhere: Option[ClockSinkLocation] = None) extends DeviceAttachParams
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLPseudoStream = where {
-    val name = s"stream_${PseudoStream.nextId()}"
+    val id = PseudoStream.nextId()
+    val name = s"stream_${id}"
     val tlbus = where.locateTLBusWrapper(controlWhere)
     val streamClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
     val stream = streamClockDomainWrapper { LazyModule(new TLPseudoStream(tlbus.beatBytes, device)) }
     stream.suggestName(name)
+
+    val sinkLocation = clockSinkWhere.getOrElse(new ClockSinkLocation(s"stream${id}_sink"))
+    where.anyLocationMap += (sinkLocation -> streamClockDomainWrapper.clockNode)
 
     tlbus.coupleTo(s"device_named_$name") { bus =>
 
@@ -114,18 +119,6 @@ case class PseudoStreamAttachParams(
         tlbus.coupleTo(s"bus_blocker_for_$name") { blocker.controlNode := TLFragmenter(tlbus) := _ }
         blocker
       }
-
-      streamClockDomainWrapper.clockNode := (controlXType match {
-        case _: SynchronousCrossing =>
-          tlbus.dtsClk.map(_.bind(stream.device))
-          tlbus.fixedClockNode
-        case _: RationalCrossing =>
-          tlbus.clockNode
-        case _: AsynchronousCrossing =>
-          val streamClockGroup = ClockGroup()
-          streamClockGroup := where.asyncClockGroupsNode
-          blockerOpt.map { _.clockNode := streamClockGroup } .getOrElse { streamClockGroup }
-      })
 
       (stream.controlXing(controlXType)
         := TLFragmenter(tlbus)

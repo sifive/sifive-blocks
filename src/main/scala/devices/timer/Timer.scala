@@ -81,16 +81,21 @@ case class TimerLocated(loc: HierarchicalLocation) extends Field[Seq[TimerAttach
 case class TimerAttachParams(
   device: TimerParams,
   controlWhere: TLBusWrapperLocation = PBUS,
-  blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
+  blockerAddr: Option[BigInt] = None,
+  clockSinkWhere: Option[ClockSinkLocation] = None,
   intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
 {
   def attachTo(where: Attachable)(implicit p: Parameters): Timer = where {
-    val name = s"timer_${TimerDevice.nextId()}"
+    val id = TimerDevice.nextId()
+    val name = s"timer_${id}"
     val tlbus = where.locateTLBusWrapper(controlWhere)
     val timerClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
     val timer = timerClockDomainWrapper { LazyModule(new Timer(tlbus.beatBytes, device)) }
     timer.suggestName(name)
+
+    val sinkLocation = clockSinkWhere.getOrElse(new ClockSinkLocation(s"timer${id}_sink"))
+    where.anyLocationMap += (sinkLocation -> timerClockDomainWrapper.clockNode)
 
     tlbus.coupleTo(s"device_named_$name") { bus =>
 
@@ -99,18 +104,6 @@ case class TimerAttachParams(
         tlbus.coupleTo(s"bus_blocker_for_$name") { blocker.controlNode := TLFragmenter(tlbus) := _ }
         blocker
       }
-
-      timerClockDomainWrapper.clockNode := (controlXType match {
-        case _: SynchronousCrossing =>
-          tlbus.dtsClk.map(_.bind(timer.device))
-          tlbus.fixedClockNode
-        case _: RationalCrossing =>
-          tlbus.clockNode
-        case _: AsynchronousCrossing =>
-          val timerClockGroup = ClockGroup()
-          timerClockGroup := where.asyncClockGroupsNode
-          blockerOpt.map { _.clockNode := timerClockGroup } .getOrElse { timerClockGroup }
-      })
 
       (timer.controlXing(controlXType)
         := TLFragmenter(tlbus)

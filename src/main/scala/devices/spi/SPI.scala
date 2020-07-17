@@ -24,16 +24,21 @@ case class SPILocated(loc: HierarchicalLocation) extends Field[Seq[SPIAttachPara
 case class SPIAttachParams(
   device: SPIParams,
   controlWhere: TLBusWrapperLocation = PBUS,
-  blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
+  blockerAddr: Option[BigInt] = None,
+  clockSinkWhere: Option[ClockSinkLocation] = None,
   intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLSPI = where {
-    val name = s"spi_${SPI.nextId()}"
+    val id = SPI.nextId()
+    val name = s"spi_${id}"
     val tlbus = where.locateTLBusWrapper(controlWhere)
     val spiClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
     val spi = spiClockDomainWrapper { LazyModule(new TLSPI(tlbus.beatBytes, device)) }
     spi.suggestName(name)
+
+    val sinkLocation = clockSinkWhere.getOrElse(new ClockSinkLocation(s"spi${id}_sink"))
+    where.anyLocationMap += (sinkLocation -> spiClockDomainWrapper.clockNode)
 
     tlbus.coupleTo(s"device_named_$name") { bus =>
 
@@ -42,18 +47,6 @@ case class SPIAttachParams(
         tlbus.coupleTo(s"bus_blocker_for_$name") { blocker.controlNode := TLFragmenter(tlbus) := _ }
         blocker
       }
-
-      spiClockDomainWrapper.clockNode := (controlXType match {
-        case _: SynchronousCrossing =>
-          tlbus.dtsClk.map(_.bind(spi.device))
-          tlbus.fixedClockNode
-        case _: RationalCrossing =>
-          tlbus.clockNode
-        case _: AsynchronousCrossing =>
-          val spiClockGroup = ClockGroup()
-          spiClockGroup := where.asyncClockGroupsNode
-          blockerOpt.map { _.clockNode := spiClockGroup } .getOrElse { spiClockGroup }
-      })
 
       (spi.controlXing(controlXType)
         := TLFragmenter(tlbus)
@@ -76,21 +69,26 @@ case class SPIFlashLocated(loc: HierarchicalLocation) extends Field[Seq[SPIFlash
 
 case class SPIFlashAttachParams(
   device: SPIFlashParams,
+  controlXType: ClockCrossingType = NoCrossing,
   controlWhere: TLBusWrapperLocation = PBUS,
   dataWhere: TLBusWrapperLocation = PBUS,
+  memXType: ClockCrossingType = NoCrossing,
   fBufferDepth: Int = 0,
   blockerAddr: Option[BigInt] = None,
-  controlXType: ClockCrossingType = NoCrossing,
-  intXType: ClockCrossingType = NoCrossing,
-  memXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
+  clockSinkWhere: Option[ClockSinkLocation] = None,
+  intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLSPIFlash = where {
-    val name = s"qspi_${SPI.nextFlashId()}" // TODO should these be shared with regular SPIs?
+    val id = SPI.nextFlashId()
+    val name = s"qspi_${id}" // TODO should these be shared with regular SPIs?
     val cbus = where.locateTLBusWrapper(controlWhere)
     val mbus = where.locateTLBusWrapper(dataWhere)
     val qspiClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
     val qspi = qspiClockDomainWrapper { LazyModule(new TLSPIFlash(cbus.beatBytes, device)) }
     qspi.suggestName(name)
+
+    val sinkLocation = clockSinkWhere.getOrElse(new ClockSinkLocation(s"qspi${id}_sink"))
+    where.anyLocationMap += (sinkLocation -> qspiClockDomainWrapper.clockNode)
 
     cbus.coupleTo(s"device_named_$name") { bus =>
 
@@ -99,18 +97,6 @@ case class SPIFlashAttachParams(
         cbus.coupleTo(s"bus_blocker_for_$name") { blocker.controlNode := TLFragmenter(cbus) := _ }
         blocker
       }
-
-      qspiClockDomainWrapper.clockNode := (controlXType match {
-        case _: SynchronousCrossing =>
-          cbus.dtsClk.map(_.bind(qspi.device))
-          cbus.fixedClockNode
-        case _: RationalCrossing =>
-          cbus.clockNode
-        case _: AsynchronousCrossing =>
-          val qspiClockGroup = ClockGroup()
-          qspiClockGroup := where.asyncClockGroupsNode
-          blockerOpt.map { _.clockNode := qspiClockGroup } .getOrElse { qspiClockGroup }
-      })
 
       (qspi.controlXing(controlXType)
         := TLFragmenter(cbus)

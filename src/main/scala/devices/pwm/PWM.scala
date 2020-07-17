@@ -123,16 +123,21 @@ case class PWMLocated(loc: HierarchicalLocation) extends Field[Seq[PWMAttachPara
 case class PWMAttachParams(
   device: PWMParams,
   controlWhere: TLBusWrapperLocation = PBUS,
-  blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
+  blockerAddr: Option[BigInt] = None,
+  clockSinkWhere: Option[ClockSinkLocation] = None,
   intXType: ClockCrossingType = NoCrossing) extends DeviceAttachParams
 {
   def attachTo(where: Attachable)(implicit p: Parameters): TLPWM = {
-    val name = s"pwm_${PWM.nextId()}"
+    val id = PWM.nextId()
+    val name = s"pwm_${id}"
     val tlbus = where.locateTLBusWrapper(controlWhere)
     val pwmClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
     val pwm = pwmClockDomainWrapper { LazyModule(new TLPWM(tlbus.beatBytes, device)) }
     pwm.suggestName(name)
+
+    val sinkLocation = clockSinkWhere.getOrElse(new ClockSinkLocation(s"pwm${id}_sink"))
+    where.anyLocationMap += (sinkLocation -> pwmClockDomainWrapper.clockNode)
 
     tlbus.coupleTo(s"device_named_$name") { bus =>
 
@@ -141,18 +146,6 @@ case class PWMAttachParams(
         tlbus.coupleTo(s"bus_blocker_for_$name") { blocker.controlNode := TLFragmenter(tlbus) := _ }
         blocker
       }
-
-      pwmClockDomainWrapper.clockNode := (controlXType match {
-        case _: SynchronousCrossing =>
-          tlbus.dtsClk.map(_.bind(pwm.device))
-          tlbus.fixedClockNode
-        case _: RationalCrossing =>
-          tlbus.clockNode
-        case _: AsynchronousCrossing =>
-          val pwmClockGroup = ClockGroup()
-          pwmClockGroup := where.asyncClockGroupsNode
-          blockerOpt.map { _.clockNode := pwmClockGroup } .getOrElse { pwmClockGroup }
-      })
 
       (pwm.controlXing(controlXType)
         := TLFragmenter(tlbus)
