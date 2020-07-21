@@ -13,7 +13,7 @@ class SourceB(info: ChipLinkInfo) extends Module
   }
 
   // Find the optional cache (at most one)
-  val cache = info.edgeIn.client.clients.filter(_.supportsProbe).headOption
+  val cache = info.edgeIn.client.clients.filter(_.supports.probe).headOption
 
   // A simple FSM to generate the packet components
   val state = RegInit(UInt(0, width = 2))
