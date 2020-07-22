@@ -1,7 +1,8 @@
 // See LICENSE for license details.
 package sifive.blocks.devices.spi
 
-import Chisel._
+import Chisel.{defaultCompileOptions => _, _}
+import freechips.rocketchip.util.CompileOptions.NotStrictInferReset
 
 class SPILinkIO(c: SPIParamsBase) extends SPIBundle(c) {
   val tx = Decoupled(Bits(width = c.frameBits))

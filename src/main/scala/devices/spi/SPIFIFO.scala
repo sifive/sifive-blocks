@@ -1,7 +1,8 @@
 // See LICENSE for license details.
 package sifive.blocks.devices.spi
 
-import Chisel._
+import Chisel.{defaultCompileOptions => _, _}
+import freechips.rocketchip.util.CompileOptions.NotStrictInferReset
 
 class SPIFIFOControl(c: SPIParamsBase) extends SPIBundle(c) {
   val fmt = new SPIFormat(c) with HasSPILength

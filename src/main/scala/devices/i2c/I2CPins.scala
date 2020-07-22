@@ -1,7 +1,8 @@
 // See LICENSE for license details.
 package sifive.blocks.devices.i2c
 
-import Chisel._
+import Chisel.{defaultCompileOptions => _, _}
+import freechips.rocketchip.util.CompileOptions.NotStrictInferReset
 import chisel3.{withClockAndReset}
 import freechips.rocketchip.util.SyncResetSynchronizerShiftReg
 import sifive.blocks.devices.pinctrl.{Pin, PinCtrl}
