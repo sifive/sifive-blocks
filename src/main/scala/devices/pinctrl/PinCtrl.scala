@@ -2,7 +2,8 @@
 
 package sifive.blocks.devices.pinctrl
 
-import Chisel._
+import Chisel.{defaultCompileOptions => _, _}
+import freechips.rocketchip.util.CompileOptions.NotStrictInferReset
 
 // This is the base class of things you "always"
 // want to control from a HW block.

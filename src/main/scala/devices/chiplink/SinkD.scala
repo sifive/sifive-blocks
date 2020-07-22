@@ -1,7 +1,8 @@
 // See LICENSE for license details.
 package sifive.blocks.devices.chiplink
 
-import Chisel._
+import Chisel.{defaultCompileOptions => _, _}
+import freechips.rocketchip.util.CompileOptions.NotStrictInferReset
 import freechips.rocketchip.tilelink._
 
 class SinkD(info: ChipLinkInfo) extends Module
