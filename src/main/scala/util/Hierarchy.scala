@@ -28,11 +28,12 @@ trait HasConfigurableHierarchy { this: Attachable =>
     // Create and recurse on child hierarchies
     val edges = graph.getEdges(root)
     edges.foreach { edge =>
-      val dssParams = DevicesSubsystemParams(
-        name = edge.name,
-        logicalTreeNode = context.logicalTreeNode,
-        asyncClockGroupsNode = context.asyncClockGroupsNode)
-      val dss = context { LazyModule(new DevicesSubsystem(edge, ibus, dssParams)) }
+      val dss = context { LazyModule(new DevicesSubsystem(
+        hierarchyName = edge.name,
+        location = edge,
+        ibus = context.ibus,
+        asyncClockGroupsNode = context.asyncClockGroupsNode,
+        logicalTreeNode = context.logicalTreeNode)) }
       dss.suggestName(edge.name)
       createHierarchyMap(edge, graph, dss)
     }
