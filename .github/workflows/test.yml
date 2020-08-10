@@ -20,7 +20,7 @@ jobs:
         environment: git@github.com:sifive/environment-blockci-sifive.git::0.7.0
 
     - name: Run wake scala compile
-      uses: sifive/environment-blockci-sifive/actions/wake@61231a985f328eb60db00ce7d80cee7fd5cec46d
+      uses: sifive/environment-blockci-sifive/actions/wake@0.7.0
       with:
         command: -x 'compileScalaModule sifiveBlocksScalaModule | getPathResult'
 
