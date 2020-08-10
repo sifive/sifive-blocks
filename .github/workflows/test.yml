@@ -15,9 +15,9 @@ jobs:
 
     steps:
     - name: Wit Init
-      uses: sifive/wit/actions/init@1f4edc0faa9c15ab88607b657cfb51617ba93fda
+      uses: sifive/wit/actions/init@v0.13.2
       with:
-        environment: git@github.com:sifive/environment-blockci-sifive.git::0.7.0
+        additional_packages: git@github.com:sifive/environment-blockci-sifive.git::0.7.0
 
     - name: Run wake scala compile
       uses: sifive/environment-blockci-sifive/actions/wake@0.7.0
