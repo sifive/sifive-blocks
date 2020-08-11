@@ -16,6 +16,7 @@ class SPILinkIO(c: SPIParamsBase) extends SPIBundle(c) {
     val hold = Bool(OUTPUT) // Supress automatic CS deactivation
   }
   val active = Bool(INPUT)
+  val dummy = c.oeDisableDummy.option(Bool(OUTPUT))
 }
 
 class SPIMedia(c: SPIParamsBase) extends Module {
@@ -43,6 +44,7 @@ class SPIMedia(c: SPIParamsBase) extends Module {
   op.bits.stb := Bool(false)
   op.bits.cnt := io.link.cnt
   op.bits.data := io.link.tx.bits
+  op.bits.dummy.foreach(_ := io.link.dummy.get)
 
   val cs = Reg(io.ctrl.cs)
   val cs_set = Reg(Bool())

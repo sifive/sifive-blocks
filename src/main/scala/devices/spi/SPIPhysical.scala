@@ -10,6 +10,7 @@ class SPIMicroOp(c: SPIParamsBase) extends SPIBundle(c) {
   val stb = Bool()
   val cnt = UInt(width = c.countBits)
   val data = Bits(width = c.frameBits)
+  val dummy = c.oeDisableDummy.option(Bool())
 }
 
 object SPIMicroOp {
@@ -166,7 +167,7 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
   (io.port.dq zip (txd.asBools zip txen)).foreach {
     case (dq, (o, oe)) =>
       dq.o := o
-      dq.oe := oe
+      dq.oe := Mux(io.op.bits.dummy.getOrElse(false.B), false.B, oe)
   }
   io.op.ready := Bool(false)
 

@@ -72,6 +72,7 @@ class SPIFlashMap(c: SPIFlashParamsBase) extends Module {
   io.link.cs.clear := Bool(false)
   io.link.cs.hold := Bool(true)
   io.link.lock := Bool(true)
+  io.link.dummy.foreach ( _ := false.B)
 
   io.addr.ready := Bool(false)
   io.data.valid := Bool(false)
@@ -143,6 +144,7 @@ class SPIFlashMap(c: SPIFlashParamsBase) extends Module {
     is (s_pad) {
       io.link.cnt := insn.pad.cnt
       io.link.tx.bits := insn.pad.code
+      io.link.dummy.foreach(_ := true.B)
       when (io.link.tx.ready) {
         state := s_data_pre
       }

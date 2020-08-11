@@ -28,6 +28,7 @@ trait SPIParamsBase {
   val fineDelayBits: Int
   val sampleDelayBits: Int
   val defaultSampleDel:Int
+  val oeDisableDummy: Boolean
 
   lazy val csIdBits = log2Up(csWidth)
   lazy val lengthBits = log2Floor(frameBits) + 1
@@ -49,7 +50,8 @@ case class SPIParams(
     divisorBits: Int = 12,
     fineDelayBits: Int = 0,
     sampleDelayBits: Int = 5,
-    defaultSampleDel: Int = 3
+    defaultSampleDel: Int = 3,
+    oeDisableDummy: Boolean = false
     )
   extends SPIParamsBase with DeviceParams {
 
