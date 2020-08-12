@@ -3,7 +3,7 @@ package sifive.blocks.devices.spi
 
 import Chisel.{defaultCompileOptions => _, _}
 import freechips.rocketchip.util.CompileOptions.NotStrictInferReset
-import freechips.rocketchip.util.ShiftRegInit
+import freechips.rocketchip.util._
 
 class SPIMicroOp(c: SPIParamsBase) extends SPIBundle(c) {
   val fn = Bits(width = 1)

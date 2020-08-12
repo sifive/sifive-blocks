@@ -37,7 +37,8 @@ case class SPIFlashParams(
     divisorBits: Int = 12,
     fineDelayBits: Int = 0,
     sampleDelayBits: Int = 5,
-    defaultSampleDel: Int = 3
+    defaultSampleDel: Int = 3,
+    oeDisableDummy: Boolean = false
     )
   extends SPIFlashParamsBase with DeviceParams {
   val frameBits = 8

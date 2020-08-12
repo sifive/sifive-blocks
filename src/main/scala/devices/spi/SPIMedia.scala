@@ -3,6 +3,7 @@ package sifive.blocks.devices.spi
 
 import Chisel.{defaultCompileOptions => _, _}
 import freechips.rocketchip.util.CompileOptions.NotStrictInferReset
+import freechips.rocketchip.util._
 
 class SPILinkIO(c: SPIParamsBase) extends SPIBundle(c) {
   val tx = Decoupled(Bits(width = c.frameBits))
