@@ -23,6 +23,7 @@ class SPIArbiter(c: SPIParamsBase, n: Int) extends Module {
   io.outer.fmt := Mux1H(sel, io.inner.map(_.fmt))
   // Workaround for overzealous combinational loop detection
   io.outer.cs := Mux(sel(0), io.inner(0).cs, io.inner(1).cs)
+  io.outer.dummy.foreach (_ := io.inner(0).dummy.get)
   require(n == 2, "SPIArbiter currently only supports 2 clients")
 
   (io.inner zip sel).foreach { case (inner, s) =>
