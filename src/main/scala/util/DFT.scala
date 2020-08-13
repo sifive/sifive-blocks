@@ -6,11 +6,11 @@ import chisel3._
 import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.diplomacy._
 
-trait HasDFT[T <: Data] {
+trait HasDeviceDFTPorts[T <: Bundle] {
   
   def dftNode: BundleBridgeSource[T]
 
-  def makePort(implicit p: Parameters): ModuleValue[T] = {
+  def makeDFTPort(implicit p: Parameters): ModuleValue[T] = {
     val dftSink = dftNode.makeSink()
     InModuleBody { dontTouch(dftSink.bundle) }
   }
@@ -22,6 +22,6 @@ trait CanHaveDFT {
 
   def devices: Seq[LazyModule]
 
-  val dftNode = devices.collect { case source: HasDFT[Data] => source }
-  dftNode.foreach(_.makePort)
+  val dftNodes = devices.collect { case source: HasDeviceDFTPorts[Bundle] => source }
+  dftNodes.foreach(_.makeDFTPort)
 }
