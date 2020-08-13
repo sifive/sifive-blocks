@@ -134,6 +134,12 @@ case class PseudoStreamAttachParams(
 
     stream
   }
+
+  type T = PseudoStreamPortIO
+  def makePort(node: BundleBridgeSource[_], name: String)(implicit p: Parameters): ModuleValue[T] = {
+    val streamNode = node.asInstanceOf[BundleBridgeSource[T]].makeSink()
+    InModuleBody { streamNode.makeIO()(ValName(name)) }
+  }
 }
 
 object PseudoStream {

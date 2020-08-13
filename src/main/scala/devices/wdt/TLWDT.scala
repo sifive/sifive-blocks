@@ -52,7 +52,7 @@ abstract class WDT(busWidthBytes: Int, val params: WDTParams)(implicit p: Parame
     //regmap((GenericTimer.timerRegMap(wdt, 0, params.regBytes)):_*)
     val mapping = (GenericTimer.timerRegMap(wdt, 0, params.regBytes))
     regmap(mapping:_*)
-    val omRegMap = OMRegister.convert(mapping:_*)  
+    val omRegMap = OMRegister.convert(mapping:_*)
   }
 
   val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
@@ -121,6 +121,12 @@ case class WDTAttachParams(
     LogicalModuleTree.add(where.logicalTreeNode, wdt.logicalTreeNode)
 
     wdt
+  }
+
+  type T = WDTPortIO
+  def makePort(node: BundleBridgeSource[_], name: String)(implicit p: Parameters): ModuleValue[T] = {
+    val wdtNode = node.asInstanceOf[BundleBridgeSource[T]].makeSink()
+    InModuleBody { wdtNode.makeIO()(ValName(name)) }
   }
 }
 

@@ -70,6 +70,13 @@ case class SPIAttachParams(
 
     spi
   }
+
+  type T = SPIPortIO
+  def makePort(node: BundleBridgeSource[_], name: String)(implicit p: Parameters): ModuleValue[T] = {
+    //val spiNode = node.makeSink()
+    val spiNode = node.asInstanceOf[BundleBridgeSource[T]].makeSink()
+    InModuleBody { spiNode.makeIO()(ValName(name)) }
+  }
 }
 
 case class SPIFlashLocated(loc: HierarchicalLocation) extends Field[Seq[SPIFlashAttachParams]](Nil)
@@ -141,6 +148,12 @@ case class SPIFlashAttachParams(
     LogicalModuleTree.add(where.logicalTreeNode, qspi.logicalTreeNode)
 
     qspi
+  }
+
+  type T = SPIPortIO
+  def makePort(node: BundleBridgeSource[_], name: String)(implicit p: Parameters): ModuleValue[T] = {
+    val spiNode = node.asInstanceOf[BundleBridgeSource[T]].makeSink()
+    InModuleBody { spiNode.makeIO()(ValName(name)) }
   }
 }
 

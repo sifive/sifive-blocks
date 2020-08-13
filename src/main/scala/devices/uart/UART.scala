@@ -90,7 +90,7 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
   val enwire4 = Reg(init = Bool(false))
   val invpol = Reg(init = Bool(false))
   val enparity = Reg(init = Bool(false))
-  val parity = Reg(init = Bool(false)) // Odd parity - 1 , Even parity - 0 
+  val parity = Reg(init = Bool(false)) // Odd parity - 1 , Even parity - 0
   val errorparity = Reg(init = Bool(false))
   val errie = Reg(init = Bool(false))
   val txwm = Reg(init = UInt(0, txCountBits))
@@ -102,7 +102,7 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
     txm.io.en := txen && (!port.cts_n.get || !enwire4)
     txm.io.cts_n.get := port.cts_n.get
   }
-  else 
+  else
     txm.io.en := txen
   txm.io.in <> txq.io.deq
   txm.io.div := div
@@ -274,6 +274,12 @@ case class UARTAttachParams(
     LogicalModuleTree.add(where.logicalTreeNode, uart.logicalTreeNode)
 
     uart
+  }
+
+  type T = UARTPortIO
+  def makePort(node: BundleBridgeSource[_], name: String)(implicit p: Parameters): ModuleValue[T] = {
+    val uartNode = node.asInstanceOf[BundleBridgeSource[T]].makeSink()
+    InModuleBody { uartNode.makeIO()(ValName(name)) }
   }
 }
 

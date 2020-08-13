@@ -92,7 +92,7 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
   // HW IO Function
   val iofEnReg  = Module(new AsyncResetRegVec(c.width, 0))
   val iofSelReg = Reg(init = UInt(0, c.width))
-  
+
   // Invert Output
   val xorReg    = Reg(init = UInt(0, c.width))
 
@@ -194,7 +194,7 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
       // Allow SW Override for things IOF doesn't control.
       iofPlusSwPinCtrl(pin) <> swPinCtrl(pin)
       iofPlusSwPinCtrl(pin) <> iofCtrl(pin)
-   
+
       // Final XOR & Pin Control
       pre_xor  := Mux(iofEnReg.io.q(pin), iofPlusSwPinCtrl(pin), swPinCtrl(pin))
     } else {
@@ -286,6 +286,12 @@ case class GPIOAttachParams(
     LogicalModuleTree.add(where.logicalTreeNode, gpio.logicalTreeNode)
 
     gpio
+  }
+
+  type T = GPIOPortIO
+  def makePort(node: BundleBridgeSource[_], name: String)(implicit p: Parameters): ModuleValue[T] = {
+    val gpioNode = node.asInstanceOf[BundleBridgeSource[T]].makeSink()
+    InModuleBody { gpioNode.makeIO()(ValName(name)) }
   }
 }
 

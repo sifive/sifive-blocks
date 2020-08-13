@@ -46,7 +46,7 @@ class Timer(w: Int, c: TimerParams)(implicit p: Parameters)
     interrupts := timer.io.ip
     val mapping = (GenericTimer.timerRegMap(timer, 0, c.regBytes))
     regmap(mapping:_*)
-    val omRegMap = OMRegister.convert(mapping:_*)  
+    val omRegMap = OMRegister.convert(mapping:_*)
   }
   val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
     def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
@@ -126,6 +126,12 @@ case class TimerAttachParams(
     LogicalModuleTree.add(where.logicalTreeNode, timer.logicalTreeNode)
 
     timer
+  }
+
+  type T = Bundle
+  def makePort(node: BundleBridgeSource[_], name: String)(implicit p: Parameters): ModuleValue[T] = {
+    val timerNode = node.asInstanceOf[BundleBridgeSource[T]].makeSink()
+    InModuleBody { timerNode.makeIO()(ValName(name)) }
   }
 }
 

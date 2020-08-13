@@ -33,6 +33,9 @@ trait DeviceAttachParams {
   val controlXType: ClockCrossingType
 
   def attachTo(where: Attachable)(implicit p: Parameters): LazyModule
+  type T <: Bundle
+  def makePort(node: BundleBridgeSource[_], name: String)(implicit p: Parameters): ModuleValue[T]
+
 }
 
 case class DevicesSubsystemParams(
