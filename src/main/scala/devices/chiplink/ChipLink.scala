@@ -1,7 +1,8 @@
 // See LICENSE for license details.
 package sifive.blocks.devices.chiplink
 
-import Chisel._
+import Chisel.{defaultCompileOptions => _, _}
+import freechips.rocketchip.util.CompileOptions.NotStrictInferReset
 import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
@@ -138,8 +139,8 @@ class ChipLink(val params: ChipLinkParams)(implicit p: Parameters) extends LazyM
       s"ChipLink requires ${errorDev.name} support ${params.acqXfer} AcquireT, not ${errorDev.supportsAcquireT}")
 
     // At most one cache can master ChipLink
-    require (edgeIn.client.clients.filter(_.supportsProbe).size <= 1,
-      s"ChipLink supports at most one caching master, ${edgeIn.client.clients.filter(_.supportsProbe).map(_.name)}")
+    require (edgeIn.client.clients.filter(_.supports.probe).size <= 1,
+      s"ChipLink supports at most one caching master, ${edgeIn.client.clients.filter(_.supports.probe).map(_.name)}")
 
     // Construct the info needed by all submodules
     val info = ChipLinkInfo(params, edgeIn, edgeOut, errorDev.address.head)

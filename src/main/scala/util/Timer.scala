@@ -1,7 +1,8 @@
 // See LICENSE for license details.
 package sifive.blocks.util
 
-import Chisel._
+import Chisel.{defaultCompileOptions => _, _}
+import freechips.rocketchip.util.CompileOptions.NotStrictInferReset
 import Chisel.ImplicitConversions._
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.util.WideCounter
@@ -54,7 +55,7 @@ object DefaultGenericTimerCfgDescs  {
     center = Seq.tabulate(ncmp){ i => RegFieldDesc(s"${prefix}cmp${i}center", s"Comparator ${i} Center")},
     extra = Seq.tabulate(ncmp){ i => RegFieldDesc(s"${prefix}extra${i}", s"Comparator ${i} Extra")},
     gang = Seq.tabulate(ncmp){ i => RegFieldDesc(s"${prefix}gang${i}", s"Comparator ${i}/${(i+1) % ncmp} Gang")},
-    ip = Seq.tabulate(ncmp){ i => RegFieldDesc(s"${prefix}ip${i}", s"Interrupt ${i} Pending")}
+    ip = Seq.tabulate(ncmp){ i => RegFieldDesc(s"${prefix}ip${i}", s"Interrupt ${i} Pending", volatile=true)}
   )
 }
 

@@ -1,7 +1,8 @@
 // See LICENSE for license details.
 package sifive.blocks.util
 
-import Chisel._
+import Chisel.{defaultCompileOptions => _, _}
+import freechips.rocketchip.util.CompileOptions.NotStrictInferReset
 
 import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.LogicalTreeNode
@@ -38,22 +39,23 @@ trait DeviceAttachParams {
 
 }
 
-case class DevicesSubsystemParams(
-  name: String,
-  logicalTreeNode: LogicalTreeNode,
-  asyncClockGroupsNode: ClockGroupEphemeralNode)
+case class DevicesSubsystemParams()
 
-class DevicesSubsystem(val location: HierarchicalLocation, val ibus: InterruptBusWrapper, params: DevicesSubsystemParams)(implicit p: Parameters)
-  extends LazyModule
+// TODO: Use DevicesSubsystemParams as the constructor arugment once Attachable's ibus and
+// location are made into defs instead of vals
+class DevicesSubsystem(
+  val hierarchyName: String,
+  val location: HierarchicalLocation,
+  val ibus: InterruptBusWrapper,
+  val asyncClockGroupsNode: ClockGroupEphemeralNode,
+  val logicalTreeNode: LogicalTreeNode)(implicit p: Parameters) extends LazyModule
     with Attachable
     with HasConfigurableTLNetworkTopology
     with CanHaveDevices {
 
   def devicesSubhierarchies = None
-  def logicalTreeNode = params.logicalTreeNode
-  implicit val asyncClockGroupsNode = params.asyncClockGroupsNode
 
   lazy val module = new LazyModuleImp(this) {
-    override def desiredName: String = params.name
+    override def desiredName: String = hierarchyName
   }
 }
