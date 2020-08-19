@@ -17,7 +17,7 @@ import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressin
 import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
 
-import sifive.blocks.devices.pinctrl.{PinCtrl, Pin, BasePin, EnhancedPin, EnhancedPinCtrl, LN14LPPEnhancedPin, Ln14LPPEnhancedPinCtrl}
+import sifive.blocks.devices.pinctrl.{LN14LPPEnhancedPin, LN14LPPEnhancedPinCtrl}
 import sifive.blocks.util.{DeviceParams,DeviceAttachParams,BasicBusBlocker}
 
 // This is sort of weird because
@@ -28,7 +28,6 @@ import sifive.blocks.util.{DeviceParams,DeviceAttachParams,BasicBusBlocker}
 // we could do the pinmux inside.
 
 class GPIOPortIO(val c: GPIOParams) extends Bundle {
-//  val pins = Vec(c.width, new EnhancedPin())
   val pins = Vec(c.width, new LN14LPPEnhancedPin())
   val iof_0 = if (c.includeIOF) Some(Vec(c.width, new IOFPin).flip) else None
   val iof_1 = if (c.includeIOF) Some(Vec(c.width, new IOFPin).flip) else None
@@ -158,7 +157,6 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
   // Actual Pinmux
   // -------------------------------------------------
 
-//  val swPinCtrl = Wire(Vec(c.width, new EnhancedPinCtrl()))
   val swPinCtrl = Wire(Vec(c.width, new LN14LPPEnhancedPinCtrl()))
 
   // This strips off the valid.
@@ -166,7 +164,6 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
   val iof1Ctrl = Wire(Vec(c.width, new IOFCtrl()))
 
   val iofCtrl = Wire(Vec(c.width, new IOFCtrl()))
-//  val iofPlusSwPinCtrl = Wire(Vec(c.width, new EnhancedPinCtrl()))
   val iofPlusSwPinCtrl = Wire(Vec(c.width, new LN14LPPEnhancedPinCtrl()))
 
   for (pin <- 0 until c.width) {
@@ -178,7 +175,6 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
     swPinCtrl(pin).ds     := dsReg(pin)
     swPinCtrl(pin).ie     := ieReg.io.q(pin)
 
-//    val pre_xor = Wire(new EnhancedPinCtrl())
     val pre_xor = Wire(new LN14LPPEnhancedPinCtrl())
 
     if (c.includeIOF) {
