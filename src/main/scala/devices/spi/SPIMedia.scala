@@ -17,7 +17,7 @@ class SPILinkIO(c: SPIParamsBase) extends SPIBundle(c) {
     val hold = Bool(OUTPUT) // Supress automatic CS deactivation
   }
   val active = Bool(INPUT)
-  val dummy = c.oeDisableDummy.option(Bool(OUTPUT))
+  val dummy = c.oeDisableDummy.option(Bool(OUTPUT)) // disable oe during dummy cycles in flash mode
 }
 
 class SPIMedia(c: SPIParamsBase) extends Module {

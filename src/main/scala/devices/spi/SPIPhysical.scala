@@ -10,7 +10,7 @@ class SPIMicroOp(c: SPIParamsBase) extends SPIBundle(c) {
   val stb = Bool()
   val cnt = UInt(width = c.countBits)
   val data = Bits(width = c.frameBits)
-  val dummy = c.oeDisableDummy.option(Bool())
+  val dummy = c.oeDisableDummy.option(Bool()) // disable oe during dummy cycles in flash mode
 }
 
 object SPIMicroOp {
