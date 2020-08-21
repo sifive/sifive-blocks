@@ -279,9 +279,10 @@ case class UARTAttachParams(
     uart
   }
 
-  type T = UARTPortIO
-  def makePort(node: BundleBridgeSource[_], name: String)(implicit p: Parameters): ModuleValue[T] = {
-    val uartNode = node.asInstanceOf[BundleBridgeSource[T]].makeSink()
+  val deviceType = classOf[TLUART]
+  //type T = UARTPortIO
+  def makePort[UARTPortIO](node: BundleBridgeSource[UARTPortIO], name: String)(implicit p: Parameters): ModuleValue[UARTPortIO] = {
+    val uartNode = node.makeSink()
     InModuleBody { uartNode.makeIO()(ValName(name)) }
   }
 }

@@ -289,10 +289,13 @@ case class GPIOAttachParams(
     gpio
   }
 
+  val deviceType = classOf[TLGPIO]
+
   type T = GPIOPortIO
   def makePort(node: BundleBridgeSource[_], name: String)(implicit p: Parameters): ModuleValue[T] = {
-    val gpioNode = node.asInstanceOf[BundleBridgeSource[T]].makeSink()
-    InModuleBody { gpioNode.makeIO()(ValName(name)) }
+    /* val gpioNode = node.asInstanceOf[BundleBridgeSource[T]].makeSink()
+    InModuleBody { gpioNode.makeIO()(ValName(name)) } */
+    GPIO.makePort(node.asInstanceOf[BundleBridgeSource[T]], name)
   }
 }
 

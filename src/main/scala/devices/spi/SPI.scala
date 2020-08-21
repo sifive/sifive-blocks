@@ -72,6 +72,7 @@ case class SPIAttachParams(
     spi
   }
 
+  val deviceType = classOf[TLSPI]
   type T = SPIPortIO
   def makePort(node: BundleBridgeSource[_], name: String)(implicit p: Parameters): ModuleValue[T] = {
     //val spiNode = node.makeSink()
@@ -151,6 +152,7 @@ case class SPIFlashAttachParams(
     qspi
   }
 
+  val deviceType = classOf[TLSPIFlash]
   type T = SPIPortIO
   def makePort(node: BundleBridgeSource[_], name: String)(implicit p: Parameters): ModuleValue[T] = {
     val spiNode = node.asInstanceOf[BundleBridgeSource[T]].makeSink()

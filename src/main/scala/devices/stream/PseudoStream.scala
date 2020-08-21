@@ -136,6 +136,7 @@ case class PseudoStreamAttachParams(
     stream
   }
 
+  val deviceType = classOf[TLPseudoStream]
   type T = PseudoStreamPortIO
   def makePort(node: BundleBridgeSource[_], name: String)(implicit p: Parameters): ModuleValue[T] = {
     val streamNode = node.asInstanceOf[BundleBridgeSource[T]].makeSink()

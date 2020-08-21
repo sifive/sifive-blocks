@@ -124,6 +124,7 @@ case class WDTAttachParams(
     wdt
   }
 
+  val deviceType = classOf[TLWDT]
   type T = WDTPortIO
   def makePort(node: BundleBridgeSource[_], name: String)(implicit p: Parameters): ModuleValue[T] = {
     val wdtNode = node.asInstanceOf[BundleBridgeSource[T]].makeSink()

@@ -29,13 +29,14 @@ trait DeviceParams
 
 trait DeviceAttachParams {
   val device: DeviceParams
+  val deviceType: Class[_]
   val controlWhere: TLBusWrapperLocation
   val blockerAddr: Option[BigInt]
   val controlXType: ClockCrossingType
 
   def attachTo(where: Attachable)(implicit p: Parameters): LazyModule
   type T <: Bundle
-  def makePort(node: BundleBridgeSource[_], name: String)(implicit p: Parameters): ModuleValue[T]
+  def makePort[T<:Bundle](node: BundleBridgeSource[T], name: String)(implicit p: Parameters): ModuleValue[T]
 
 }
 

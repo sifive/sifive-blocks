@@ -631,6 +631,7 @@ case class I2CAttachParams(
     i2c
   }
 
+  val deviceType = classOf[TLI2C]
   type T = I2CPort
   def makePort(node: BundleBridgeSource[_], name: String)(implicit p: Parameters): ModuleValue[T] = {
     val i2cNode = node.asInstanceOf[BundleBridgeSource[T]].makeSink()

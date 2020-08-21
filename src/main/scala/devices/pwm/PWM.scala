@@ -171,6 +171,7 @@ case class PWMAttachParams(
     pwm
   }
 
+  val deviceType = classOf[TLPWM]
   type T = PWMPortIO
   def makePort(node: BundleBridgeSource[_], name: String)(implicit p: Parameters): ModuleValue[T] = {
     val pwmNode = node.asInstanceOf[BundleBridgeSource[T]].makeSink()
