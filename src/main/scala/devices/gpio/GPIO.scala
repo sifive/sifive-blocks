@@ -17,7 +17,7 @@ import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressin
 import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
 
-import sifive.blocks.devices.pinctrl.{LN14LPPEnhancedPin, LN14LPPEnhancedPinCtrl}
+import sifive.blocks.devices.pinctrl.{EnhancedPin, EnhancedPinCtrl}
 import sifive.blocks.util.{DeviceParams,DeviceAttachParams,BasicBusBlocker}
 
 // This is sort of weird because
@@ -28,7 +28,7 @@ import sifive.blocks.util.{DeviceParams,DeviceAttachParams,BasicBusBlocker}
 // we could do the pinmux inside.
 
 class GPIOPortIO(val c: GPIOParams) extends Bundle {
-  val pins = Vec(c.width, new LN14LPPEnhancedPin())
+  val pins = Vec(c.width, new EnhancedPin())
   val iof_0 = if (c.includeIOF) Some(Vec(c.width, new IOFPin).flip) else None
   val iof_1 = if (c.includeIOF) Some(Vec(c.width, new IOFPin).flip) else None
 }
@@ -157,14 +157,14 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
   // Actual Pinmux
   // -------------------------------------------------
 
-  val swPinCtrl = Wire(Vec(c.width, new LN14LPPEnhancedPinCtrl()))
+  val swPinCtrl = Wire(Vec(c.width, new EnhancedPinCtrl()))
 
   // This strips off the valid.
   val iof0Ctrl = Wire(Vec(c.width, new IOFCtrl()))
   val iof1Ctrl = Wire(Vec(c.width, new IOFCtrl()))
 
   val iofCtrl = Wire(Vec(c.width, new IOFCtrl()))
-  val iofPlusSwPinCtrl = Wire(Vec(c.width, new LN14LPPEnhancedPinCtrl()))
+  val iofPlusSwPinCtrl = Wire(Vec(c.width, new EnhancedPinCtrl()))
 
   for (pin <- 0 until c.width) {
 
@@ -175,7 +175,7 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
     swPinCtrl(pin).ds     := dsReg(pin)
     swPinCtrl(pin).ie     := ieReg.io.q(pin)
 
-    val pre_xor = Wire(new LN14LPPEnhancedPinCtrl())
+    val pre_xor = Wire(new EnhancedPinCtrl())
 
     if (c.includeIOF) {
       // Allow SW Override for invalid inputs.

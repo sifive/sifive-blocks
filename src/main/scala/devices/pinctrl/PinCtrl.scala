@@ -13,73 +13,6 @@ class PinCtrl extends Bundle {
   val ie   = Bool()
 }
 
-class LN14LPPEnhancedPinCtrl extends EnhancedPinCtrl {
-  val ps  = Bool()
-  val ds0 = Bool()
-  val ds1 = Bool()
-  val po  = Bool()
-  val poe = Bool()
-  val pe  = Bool()
-}
-
-class LN14LPPEnhancedPin extends EnhancedPin() {
-
-  override val o = new LN14LPPEnhancedPinCtrl().asOutput
-
-  override def default(): Unit = {
-    this.o.oval := Bool(false)
-    this.o.oe   := Bool(false)
-    this.o.ie   := Bool(false)
-    this.o.ds   := Bool(false)
-    this.o.pue  := Bool(false)
-    this.o.ds0  := Bool(false)
-    this.o.ds1  := Bool(false)
-    this.o.ps   := Bool(false)
-    this.o.pe   := Bool(false)
-    this.o.po   := Bool(false)
-    this.o.poe  := Bool(false)
-  }
-
-  override def inputPin(pue: Bool = Bool(false)): Bool = {
-    this.o.oval := Bool(false)
-    this.o.oe   := Bool(false)
-    this.o.ds   := Bool(false)
-    this.o.pue  := pue
-    this.o.pe   := pue
-    this.o.ie   := Bool(true)
-    this.o.ds0  := Bool(false)
-    this.o.ds1  := Bool(false)
-    this.o.ps   := Bool(false)
-    this.o.po   := Bool(false)
-    this.o.poe  := Bool(false)
-    this.i.ival
-  }
-
-  override def outputPin(signal: Bool,
-    pue: Bool = Bool(false),
-    ds: Bool = Bool(false),
-    ie: Bool = Bool(false)
-  ): Unit = {
-    this.o.oval := signal
-    this.o.oe   := Bool(true)
-    this.o.pe   := pue
-    this.o.ds0  := ds
-    this.o.ie   := ie
-    this.o.ds1  := Bool(false)
-    this.o.po   := Bool(false)
-    this.o.ps   := Bool(false)
-    this.o.poe  := Bool(false)
-  }
-
-  override def toBasePin(): BasePin = {
-
-    val base_pin = Wire(new BasePin())
-    base_pin <> this
-    base_pin
-  }
-
-}
-
 // Package up the inputs and outputs
 // for the Pin
 abstract class Pin extends Bundle {
@@ -133,6 +66,12 @@ class BasePin extends Pin() {
 class EnhancedPinCtrl extends PinCtrl {
   val pue = Bool()
   val ds = Bool()
+
+  val ps  = Bool()
+  val ds1 = Bool()
+  val po  = Bool()
+  val poe = Bool()
+
 }
 
 class EnhancedPin extends Pin() {
@@ -145,6 +84,12 @@ class EnhancedPin extends Pin() {
     this.o.ie   := Bool(false)
     this.o.ds   := Bool(false)
     this.o.pue  := Bool(false)
+
+    this.o.ds1  := Bool(false)
+    this.o.ps   := Bool(false)
+    this.o.po   := Bool(false)
+    this.o.poe  := Bool(false)
+
   }
 
   def inputPin(pue: Bool = Bool(false)): Bool = {
@@ -153,6 +98,11 @@ class EnhancedPin extends Pin() {
     this.o.pue  := pue
     this.o.ds   := Bool(false)
     this.o.ie   := Bool(true)
+
+    this.o.ds1  := Bool(false)
+    this.o.ps   := Bool(false)
+    this.o.po   := Bool(false)
+    this.o.poe  := Bool(false)
 
     this.i.ival
   }
@@ -167,6 +117,10 @@ class EnhancedPin extends Pin() {
     this.o.pue  := pue
     this.o.ds   := ds
     this.o.ie   := ie
+    this.o.ds1  := ds
+    this.o.po   := Bool(false)
+    this.o.ps   := Bool(false)
+    this.o.poe  := Bool(false)
   }
 
   def toBasePin(): BasePin = {
