@@ -10,7 +10,7 @@ class SPIMicroOp(c: SPIParamsBase) extends SPIBundle(c) {
   val stb = Bool()
   val cnt = UInt(width = c.countBits)
   val data = Bits(width = c.frameBits)
-  val dummy = c.oeDisableDummy.option(Bool()) // disable oe during dummy cycles in flash mode
+  val disableOE = c.oeDisableDummy.option(Bool()) // disable oe during dummy cycles in flash mode
 }
 
 object SPIMicroOp {
@@ -161,14 +161,14 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
   val tx = (ctrl.fmt.iodir === SPIDirection.Tx)
   val txen_in = (proto.head +: proto.tail.map(_ && tx)).scanRight(Bool(false))(_ || _).init
   val txen = txen_in :+ txen_in.last
-  val rdummy = Reg(Bool())
+  val rdisableOE = Reg(Bool())
 
   io.port.sck := sck
   io.port.cs := Vec.fill(io.port.cs.size)(Bool(true)) // dummy
   (io.port.dq zip (txd.asBools zip txen)).foreach {
     case (dq, (o, oe)) =>
       dq.o := o
-      dq.oe := Mux(rdummy, false.B, oe)
+      dq.oe := Mux(rdisableOE, false.B, oe)
   }
   io.op.ready := Bool(false)
 
@@ -210,7 +210,7 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
     io.op.ready := Bool(true)
     when (io.op.valid) {
       scnt := op.cnt
-      rdummy := io.op.bits.dummy.getOrElse(false.B)
+      rdisableOE := io.op.bits.disableOE.getOrElse(false.B)
       when (op.stb) {
         ctrl.fmt := io.ctrl.fmt
       }
