@@ -65,11 +65,10 @@ class BasePin extends Pin() {
 /////////////////////////////////////////////////////////////////////////
 class EnhancedPinCtrl extends PinCtrl {
   val pue = Bool()
-  val ds = Bool()
+  val ds  = Bool()
 
   val ps  = Bool()
   val ds1 = Bool()
-  val po  = Bool()
   val poe = Bool()
 
 }
@@ -87,7 +86,6 @@ class EnhancedPin extends Pin() {
 
     this.o.ds1  := Bool(false)
     this.o.ps   := Bool(false)
-    this.o.po   := Bool(false)
     this.o.poe  := Bool(false)
 
   }
@@ -101,7 +99,6 @@ class EnhancedPin extends Pin() {
 
     this.o.ds1  := Bool(false)
     this.o.ps   := Bool(false)
-    this.o.po   := Bool(false)
     this.o.poe  := Bool(false)
 
     this.i.ival
@@ -117,10 +114,6 @@ class EnhancedPin extends Pin() {
     this.o.pue  := pue
     this.o.ds   := ds
     this.o.ie   := ie
-    this.o.ds1  := ds
-    this.o.po   := Bool(false)
-    this.o.ps   := Bool(false)
-    this.o.poe  := Bool(false)
   }
 
   def toBasePin(): BasePin = {
