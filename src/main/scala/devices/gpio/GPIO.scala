@@ -71,6 +71,7 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
   val pueReg = Module(new AsyncResetRegVec(c.width, 0))
   val dsReg  = Reg(init = UInt(0, c.width))
   val ieReg  = Module(new AsyncResetRegVec(c.width, 0))
+  val ds1Reg = Reg(init = UInt(0, c.width))
   val psReg  = Reg(init = UInt(0, c.width))
   val poeReg = Module(new AsyncResetRegVec(c.width, 0))
 
