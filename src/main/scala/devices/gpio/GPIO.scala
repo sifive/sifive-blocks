@@ -71,6 +71,8 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
   val pueReg = Module(new AsyncResetRegVec(c.width, 0))
   val dsReg  = Reg(init = UInt(0, c.width))
   val ieReg  = Module(new AsyncResetRegVec(c.width, 0))
+  val psReg  = Reg(init = UInt(0, c.width))
+  val poeReg = Module(new AsyncResetRegVec(c.width, 0))
 
   // Synchronize Input to get valueReg
   val inVal = Wire(UInt(0, width=c.width))
@@ -141,6 +143,8 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
     GPIOCtrlRegs.iof_sel   -> iofSelFields,
     GPIOCtrlRegs.drive     -> Seq(RegField(c.width, dsReg,
                                   RegFieldDesc("ds","Pin drive strength selection", reset=Some(0)))),
+    GPIOCtrlRegs.drive1    -> Seq(RegField(c.width, ds1Reg,
+                                  RegFieldDesc("ds1","Pin drive strength selection", reset=Some(0)))),
     GPIOCtrlRegs.input_en  -> Seq(RegField.rwReg(c.width, ieReg.io,
                                   Some(RegFieldDesc("input_en","Pin input enable", reset=Some(0))))),
     GPIOCtrlRegs.out_xor   -> Seq(RegField(c.width, xorReg,
@@ -148,7 +152,11 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
     GPIOCtrlRegs.passthru_high_ie -> Seq(RegField(c.width, passthruHighIeReg,
                                          RegFieldDesc("passthru_high_ie", "Pass-through active-high interrupt enable", reset=Some(0)))),
     GPIOCtrlRegs.passthru_low_ie  -> Seq(RegField(c.width, passthruLowIeReg,
-                                         RegFieldDesc("passthru_low_ie", "Pass-through active-low interrupt enable", reset=Some(0))))
+                                         RegFieldDesc("passthru_low_ie", "Pass-through active-low interrupt enable", reset=Some(0)))),
+    GPIOCtrlRegs.ps        -> Seq(RegField(c.width, psReg,
+                                  RegFieldDesc("ps","Weak PU/PD Resistor Selection", reset=Some(0)))),
+    GPIOCtrlRegs.poe       -> Seq(RegField.rwReg(c.width, poeReg.io,
+                                  Some(RegFieldDesc("poe"," Nandtree enable", reset=Some(0)))))
   )
   regmap(mapping:_*)
   val omRegMap = OMRegister.convert(mapping:_*)
@@ -174,6 +182,9 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
     swPinCtrl(pin).oe     := oeReg.io.q(pin)
     swPinCtrl(pin).ds     := dsReg(pin)
     swPinCtrl(pin).ie     := ieReg.io.q(pin)
+    swPinCtrl(pin).ds1    := ds1Reg(pin)
+    swPinCtrl(pin).ps     := psReg(pin)
+    swPinCtrl(pin).poe    := poeReg.io.q(pin)
 
     val pre_xor = Wire(new EnhancedPinCtrl())
 
