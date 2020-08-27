@@ -167,6 +167,7 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
     case (dq, (o, oe)) =>
       dq.o := o
       dq.oe := oe
+      dq.ie := ~(dq.oe)
   }
   io.op.ready := Bool(false)
 
