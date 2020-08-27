@@ -3,13 +3,14 @@ package sifive.blocks.devices.spi
 
 import Chisel.{defaultCompileOptions => _, _}
 import freechips.rocketchip.util.CompileOptions.NotStrictInferReset
-import freechips.rocketchip.util.ShiftRegInit
+import freechips.rocketchip.util._
 
 class SPIMicroOp(c: SPIParamsBase) extends SPIBundle(c) {
   val fn = Bits(width = 1)
   val stb = Bool()
   val cnt = UInt(width = c.countBits)
   val data = Bits(width = c.frameBits)
+  val disableOE = c.oeDisableDummy.option(Bool()) // disable oe during dummy cycles in flash mode
 }
 
 object SPIMicroOp {
@@ -160,13 +161,14 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
   val tx = (ctrl.fmt.iodir === SPIDirection.Tx)
   val txen_in = (proto.head +: proto.tail.map(_ && tx)).scanRight(Bool(false))(_ || _).init
   val txen = txen_in :+ txen_in.last
+  val rdisableOE = Reg(Bool())
 
   io.port.sck := sck
   io.port.cs := Vec.fill(io.port.cs.size)(Bool(true)) // dummy
   (io.port.dq zip (txd.asBools zip txen)).foreach {
     case (dq, (o, oe)) =>
       dq.o := o
-      dq.oe := oe
+      dq.oe := Mux(rdisableOE, false.B, oe)
       dq.ie := ~(dq.oe)
   }
   io.op.ready := Bool(false)
@@ -209,6 +211,7 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
     io.op.ready := Bool(true)
     when (io.op.valid) {
       scnt := op.cnt
+      rdisableOE := io.op.bits.disableOE.getOrElse(false.B)
       when (op.stb) {
         ctrl.fmt := io.ctrl.fmt
       }

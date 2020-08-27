@@ -3,6 +3,7 @@ package sifive.blocks.devices.spi
 
 import Chisel.{defaultCompileOptions => _, _}
 import freechips.rocketchip.util.CompileOptions.NotStrictInferReset
+import freechips.rocketchip.util._
 
 class SPILinkIO(c: SPIParamsBase) extends SPIBundle(c) {
   val tx = Decoupled(Bits(width = c.frameBits))
@@ -16,6 +17,7 @@ class SPILinkIO(c: SPIParamsBase) extends SPIBundle(c) {
     val hold = Bool(OUTPUT) // Supress automatic CS deactivation
   }
   val active = Bool(INPUT)
+  val disableOE = c.oeDisableDummy.option(Bool(OUTPUT)) // disable oe during dummy cycles in flash mode
 }
 
 class SPIMedia(c: SPIParamsBase) extends Module {
@@ -43,6 +45,7 @@ class SPIMedia(c: SPIParamsBase) extends Module {
   op.bits.stb := Bool(false)
   op.bits.cnt := io.link.cnt
   op.bits.data := io.link.tx.bits
+  op.bits.disableOE.foreach(_ := io.link.disableOE.get)
 
   val cs = Reg(io.ctrl.cs)
   val cs_set = Reg(Bool())
