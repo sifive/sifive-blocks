@@ -18,6 +18,7 @@ class PinCtrl extends Bundle {
 abstract class Pin extends Bundle {
   val i = new Bundle {
     val ival = Bool(INPUT)
+    val po   = Option(Bool(INPUT))
   }
   val o: PinCtrl
 
@@ -72,8 +73,9 @@ class EnhancedPinCtrl extends PinCtrl {
 
 }
 
-class EnhancedPin extends Pin() {
+class EnhancedPin  extends Pin() {
 
+//  val po = Some(Input(Bool()))
   val o = new EnhancedPinCtrl().asOutput
 
   def default(): Unit = {
@@ -118,5 +120,9 @@ class EnhancedPin extends Pin() {
     val base_pin = Wire(new BasePin())
     base_pin <> this
     base_pin
+  }
+
+  def nandInput(poe: Bool = Bool(true)) : Bool = {
+    this.i.po.get
   }
 }

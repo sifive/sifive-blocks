@@ -1,4 +1,4 @@
-// See LICENSE for license details. else None
+// See LICENSE for license details.
 package sifive.blocks.devices.gpio
 
 import Chisel.{defaultCompileOptions => _, _}
