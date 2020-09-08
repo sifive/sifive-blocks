@@ -75,7 +75,6 @@ class EnhancedPinCtrl extends PinCtrl {
 
 class EnhancedPin  extends Pin() {
 
-//  val po = Some(Input(Bool()))
   val o = new EnhancedPinCtrl().asOutput
 
   def default(): Unit = {
