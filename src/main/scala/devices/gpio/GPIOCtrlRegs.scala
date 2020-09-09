@@ -21,4 +21,6 @@ object GPIOCtrlRegs {
   val out_xor     = 0x40
   val passthru_high_ie = 0x44
   val passthru_low_ie  = 0x48
+  val ps          = 0x4c
+  val poe         = 0x50
 }
