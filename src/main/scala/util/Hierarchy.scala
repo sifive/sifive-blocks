@@ -32,6 +32,7 @@ trait HasConfigurableHierarchy { this: Attachable =>
         hierarchyName = edge.name,
         location = edge,
         ibus = context.ibus,
+        wgbus = context.wgbus,
         asyncClockGroupsNode = context.asyncClockGroupsNode,
         logicalTreeNode = context.logicalTreeNode)) }
       dss.suggestName(edge.name)

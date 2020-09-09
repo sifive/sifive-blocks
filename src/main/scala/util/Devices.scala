@@ -11,6 +11,7 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.regmapper.RegisterRouter
 import freechips.rocketchip.subsystem._
+import sifive.enterprise.worldguard._
 
 case class DevicesLocated(loc: HierarchicalLocation) extends Field[Seq[DeviceAttachParams]](Nil)
 
@@ -44,6 +45,7 @@ class DevicesSubsystem(
   val hierarchyName: String,
   val location: HierarchicalLocation,
   val ibus: InterruptBusWrapper,
+  val wgbus: WGBusWrapper,
   val asyncClockGroupsNode: ClockGroupEphemeralNode,
   val logicalTreeNode: LogicalTreeNode)(implicit p: Parameters) extends LazyModule
     with Attachable
