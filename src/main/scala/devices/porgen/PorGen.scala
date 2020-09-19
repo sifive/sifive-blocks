@@ -18,7 +18,7 @@ import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
 import sifive.blocks.util._
 
-// Ideally, we may want SOFT(configurable) reset inputs like this. For the 9/18 release inputs are HARD
+// Ideally, we want SOFT(configurable) reset inputs like this. 
 // case class PorResetGenParams(
 //   address: BigInt
 //   includeExtButtonReset: Boolean = true
@@ -51,6 +51,9 @@ class PorGenPinIO(val c : PorGenParams) extends Bundle {
   // Debug module ndreset
   val ndreset = Input(Bool())
 
+  // Internal on chip power good indicator
+  val powerGood = Input(Bool())
+  
   // Active high POR reset out of the reset controller
   val async_por_reset    = Output(Bool())
 }
@@ -59,21 +62,20 @@ class PorGenModuleImp(outer: PorGen) extends LazyModuleImp(outer) {
   val port = outer.port
   val pin = outer.pin.bundle
 
-  val por_reset = ~port.poreset_n
+  val por_reset = ~port.poreset_n | ~pin.powerGood
 
-  //----Reset Control Logic - Very similar to cln28hpc PRCI-----//
+  //----Reset Control Logic-----//
   // eresetn button is synchrnoized to hfclk and debounced with a counter
-  // poresetn input is not synchrnoized - directly asserts async_por_reset
-  // There was not WDT reset in almond
+  // poreset inputs are not synchrnoized - directly asserts async_por_reset
+  // There was no WDT reset  
   // ndreset from the debug module is also not synchrnoized - directly asserts async_por_reset
 
-  //-------- Features missing from almond PRCI ---------- //
-  // Missing Reset bypass function - Will be added post 9/18  release
+  //-------- Features missing compared to PRCI ---------- //
+  // Missing Reset bypass function
 
-  //-------- Other features we might want to include for Chronos ----- //
-  // Missing PCie Function level reset - PENDING input from robbie
-  // Missing Software control of reset - Will add if desired
-  // Missing internal Samsung 14LPP POR integation - Will attempt to add by 9 /18
+  //-------- Other features we might want to include ----- //
+  // Missing PCie Function level reset
+  // Missing Software control of reset
 
   val ereset_catch = ResetCatchAndSync(pin.hfclk, ~port.ereset_n, name = "e_reset_sync")
   // Copied - AsyncDownCounter from federation to sifive-blocks.util package for debounce counter
