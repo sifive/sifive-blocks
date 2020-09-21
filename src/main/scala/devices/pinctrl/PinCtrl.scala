@@ -18,7 +18,7 @@ class PinCtrl extends Bundle {
 abstract class Pin extends Bundle {
   val i = new Bundle {
     val ival = Bool(INPUT)
-    val po   = Option(Bool(INPUT))
+//    val po   = Option(Bool(INPUT))
   }
   val o: PinCtrl
 
@@ -121,7 +121,7 @@ class EnhancedPin  extends Pin() {
     base_pin
   }
 
-  def nandInput(poe: Bool = Bool(true)) : Bool = {
-    this.i.po.get
-  }
+//  def nandInput(poe: Bool = Bool(true)) : Bool = {
+//    this.i.po.get
+//  }
 }
