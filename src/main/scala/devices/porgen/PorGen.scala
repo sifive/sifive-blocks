@@ -90,7 +90,7 @@ class PorGenModuleImp(outer: PorGen) extends LazyModuleImp(outer) {
 
   // Note Asyncdowncounter counts to 0 and stops so is one shot already
   val downctr = Module(new AsyncDownCounter(
-    clk = pin.hfclk,
+    clock = pin.hfclk,
     reset = port.perstn | ~pin.powerGood,
     value = 255
   ))
