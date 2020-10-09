@@ -39,6 +39,8 @@ class PorGenPortIO(val c : PorGenParams) extends Bundle {
   val ereset_n      = Input(Bool())
   //  External PMIC. Active LOW. Async to hfclkin and causes aysnchronous assert of por_reset
   val poreset_n      = Input(Bool())
+  // PERSTn. ACTIVE LOW
+  val perstn    = Input(Bool())
 }
 
 class PorGenPinIO(val c : PorGenParams) extends Bundle {
@@ -86,8 +88,19 @@ class PorGenModuleImp(outer: PorGen) extends LazyModuleImp(outer) {
   ereset_debouncer.suggestName("ereset_debouncer")
   val ereset = ~ereset_debouncer.io.done
 
+  // Note Asyncdowncounter counts to 0 and stops so is one shot already
+  val downctr = Module(new AsyncDownCounter(
+    clk = pin.hfclk,
+    reset = port.perstn | ~pin.powerGood,
+    value = 255
+  ))
+  downctr.suggestName("oneshotdownctr")
+  val trig = ~downctr.io.done
+
+  val perstn_reset = ~(trig | port.perstn)
+
   // Need to double check the polarity of ereset in sims
-  pin.async_por_reset :=  por_reset | pin.wdt_rst | pin.ndreset | ereset
+  pin.async_por_reset :=  por_reset | pin.wdt_rst | pin.ndreset | ereset | perstn_reset
 
   // This is done directly with the test mode reset so not sure if we want a passthrough.
   // io.jtag_reset := io.trst_n
