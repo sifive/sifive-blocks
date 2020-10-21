@@ -2,6 +2,7 @@
 package sifive.blocks.devices.gpio
 
 import Chisel.{defaultCompileOptions => _, _}
+import chisel3.{VecInit}
 import freechips.rocketchip.util.CompileOptions.NotStrictInferReset
 
 import freechips.rocketchip.config.{Field, Parameters}
@@ -18,7 +19,7 @@ import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
 
 import sifive.blocks.devices.pinctrl.{PinCtrl, Pin, BasePin, EnhancedPin, EnhancedPinCtrl}
-import sifive.blocks.util.{DeviceParams,DeviceAttachParams,BasicBusBlocker}
+import sifive.blocks.util.{DeviceParams,DeviceAttachParams}
 
 // This is sort of weird because
 // the IOF end up at the RocketChipTop
@@ -36,7 +37,10 @@ class GPIOPortIO(val c: GPIOParams) extends Bundle {
 case class GPIOParams(
   address: BigInt,
   width: Int,
-  includeIOF: Boolean = false) extends DeviceParams
+  includeIOF: Boolean = false,
+  dsWidth: Int = 1,
+  hasPS: Boolean = false,
+  hasPOE: Boolean = false) extends DeviceParams
 
 /** The base GPIO peripheral functionality, which uses the regmap API to
   * abstract over the bus protocol to which it is being connected
@@ -69,8 +73,10 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
 
   val oeReg  = Module(new AsyncResetRegVec(c.width, 0))
   val pueReg = Module(new AsyncResetRegVec(c.width, 0))
-  val dsReg  = Reg(init = UInt(0, c.width))
+  val dsReg  = RegInit(VecInit(Seq.fill(c.dsWidth)(UInt(0, c.width))))
   val ieReg  = Module(new AsyncResetRegVec(c.width, 0))
+  val psReg  = Reg(init = UInt(0, c.width))
+  val poeReg = Module(new AsyncResetRegVec(c.width, 0))
 
   // Synchronize Input to get valueReg
   val inVal = Wire(UInt(0, width=c.width))
@@ -110,47 +116,62 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
   val iofSelFields = if (c.includeIOF) (Seq(RegField(c.width, iofSelReg,
                         RegFieldDesc("iof_sel","HW I/O function select", reset=Some(0)))))
                      else (Seq(RegField(c.width)))
+  val psFields = if (c.hasPS) Seq(RegField(c.width, psReg,
+                                  RegFieldDesc("ps","Weak PU/PD Resistor Selection", reset=Some(0))))
+                 else Seq(RegField(c.width))
+  val poeFields = if (c.hasPOE) Seq(RegField.rwReg(c.width, poeReg.io,
+                                  Some(RegFieldDesc("poe"," Nandtree enable", reset=Some(0)))))
+                  else (Seq(RegField(c.width)))
+  val dsRegsAndDescs = Seq.tabulate(c.dsWidth)( i =>
+                        Seq(RegField(c.width, dsReg(i),
+                              RegFieldDesc(s"ds$i", s"Pin drive strength $i selection", reset=Some(0)))))
+  val dsRegMap = for ((rd, i) <- dsRegsAndDescs.zipWithIndex)
+                   yield (GPIOCtrlRegs.drive + 4*i -> Seq(RegField(c.width, dsReg(i),
+                          RegFieldDesc(s"ds$i",s"Pin drive strength $i selection", reset=Some(0)))))
+
+  // shift other register offset when c.dsWidth > 1
+  val dsOffset = (c.dsWidth - 1) * 4
 
   // Note that these are out of order.
   val mapping = Seq(
     GPIOCtrlRegs.value     -> Seq(RegField.r(c.width, valueReg,
                                   RegFieldDesc("input_value","Pin value", volatile=true))),
+    GPIOCtrlRegs.input_en  -> Seq(RegField.rwReg(c.width, ieReg.io,
+                                  Some(RegFieldDesc("input_en","Pin input enable", reset=Some(0))))),
     GPIOCtrlRegs.output_en -> Seq(RegField.rwReg(c.width, oeReg.io,
                                   Some(RegFieldDesc("output_en","Pin output enable", reset=Some(0))))),
-    GPIOCtrlRegs.rise_ie   -> Seq(RegField(c.width, riseIeReg,
-                                  RegFieldDesc("rise_ie","Rise interrupt enable", reset=Some(0)))),
-    GPIOCtrlRegs.rise_ip   -> Seq(RegField.w1ToClear(c.width, riseIpReg, rise,
-                                  Some(RegFieldDesc("rise_ip","Rise interrupt pending", volatile=true)))),
-    GPIOCtrlRegs.fall_ie   -> Seq(RegField(c.width, fallIeReg,
-                                  RegFieldDesc("fall_ie", "Fall interrupt enable", reset=Some(0)))),
-    GPIOCtrlRegs.fall_ip   -> Seq(RegField.w1ToClear(c.width, fallIpReg, fall,
-                                  Some(RegFieldDesc("fall_ip","Fall interrupt pending", volatile=true)))),
-    GPIOCtrlRegs.high_ie   -> Seq(RegField(c.width, highIeReg,
-                                  RegFieldDesc("high_ie","High interrupt enable", reset=Some(0)))),
-    GPIOCtrlRegs.high_ip   -> Seq(RegField.w1ToClear(c.width, highIpReg, valueReg,
-                                  Some(RegFieldDesc("high_ip","High interrupt pending", volatile=true)))),
-    GPIOCtrlRegs.low_ie    -> Seq(RegField(c.width, lowIeReg,
-                                  RegFieldDesc("low_ie","Low interrupt enable", reset=Some(0)))),
-    GPIOCtrlRegs.low_ip    -> Seq(RegField.w1ToClear(c.width,lowIpReg, ~valueReg,
-                                  Some(RegFieldDesc("low_ip","Low interrupt pending", volatile=true)))),
     GPIOCtrlRegs.port      -> Seq(RegField(c.width, portReg,
                                   RegFieldDesc("output_value","Output value", reset=Some(0)))),
     GPIOCtrlRegs.pullup_en -> Seq(RegField.rwReg(c.width, pueReg.io,
                                   Some(RegFieldDesc("pue","Internal pull-up enable", reset=Some(0))))),
-    GPIOCtrlRegs.iof_en    -> iofEnFields,
-    GPIOCtrlRegs.iof_sel   -> iofSelFields,
-    GPIOCtrlRegs.drive     -> Seq(RegField(c.width, dsReg,
-                                  RegFieldDesc("ds","Pin drive strength selection", reset=Some(0)))),
-    GPIOCtrlRegs.input_en  -> Seq(RegField.rwReg(c.width, ieReg.io,
-                                  Some(RegFieldDesc("input_en","Pin input enable", reset=Some(0))))),
-    GPIOCtrlRegs.out_xor   -> Seq(RegField(c.width, xorReg,
+    GPIOCtrlRegs.rise_ie + dsOffset -> Seq(RegField(c.width, riseIeReg,
+                                  RegFieldDesc("rise_ie","Rise interrupt enable", reset=Some(0)))),
+    GPIOCtrlRegs.rise_ip + dsOffset -> Seq(RegField.w1ToClear(c.width, riseIpReg, rise,
+                                  Some(RegFieldDesc("rise_ip","Rise interrupt pending", volatile=true)))),
+    GPIOCtrlRegs.fall_ie + dsOffset -> Seq(RegField(c.width, fallIeReg,
+                                  RegFieldDesc("fall_ie", "Fall interrupt enable", reset=Some(0)))),
+    GPIOCtrlRegs.fall_ip + dsOffset -> Seq(RegField.w1ToClear(c.width, fallIpReg, fall,
+                                  Some(RegFieldDesc("fall_ip","Fall interrupt pending", volatile=true)))),
+    GPIOCtrlRegs.high_ie + dsOffset -> Seq(RegField(c.width, highIeReg,
+                                  RegFieldDesc("high_ie","High interrupt enable", reset=Some(0)))),
+    GPIOCtrlRegs.high_ip + dsOffset -> Seq(RegField.w1ToClear(c.width, highIpReg, valueReg,
+                                  Some(RegFieldDesc("high_ip","High interrupt pending", volatile=true)))),
+    GPIOCtrlRegs.low_ie  + dsOffset -> Seq(RegField(c.width, lowIeReg,
+                                  RegFieldDesc("low_ie","Low interrupt enable", reset=Some(0)))),
+    GPIOCtrlRegs.low_ip  + dsOffset -> Seq(RegField.w1ToClear(c.width,lowIpReg, ~valueReg,
+                                  Some(RegFieldDesc("low_ip","Low interrupt pending", volatile=true)))),
+    GPIOCtrlRegs.iof_en  + dsOffset -> iofEnFields,
+    GPIOCtrlRegs.iof_sel + dsOffset -> iofSelFields,
+    GPIOCtrlRegs.out_xor + dsOffset -> Seq(RegField(c.width, xorReg,
                                   RegFieldDesc("out_xor","Output XOR (invert) enable", reset=Some(0)))),
-    GPIOCtrlRegs.passthru_high_ie -> Seq(RegField(c.width, passthruHighIeReg,
+    GPIOCtrlRegs.passthru_high_ie + dsOffset -> Seq(RegField(c.width, passthruHighIeReg,
                                          RegFieldDesc("passthru_high_ie", "Pass-through active-high interrupt enable", reset=Some(0)))),
-    GPIOCtrlRegs.passthru_low_ie  -> Seq(RegField(c.width, passthruLowIeReg,
-                                         RegFieldDesc("passthru_low_ie", "Pass-through active-low interrupt enable", reset=Some(0))))
+    GPIOCtrlRegs.passthru_low_ie  + dsOffset -> Seq(RegField(c.width, passthruLowIeReg,
+                                         RegFieldDesc("passthru_low_ie", "Pass-through active-low interrupt enable", reset=Some(0)))),
+    GPIOCtrlRegs.ps  + dsOffset -> psFields,
+    GPIOCtrlRegs.poe + dsOffset -> poeFields
   )
-  regmap(mapping:_*)
+  regmap(mapping ++ dsRegMap :_*)
   val omRegMap = OMRegister.convert(mapping:_*)
 
   //--------------------------------------------------
@@ -172,8 +193,11 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
     swPinCtrl(pin).pue    := pueReg.io.q(pin)
     swPinCtrl(pin).oval   := portReg(pin)
     swPinCtrl(pin).oe     := oeReg.io.q(pin)
-    swPinCtrl(pin).ds     := dsReg(pin)
+    swPinCtrl(pin).ds     := dsReg(0)(pin)
     swPinCtrl(pin).ie     := ieReg.io.q(pin)
+    swPinCtrl(pin).ds1    := dsReg(if (c.dsWidth > 1) 1 else 0)(pin)
+    swPinCtrl(pin).ps     := psReg(pin)
+    swPinCtrl(pin).poe    := poeReg.io.q(pin)
 
     val pre_xor = Wire(new EnhancedPinCtrl())
 
