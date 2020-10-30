@@ -13,7 +13,7 @@ import freechips.rocketchip.regmapper._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
-import freechips.rocketchip.util.{AsyncResetRegVec, SynchronizerShiftReg}
+import freechips.rocketchip.util._
 import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
 import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
@@ -30,8 +30,11 @@ import sifive.blocks.util.{DeviceParams,DeviceAttachParams}
 
 class GPIOPortIO(val c: GPIOParams) extends Bundle {
   val pins = Vec(c.width, new EnhancedPin())
-  val iof_0 = if (c.includeIOF) Some(Vec(c.width, new IOFPin).flip) else None
-  val iof_1 = if (c.includeIOF) Some(Vec(c.width, new IOFPin).flip) else None
+}
+
+class IOFPortIO(val w: Int) extends Bundle {
+  val iof_0 = Vec(w, new IOFPin).flip
+  val iof_1 = Vec(w, new IOFPin).flip
 }
 
 case class GPIOParams(
@@ -54,6 +57,8 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
         beatBytes = busWidthBytes),
       new GPIOPortIO(c))
     with HasInterruptSources {
+  val iofNode = c.includeIOF.option(BundleBridgeSource(() => new IOFPortIO(c.width)))
+  val iofPort = iofNode.map { node => InModuleBody { node.bundle } }
 
   def nInterrupts = c.width
   override def extraResources(resources: ResourceBindings) = Map(
@@ -204,13 +209,13 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
     if (c.includeIOF) {
       // Allow SW Override for invalid inputs.
       iof0Ctrl(pin)      <> swPinCtrl(pin)
-      when (port.iof_0.get(pin).o.valid) {
-        iof0Ctrl(pin)    <> port.iof_0.get(pin).o
+      when (iofPort.get.iof_0(pin).o.valid) {
+        iof0Ctrl(pin)    <> iofPort.get.iof_0(pin).o
       }
 
       iof1Ctrl(pin)      <> swPinCtrl(pin)
-      when (port.iof_1.get(pin).o.valid) {
-        iof1Ctrl(pin)    <> port.iof_1.get(pin).o
+      when (iofPort.get.iof_1(pin).o.valid) {
+        iof1Ctrl(pin)    <> iofPort.get.iof_1(pin).o
       }
 
       // Select IOF 0 vs. IOF 1.
@@ -239,8 +244,8 @@ abstract class GPIO(busWidthBytes: Int, c: GPIOParams)(implicit p: Parameters)
 
     if (c.includeIOF) {
       // Send Value to all consumers
-      port.iof_0.get(pin).i.ival := inSyncReg(pin)
-      port.iof_1.get(pin).i.ival := inSyncReg(pin)
+      iofPort.get.iof_0(pin).i.ival := inSyncReg(pin)
+      iofPort.get.iof_1(pin).i.ival := inSyncReg(pin)
     }
   }}
 
@@ -326,12 +331,11 @@ object GPIO {
     g.pins.foreach { p =>
       p.i.ival := false.B
     }
-    g.iof_0.foreach {i0 =>
-      i0.foreach { iof => iof.default() }
-    }
-    g.iof_1.foreach {i1 =>
-      i1.foreach { iof => iof.default() }
-    }
+  }
+
+  def tieoff(f: IOFPortIO) {
+    f.iof_0.foreach { iof => iof.default() }
+    f.iof_1.foreach { iof => iof.default() }
   }
 
   def loopback(g: GPIOPortIO)(pinA: Int, pinB: Int) {
