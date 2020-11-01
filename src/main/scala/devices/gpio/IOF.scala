@@ -64,18 +64,10 @@ object BasePinToIOF {
 }
 
 object InputPortToIOF {
-  def apply(port: Bool, iof: IOFPin): Unit = {
+  def apply(iof: IOFPin): Bool = {
     val pin = Wire(new BasePin())
-    pin.inputPin(port)
     BasePinToIOF(pin, iof)
-  }
-
-  def apply(port: UInt, iofs: Vec[IOFPin], offset: Int) {
-    require(offset >= 0, s"offset in InputPortToIOF must be >= 0, not ${offset}")
-    require((offset + port.getWidth) <= iofs.size, s"offset (${offset}) + port width(${port.getWidth}) must be <= IOF size (${iofs.size})")
-    for (i <-0 until port.getWidth) {
-      apply(port(i), iofs(offset + i))
-    }
+    pin.inputPin()
   }
 }
 
@@ -89,7 +81,7 @@ object OutputPortToIOF {
   def apply(port: UInt, iofs: Vec[IOFPin], offset: Int) {
     require(offset >= 0, s"offset in OutputPortToIOF must be >= 0, not ${offset}")
     require((offset + port.getWidth) <= iofs.size, s"offset (${offset}) + port width(${port.getWidth}) must be <= IOF size (${iofs.size})")
-    for (i <-0 until port.getWidth) {
+    for (i <- 0 until port.getWidth) {
       apply(port(i), iofs(offset + i))
     }
   }
