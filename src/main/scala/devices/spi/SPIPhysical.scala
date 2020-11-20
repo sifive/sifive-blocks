@@ -82,7 +82,9 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
     }
    }
 
-  when (del_cntr === 1.U) {
+  when (!totalCoarseDel.orR) {
+    sample_d := beat && sample
+  }.elsewhen (del_cntr === 1.U) {
     sample_d := true.B
   }.otherwise {
     sample_d := false.B
@@ -103,7 +105,9 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
     }
   }
 
-  when (del_cntr_last === 1.U) {
+  when (!totalCoarseDel.orR) {
+    last_d := beat && last
+  }.elsewhen (del_cntr_last === 1.U) {
     last_d := true.B
   }.otherwise {
     last_d := false.B
