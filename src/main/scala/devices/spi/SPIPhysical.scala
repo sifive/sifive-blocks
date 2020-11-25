@@ -143,11 +143,10 @@ class SPIPhysical(c: SPIParamsBase) extends Module {
 
   val buffer = Reg(op.data)
   val buffer_in = convert(io.op.bits.data, io.ctrl.fmt)
-  val shift = Mux ((totalCoarseDel > 0.U), setup_d || (sample_d && stop), sample_d)
   buffer := Mux1H(proto, samples.zipWithIndex.map { case (data, i) =>
     val n = 1 << i
     val m = c.frameBits -1
-    Cat(Mux(shift, buffer(m-n, 0), buffer(m, n)),
+    Cat(Mux(setup_d, buffer(m-n, 0), buffer(m, n)),
         Mux(sample_d, data, buffer(n-1, 0)))
   })
 
