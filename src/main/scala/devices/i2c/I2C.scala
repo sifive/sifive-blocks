@@ -81,6 +81,8 @@ abstract class I2C(busWidthBytes: Int, params: I2CParams)(implicit p: Parameters
       new I2CPort)
     with HasInterruptSources {
 
+  override def extraResources(resources: ResourceBindings) = Map(
+	  "reg-shift" -> Seq(ResourceInt(2)))
   def nInterrupts = 1
 
   lazy val module = new LazyModuleImp(this) {
