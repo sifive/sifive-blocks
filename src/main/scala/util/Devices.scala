@@ -5,7 +5,7 @@ import Chisel.{defaultCompileOptions => _, _}
 import freechips.rocketchip.util.CompileOptions.NotStrictInferReset
 
 import freechips.rocketchip.config.{Field, Parameters}
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree.LogicalTreeNode
+
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.prci._
@@ -44,8 +44,7 @@ class DevicesSubsystem(
   val hierarchyName: String,
   val location: HierarchicalLocation,
   val ibus: InterruptBusWrapper,
-  val asyncClockGroupsNode: ClockGroupEphemeralNode,
-  val logicalTreeNode: LogicalTreeNode)(implicit p: Parameters) extends LazyModule
+  val asyncClockGroupsNode: ClockGroupEphemeralNode)(implicit p: Parameters) extends LazyModule
     with Attachable
     with HasConfigurableTLNetworkTopology
     with CanHaveDevices {

@@ -33,7 +33,7 @@ trait HasConfigurableHierarchy { this: Attachable =>
         location = edge,
         ibus = context.ibus,
         asyncClockGroupsNode = context.asyncClockGroupsNode,
-        logicalTreeNode = context.logicalTreeNode)) }
+        )) }
       dss.suggestName(edge.name)
       createHierarchyMap(edge, graph, dss)
     }

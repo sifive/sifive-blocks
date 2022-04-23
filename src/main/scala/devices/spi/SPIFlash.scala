@@ -3,9 +3,9 @@ package sifive.blocks.devices.spi
 
 import Chisel.{defaultCompileOptions => _, _}
 import freechips.rocketchip.util.CompileOptions.NotStrictInferReset
-import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
-import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
+
+
+
 
 class SPIFlashInsn(c: SPIFlashParamsBase) extends SPIBundle(c) {
   val cmd = new Bundle with HasSPIProtocol {

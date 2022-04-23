@@ -15,9 +15,9 @@ import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.util._
-import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
-import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
+
+
+
 
 import sifive.blocks.util._
 
@@ -98,22 +98,7 @@ abstract class PWM(busWidthBytes: Int, val params: PWMParams)(implicit p: Parame
     //regmap((GenericTimer.timerRegMap(pwm, 0, params.regBytes)):_*)
     val mapping = (GenericTimer.timerRegMap(pwm, 0, params.regBytes))
     regmap(mapping:_*)
-    val omRegMap = OMRegister.convert(mapping:_*)
   }
-  val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
-    def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
-      Seq(
-        OMPWM(
-          numComparators = params.ncmp,
-          compareWidth   = params.cmpWidth,
-          //TODO CHECK FOR REG BINDINGS memoryRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions("UART", resourceBindings, Some(omRegMap)),
-          memoryRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions("PWM", resourceBindings, Some(module.omRegMap)),
-          interrupts = DiplomaticObjectModelAddressing.describeGlobalInterrupts(device.describe(resourceBindings).name, resourceBindings),
-        )
-      )
-    }
-  }
-
 }
 
 class TLPWM(busWidthBytes: Int, params: PWMParams)(implicit p: Parameters)
@@ -165,8 +150,6 @@ case class PWMAttachParams(
       case _: RationalCrossing => where.ibus.fromRational
       case _: AsynchronousCrossing => where.ibus.fromAsync
     }) := pwm.intXing(intXType)
-
-    LogicalModuleTree.add(where.logicalTreeNode, pwm.logicalTreeNode)
 
     pwm
   }
