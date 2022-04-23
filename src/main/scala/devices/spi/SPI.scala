@@ -14,9 +14,9 @@ import freechips.rocketchip.regmapper._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
-import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
-import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
+
+
+
 
 import sifive.blocks.util._
 
@@ -66,8 +66,6 @@ case class SPIAttachParams(
       case _: RationalCrossing => where.ibus.fromRational
       case _: AsynchronousCrossing => where.ibus.fromAsync
     }) := spi.intXing(intXType)
-
-    LogicalModuleTree.add(where.logicalTreeNode, spi.logicalTreeNode)
 
     spi
   }
@@ -138,8 +136,6 @@ case class SPIFlashAttachParams(
       case _: RationalCrossing => where.ibus.fromRational
       case _: AsynchronousCrossing => where.ibus.fromAsync
     }) := qspi.intXing(intXType)
-
-    LogicalModuleTree.add(where.logicalTreeNode, qspi.logicalTreeNode)
 
     qspi
   }

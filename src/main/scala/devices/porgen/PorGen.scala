@@ -13,9 +13,9 @@ import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.util._
-import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
-import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
+
+
+
 import sifive.blocks.util._
 
 // Ideally, we want SOFT(configurable) reset inputs like this. 

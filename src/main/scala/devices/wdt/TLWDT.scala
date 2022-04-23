@@ -15,9 +15,9 @@ import freechips.rocketchip.tilelink._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.util._
-import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
-import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
+
+
+
 
 import sifive.blocks.util._
 import sifive.blocks.devices.mockaon.WatchdogTimer
@@ -53,20 +53,7 @@ abstract class WDT(busWidthBytes: Int, val params: WDTParams)(implicit p: Parame
     //regmap((GenericTimer.timerRegMap(wdt, 0, params.regBytes)):_*)
     val mapping = (GenericTimer.timerRegMap(wdt, 0, params.regBytes))
     regmap(mapping:_*)
-    val omRegMap = OMRegister.convert(mapping:_*)  
   }
-
-  val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
-    def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
-      Seq(
-        OMWDT(
-          memoryRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions("WDT", resourceBindings, Some(module.omRegMap)),
-          interrupts = DiplomaticObjectModelAddressing.describeGlobalInterrupts(device.describe(resourceBindings).name, resourceBindings)
-        )
-      )
-    }
-  }
-
 }
 
 class TLWDT(busWidthBytes: Int, params: WDTParams)(implicit p: Parameters)
@@ -118,8 +105,6 @@ case class WDTAttachParams(
       case _: RationalCrossing => where.ibus.fromRational
       case _: AsynchronousCrossing => where.ibus.fromAsync
     }) := wdt.intXing(intXType)
-
-    LogicalModuleTree.add(where.logicalTreeNode, wdt.logicalTreeNode)
 
     wdt
   }

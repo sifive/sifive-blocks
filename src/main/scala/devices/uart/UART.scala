@@ -13,9 +13,9 @@ import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.util._
-import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
-import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
+
+
+
 
 import sifive.blocks.util._
 
@@ -198,30 +198,7 @@ class UART(busWidthBytes: Int, val c: UARTParams, divisorInit: Int = 0)
       RegField(1, data8or9,
                RegFieldDesc("databits8or9","Data Bits to be 8(1) or 9(0)", reset=Some(1)))))) else Nil
   regmap(mapping ++ optionalparity ++ optionalwire4 ++ optional8or9:_*)
-  val omRegMap = OMRegister.convert(mapping ++ optionalparity ++ optionalwire4 ++ optional8or9:_*)
 }
-
-  val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
-    def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
-      Seq(
-        OMUART(
-          divisorWidthBits = c.divisorBits,
-          divisorInit = divisorInit,
-          nRxEntries = c.nRxEntries,
-          nTxEntries = c.nTxEntries,
-          dataBits = c.dataBits,
-          stopBits = c.stopBits,
-          oversample = c.oversample,
-          nSamples = c.nSamples,
-          includeFourWire = c.includeFourWire,
-          includeParity = c.includeParity,
-          includeIndependentParity = c.includeIndependentParity,
-          memoryRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions("UART", resourceBindings, Some(module.omRegMap)),
-          interrupts = DiplomaticObjectModelAddressing.describeGlobalInterrupts(device.describe(resourceBindings).name, resourceBindings),
-        )
-      )
-    }
-  }
 }
 class TLUART(busWidthBytes: Int, params: UARTParams, divinit: Int)(implicit p: Parameters)
   extends UART(busWidthBytes, params, divinit) with HasTLControlRegMap
@@ -273,8 +250,6 @@ case class UARTAttachParams(
       case _: RationalCrossing => where.ibus.fromRational
       case _: AsynchronousCrossing => where.ibus.fromAsync
     }) := uart.intXing(intXType)
-
-    LogicalModuleTree.add(where.logicalTreeNode, uart.logicalTreeNode)
 
     uart
   }

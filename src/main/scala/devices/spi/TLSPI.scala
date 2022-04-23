@@ -11,9 +11,9 @@ import freechips.rocketchip.interrupts._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util.HeterogeneousBag
 import sifive.blocks.util.{NonBlockingEnqueue, NonBlockingDequeue}
-import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
-import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
+
+
+
 import sifive.blocks.util._
 
 trait SPIParamsBase {
@@ -196,29 +196,5 @@ class TLSPI(w: Int, c: SPIParams)(implicit p: Parameters)
     mac.io.link <> fifo.io.link
     val mapping = (regmapBase)
     regmap(mapping:_*)
-    val omRegMap = OMRegister.convert(mapping:_*)
   }
-
-  val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
-    def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
-      Seq(
-        OMSPI(
-          rxDepth = c.rxDepth,
-          txDepth = c.txDepth,
-          csWidthBits = c.csWidth,
-          frameBits = c.frameBits,
-          delayBits = c.delayBits,
-          divisorBits = c.divisorBits,
-          coarseDelayBits = c.divisorBits,
-          fineDelayBits = c.fineDelayBits,
-          sampleDelayBits = c.sampleDelayBits,
-          defaultSampleDelay = c.defaultSampleDel,
-          memoryRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions("SPI", resourceBindings, Some(module.omRegMap)),
-          interrupts = DiplomaticObjectModelAddressing.describeGlobalInterrupts(device.describe(resourceBindings).name, resourceBindings)
-        )
-      )
-    }
-  }
-
-
 }

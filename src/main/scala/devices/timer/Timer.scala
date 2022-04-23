@@ -13,9 +13,9 @@ import freechips.rocketchip.regmapper.{RegisterRouter, RegisterRouterParams}
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
-import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
-import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
+
+
+
 
 import sifive.blocks.util._
 import sifive.blocks.devices.pwm._
@@ -47,18 +47,6 @@ class Timer(w: Int, c: TimerParams)(implicit p: Parameters)
     interrupts := timer.io.ip
     val mapping = (GenericTimer.timerRegMap(timer, 0, c.regBytes))
     regmap(mapping:_*)
-    val omRegMap = OMRegister.convert(mapping:_*)  
-  }
-  val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
-    def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
-      Seq(
-        OMTimer(
-          comparatorWidthBits = c.cmpWidth,
-          memoryRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions("Timer", resourceBindings, Some(module.omRegMap)),
-          interrupts = DiplomaticObjectModelAddressing.describeGlobalInterrupts(device.describe(resourceBindings).name, resourceBindings)
-        )
-      )
-    }
   }
 }
 
@@ -123,8 +111,6 @@ case class TimerAttachParams(
       case _: RationalCrossing => where.ibus.fromRational
       case _: AsynchronousCrossing => where.ibus.fromAsync
     }) := timer.intXing(intXType)
-
-    LogicalModuleTree.add(where.logicalTreeNode, timer.logicalTreeNode)
 
     timer
   }

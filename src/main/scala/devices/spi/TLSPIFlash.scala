@@ -9,9 +9,9 @@ import freechips.rocketchip.regmapper._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util.HeterogeneousBag
-import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMRegister}
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
-import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
+
+
+
 import sifive.blocks.util._
 
 trait SPIFlashParamsBase extends SPIParamsBase {
@@ -141,42 +141,5 @@ class TLSPIFlash(w: Int, c: SPIFlashParams)(implicit p: Parameters)
 
     val totalMapping = (regmapBase ++ regmapFlash)
     regmap(totalMapping:_*)
-    val omRegMap = OMRegister.convert(totalMapping:_*)
   }
-
-  val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
-    def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
-      // Get all the memory regions, but don't associate a register map to any of them yet
-      val diplomaticRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions("SPIXIP", resourceBindings/*, Some(module.omRegMap)*/)
-      // The regmap goes with the "control" region so add it and don't alter the others.
-      require(diplomaticRegions.exists(_.description == "control"),
-        "There should be a memory region with description \"control\" to connect the regmap to")
-      val memoryRegions = diplomaticRegions.map{ memRegion =>
-        if (memRegion.description == "control") { memRegion.copy(registerMap = Some(module.omRegMap)) } else {memRegion}
-      }
-
-      Seq(
-        OMSPIXIP(
-          rxDepth = c.rxDepth,
-          txDepth = c.txDepth,
-          csWidthBits = c.csWidth,
-          frameBits = c.frameBits,
-          delayBits = c.delayBits,
-          divisorBits = c.divisorBits,
-          coarseDelayBits = c.divisorBits,
-          fineDelayBits = c.fineDelayBits,
-          sampleDelayBits = c.sampleDelayBits,
-          defaultSampleDelay = c.defaultSampleDel,
-          instructionAddressBytes = c.insnAddrBytes,
-          instructionPadLengthBits = c.insnPadLenBits,
-          memMapAddressBase = c.fAddress,
-          memMapAddressSizeBytes = c.fSize,
-          memoryRegions = memoryRegions,
-          interrupts = DiplomaticObjectModelAddressing.describeGlobalInterrupts(device.describe(resourceBindings).name, resourceBindings)
-        )
-      )
-    }
-  }
-
-
 }
